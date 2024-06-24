@@ -2,7 +2,6 @@
 #define CrossOverBase_H
 
 #include <eigen3/Eigen/Core>
-#include <vector>
 
 #include "ICrossover.h"
 #include "Utils/TemplateType.h"
@@ -13,12 +12,12 @@ template <Number T>
 class CrossoverBase : public ICrossover<T> {
    public:
     CrossoverBase(int parentNum, int childrenNum) : _parentNum(parentNum), _childrenNum(childrenNum) {}
-    int GetParentNum() override { return _parentNum; }
-    int GetChildrenNum() override { return _childrenNum; }
-    std::vector<Eigen::VectorX<T>> Cross(std::vector<Eigen::VectorX<T>> parents) override;
+    int GetParentNum() const override { return _parentNum; }
+    int GetChildrenNum() const override { return _childrenNum; }
+    Eigen::ArrayXX<T> Cross(const Eigen::ArrayXX<T>& parents) const override;
 
    protected:
-    virtual std::vector<Eigen::VectorX<T>> performCrossover(std::vector<Eigen::VectorX<T>> parents) = 0;
+    virtual Eigen::ArrayXX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const = 0;
 
    private:
     int _parentNum;

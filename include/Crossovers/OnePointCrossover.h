@@ -1,6 +1,7 @@
 #ifndef OnePointCrossover_H
 #define OnePointCrossover_H
 
+#include <cstdint>
 #include <eigen3/Eigen/Core>
 #include <vector>
 
@@ -14,11 +15,12 @@ template <Number T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
     OnePointCrossover() : CrossoverBase<T>(2, 1), _rng() {}
+    explicit OnePointCrossover(SeedType seed) : CrossoverBase<T>(2, 1), _rng(seed) {}
 
    private:
     Rng _rng;
 
-    std::vector<Eigen::VectorX<T>> performCrossover(std::vector<Eigen::VectorX<T>> parents) override;
+    Eigen::ArrayXX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const override;
 };
 
 }  // namespace Eacpp

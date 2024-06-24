@@ -10,6 +10,16 @@ set(SRC_FILES
     "${SRC_DIRECTORY}/Crossovers/CrossoverBase.cpp"
     "${SRC_DIRECTORY}/Crossovers/OnePointCrossover.cpp"
 
+    "${SRC_DIRECTORY}/Decompositions/Tchebycheff.cpp"
+
+    "${SRC_DIRECTORY}/Mutations/BitFlipMutation.cpp"
+
+    "${SRC_DIRECTORY}/Problems/LZ1.cpp"
+    "${SRC_DIRECTORY}/Problems/LZBase.cpp"
+    "${SRC_DIRECTORY}/Samplings/UniformRandomSampling.cpp"
+
+    "${SRC_DIRECTORY}/Selections/RandomSelection.cpp"
+
     "${SRC_DIRECTORY}/Utils/Rng.cpp"
 )
 

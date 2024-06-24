@@ -16,36 +16,23 @@ class OnePointCrossover {
    public:
     OnePointCrossover() {}
     std::vector<Eigen::VectorX<T>> Cross(std::vector<Eigen::VectorX<T>> parents) {
-        int size = parents[0].size();
-        // // int crossoverPoint = _rng.Integer(1, size - 1);
-        int crossoverPoint = 1;
-        Eigen::VectorX<T> child(size);
-        child << parents[0].head(crossoverPoint), parents[1].tail(size - crossoverPoint);
-        return {child};
+        throw std::runtime_error("Not implemented");
     }
 };
 
-int main() {
-    srand(time(0));
-    // Rng rng;
-    // cout << rng.Integers(10) << endl;
-    // cout << rng.Integers(5, 10) << endl;
-    // auto v = rng.Integers(5, 10, 10, true);
-    // for (auto i : v) {
-    //     cout << i << " ";
-    // }
-    // cout << endl;
+void swapIfMaxLessThanMin(int& min, int& max) {
+    if (max < min) {
+        std::swap(min, max);
+    }
+}
 
-    OnePointCrossover<int> op;
-    Eigen::VectorXi v1 = Eigen::VectorXi::Random(4);
-    Eigen::VectorXi v2 = Eigen::VectorXi::Random(4);
-    vector<Eigen::VectorXi> parents = {v1, v2};
-    auto child = op.Cross(parents);
-    cout << v1 << endl
-         << endl;
-    cout << v2 << endl
-         << endl;
-    cout << child[0] << endl;
+Eigen::MatrixXd Mutate() { return Eigen::MatrixXd::Random(10, 10); }
+
+int main() {
+    int min = 100;
+    int max = 10;
+    swapIfMaxLessThanMin(min, max);
+    cout << min << " " << max << endl;
 
     return 0;
 }
