@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Crossovers/CrossoverBase.h"
+#include "Rng/IRng.h"
 #include "Rng/Rng.h"
 #include "Utils/TemplateType.h"
 
@@ -15,10 +16,10 @@ template <Number T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
     OnePointCrossover() : CrossoverBase<T>(2, 1), _rng() {}
-    explicit OnePointCrossover(SeedType seed) : CrossoverBase<T>(2, 1), _rng(seed) {}
+    explicit OnePointCrossover(IRng rng) : CrossoverBase<T>(2, 1), _rng(rng) {}
 
    private:
-    Rng _rng;
+    IRng* _rng;
 
     Eigen::ArrayXX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const override;
 };
