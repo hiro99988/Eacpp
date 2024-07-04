@@ -1,8 +1,8 @@
 #ifndef RandomSelection_h
 #define RandomSelection_h
 
+#include "Rng/Rng.h"
 #include "Selections/ISelection.h"
-#include "Utils/Rng.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {

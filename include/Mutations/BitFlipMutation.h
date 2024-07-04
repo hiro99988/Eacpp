@@ -2,10 +2,9 @@
 #define BitFlipMutation_h
 
 #include "Mutations/IMutation.h"
-#include "Utils/Rng.h"
+#include "Rng/Rng.h"
 
 namespace Eacpp {
-
 class BitFlipMutation : public IMutation<int> {
    public:
     double mutationRate;

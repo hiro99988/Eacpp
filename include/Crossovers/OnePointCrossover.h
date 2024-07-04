@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Crossovers/CrossoverBase.h"
-#include "Utils/Rng.h"
+#include "Rng/Rng.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {

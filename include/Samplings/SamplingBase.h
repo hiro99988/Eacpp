@@ -1,8 +1,8 @@
 #ifndef SamplingBase_h
 #define SamplingBase_h
 
+#include "Rng/Rng.h"
 #include "Samplings/ISampling.h"
-#include "Utils/Rng.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {
