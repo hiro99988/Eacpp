@@ -29,7 +29,7 @@ class Rng : public IRng {
     Eigen::ArrayXXd Random(const std::tuple<int, int> size) const override;
 
     template <typename T>
-    Eigen::ArrayXX<T> Choice(Eigen::ArrayXX<T>, int size, bool replace) const;
+    Eigen::ArrayXX<T> Choice(Eigen::ArrayXX<T>, int size, bool replace = true) const;
 
    private:
     std::mt19937 mt;
