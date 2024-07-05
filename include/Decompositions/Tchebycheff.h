@@ -6,6 +6,7 @@
 namespace Eacpp {
 
 class Tchebycheff : public IDecomposition {
+   public:
     double ComputeObjective(const Eigen::ArrayXd& weight, const Eigen::ArrayXd& objectiveSet,
                             const Eigen::ArrayXd& referencePoint) const override;
 };
