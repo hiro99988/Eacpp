@@ -10,6 +10,8 @@
 namespace Eacpp {
 
 struct IRng {
+    virtual ~IRng() {}
+
     virtual int Integer(const int max) const = 0;
     virtual int Integer(int min, int max) const = 0;
     virtual std::vector<int> Integers(int min, int max, const int size, bool replace = true) const = 0;

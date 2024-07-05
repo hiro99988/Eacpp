@@ -9,6 +9,8 @@ namespace Eacpp {
 
 template <Number T>
 struct ISampling {
+    virtual ~ISampling() {}
+
     virtual Eigen::ArrayXX<T> Sample(int sampleNum, int variableNum) const = 0;
 };
 

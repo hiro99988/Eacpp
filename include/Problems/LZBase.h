@@ -24,6 +24,7 @@ class LZBase : public IProblem {
             Js.push_back(Eigen::ArrayXi::LinSpaced(int(objectiveNum / 2) - (1 - i), i + 1, decisionNum - 1));
         }
     }
+    virtual ~LZBase() {}
 
     bool IsFeasible(const Eigen::ArrayXd& solution) const override;
     std::vector<bool> EvaluateConstraints(const Eigen::ArrayXd& solution) const override;

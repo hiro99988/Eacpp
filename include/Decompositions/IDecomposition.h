@@ -5,6 +5,8 @@
 namespace Eacpp {
 
 struct IDecomposition {
+    virtual ~IDecomposition() {}
+
     virtual double ComputeObjective(const Eigen::ArrayXd& weight, const Eigen::ArrayXd& objectiveSet,
                                     const Eigen::ArrayXd& referencePoint) const = 0;
 };

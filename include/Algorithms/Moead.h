@@ -38,6 +38,7 @@ class Moead {
           problem(problem),
           sampling(sampling),
           selection(selection) {}
+    virtual ~Moead() {}
 };
 
 }  // namespace Eacpp

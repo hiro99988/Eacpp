@@ -9,6 +9,8 @@ namespace Eacpp {
 
 template <Number T>
 struct ISelection {
+    virtual ~ISelection() {}
+
     virtual Eigen::ArrayXX<T> select(int parentNum, const Eigen::ArrayXX<T>& population) const = 0;
 };
 

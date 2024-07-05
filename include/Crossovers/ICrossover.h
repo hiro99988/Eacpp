@@ -9,6 +9,8 @@ namespace Eacpp {
 
 template <Number T>
 struct ICrossover {
+    virtual ~ICrossover() {}
+
     virtual int GetParentNum() const = 0;
     virtual int GetChildrenNum() const = 0;
     virtual Eigen::ArrayXX<T> Cross(const Eigen::ArrayXX<T>& parents) const = 0;

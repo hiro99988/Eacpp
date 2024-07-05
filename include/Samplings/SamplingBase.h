@@ -12,6 +12,7 @@ class SamplingBase : public ISampling<T> {
    public:
     SamplingBase() : _rng() {}
     SamplingBase(SeedType seed) : _rng(seed) {}
+    virtual ~SamplingBase() {}
 
    protected:
     Rng _rng;

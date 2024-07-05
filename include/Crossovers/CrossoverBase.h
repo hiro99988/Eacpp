@@ -12,8 +12,11 @@ template <Number T>
 class CrossoverBase : public ICrossover<T> {
    public:
     CrossoverBase(int parentNum, int childrenNum) : _parentNum(parentNum), _childrenNum(childrenNum) {}
+    virtual ~CrossoverBase() {}
+
     int GetParentNum() const override { return _parentNum; }
     int GetChildrenNum() const override { return _childrenNum; }
+
     Eigen::ArrayXX<T> Cross(const Eigen::ArrayXX<T>& parents) const override;
 
    protected:
