@@ -24,8 +24,8 @@ struct IRng {
     virtual Eigen::ArrayXd Random(const int size) = 0;
     virtual Eigen::ArrayXXd Random(const std::tuple<int, int> size) = 0;
 
-    // template <typename T>
-    // virtual Eigen::ArrayXX<T> Choice(Eigen::ArrayXX<T>, int size, bool replace);
+    virtual Eigen::ArrayXXi Choice(Eigen::ArrayXXi array, int size, bool replace) = 0;
+    virtual Eigen::ArrayXXd Choice(Eigen::ArrayXXd array, int size, bool replace) = 0;
 };
 
 }  // namespace Eacpp
