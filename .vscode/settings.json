@@ -57,6 +57,19 @@
         "thread": "cpp",
         "typeinfo": "cpp",
         "core": "cpp",
-        "hash_map": "cpp"
+        "hash_map": "cpp",
+        "chrono": "cpp",
+        "any": "cpp",
+        "charconv": "cpp",
+        "condition_variable": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "format": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "mutex": "cpp",
+        "span": "cpp",
+        "variant": "cpp"
     }
 }
