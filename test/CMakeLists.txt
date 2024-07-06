@@ -15,3 +15,4 @@ FetchContent_MakeAvailable(googletest)
 
 add_subdirectory(Rng)
 add_subdirectory(Utils)
+add_subdirectory(Mutations)
