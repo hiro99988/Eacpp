@@ -5,7 +5,8 @@
 
 namespace Eacpp {
 
-void swapIfMaxLessThanMin(int& min, int& max) {
+template <typename T>
+void swapIfMaxLessThanMin(T& min, T& max) {
     if (max < min) {
         std::swap(min, max);
     }
