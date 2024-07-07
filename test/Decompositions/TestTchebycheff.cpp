@@ -16,7 +16,7 @@ TEST(TchebycheffTest, ComputeObjective) {
     referencePoint << 1, 2, 3;
     double actual = tchebycheff.ComputeObjective(weight, objectiveSet, referencePoint);
     double expected = 0.8;
-    ASSERT_DOUBLE_EQ(actual, expected);
+    ASSERT_DOUBLE_EQ(expected, actual);
 }
 
 }  // namespace Eacpp::Test
