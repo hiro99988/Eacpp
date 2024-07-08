@@ -1,9 +1,9 @@
-#ifndef CrossOverBase_H
-#define CrossOverBase_H
+#ifndef CrossoverBase_H
+#define CrossoverBase_H
 
 #include <eigen3/Eigen/Core>
 
-#include "ICrossover.h"
+#include "Crossovers/ICrossover.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {
@@ -11,20 +11,24 @@ namespace Eacpp {
 template <Number T>
 class CrossoverBase : public ICrossover<T> {
    public:
-    CrossoverBase(int parentNum, int childrenNum) : _parentNum(parentNum), _childrenNum(childrenNum) {}
+    explicit CrossoverBase(int parentNum) : _parentNum(parentNum) {}
     virtual ~CrossoverBase() {}
 
     int GetParentNum() const override { return _parentNum; }
-    int GetChildrenNum() const override { return _childrenNum; }
 
-    Eigen::ArrayXX<T> Cross(const Eigen::ArrayXX<T>& parents) const override;
+    Eigen::ArrayX<T> Cross(const Eigen::ArrayXX<T>& parents) const override {
+        int actualParentNum = parents.rows();
+        if (actualParentNum != _parentNum) {
+            throw std::invalid_argument("Invalid number of parents");
+        }
+        return performCrossover(parents);
+    }
 
    protected:
-    virtual Eigen::ArrayXX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const = 0;
+    virtual Eigen::ArrayX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const = 0;
 
    private:
     int _parentNum;
-    int _childrenNum;
 };
 
 }  // namespace Eacpp

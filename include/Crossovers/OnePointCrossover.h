@@ -15,13 +15,34 @@ namespace Eacpp {
 template <Number T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
-    OnePointCrossover() : CrossoverBase<T>(2, 1), _rng() {}
-    explicit OnePointCrossover(IRng rng) : CrossoverBase<T>(2, 1), _rng(rng) {}
+    double crossoverRate;
+
+    OnePointCrossover(double crossoverRate) : CrossoverBase<T>(2), crossoverRate(crossoverRate) {
+        _rng = new Rng();
+        _isRngCreated = true;
+    }
+    explicit OnePointCrossover(double crossoverRate, IRng* rng)
+        : CrossoverBase<T>(2), crossoverRate(crossoverRate), _rng(rng) {}
+    ~OnePointCrossover() {
+        if (_isRngCreated) {
+            delete _rng;
+        }
+    }
 
    private:
     IRng* _rng;
+    bool _isRngCreated = false;
 
-    Eigen::ArrayXX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const override;
+    Eigen::ArrayX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const override {
+        if (_rng->Random() > crossoverRate) {
+            return parents.row(0);
+        }
+        int size = parents.cols();
+        int crossoverPoint = _rng->Integer(1, size - 1);
+        Eigen::ArrayX<T> child(size);
+        child << parents.block(0, 0, 1, crossoverPoint), parents.block(1, crossoverPoint, 1, size - crossoverPoint);
+        return child;
+    }
 };
 
 }  // namespace Eacpp
