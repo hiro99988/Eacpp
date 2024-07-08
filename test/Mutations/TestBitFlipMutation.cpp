@@ -1,7 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-// #include "Mutations/BitFlipMutation.h"
+#include <eigen3/Eigen/Core>
+
 #include "Mutations/BitFlipMutation.h"
 #include "Rng/MockRng.h"
 
