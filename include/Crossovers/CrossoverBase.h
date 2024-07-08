@@ -17,9 +17,9 @@ class CrossoverBase : public ICrossover<T> {
     int GetParentNum() const override { return _parentNum; }
 
     Eigen::ArrayX<T> Cross(const Eigen::ArrayXX<T>& parents) const override {
-        int actualParentNum = parents.rows();
+        int actualParentNum = parents.cols();
         if (actualParentNum != _parentNum) {
-            throw std::invalid_argument("Invalid number of parents");
+            throw std::invalid_argument("Invalid size of parents");
         }
         return performCrossover(parents);
     }
