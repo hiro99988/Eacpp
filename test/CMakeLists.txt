@@ -13,6 +13,7 @@ endif()
 # googletestをターゲットとして使えるようにする
 FetchContent_MakeAvailable(googletest)
 
+add_subdirectory(Crossovers)
 add_subdirectory(Decompositions)
 add_subdirectory(Mutations)
 add_subdirectory(Rng)
