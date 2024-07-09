@@ -11,7 +11,9 @@ namespace Eacpp {
 template <Number T>
 class CrossoverBase : public ICrossover<T> {
    public:
-    explicit CrossoverBase(int parentNum) : _parentNum(parentNum) {}
+    double crossoverRate;
+
+    explicit CrossoverBase(int parentNum, double crossoverRate) : _parentNum(parentNum), crossoverRate(crossoverRate) {}
     virtual ~CrossoverBase() {}
 
     int GetParentNum() const override { return _parentNum; }

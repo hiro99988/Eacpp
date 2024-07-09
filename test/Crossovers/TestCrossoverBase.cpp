@@ -11,11 +11,11 @@ class CrossoverBaseTest : public ::testing::Test {
 
     class CrossoverBaseTmp : public CrossoverBase<int> {
        public:
-        CrossoverBaseTmp(int parentNum) : CrossoverBase<int>(parentNum) {}
+        CrossoverBaseTmp(int parentNum, double crossoverRate) : CrossoverBase<int>(parentNum, crossoverRate) {}
         Eigen::ArrayX<int> performCrossover(const Eigen::ArrayXX<int>& parents) const override { return parents.row(0); }
     };
 
-    CrossoverBaseTmp crossoverBase{2};
+    CrossoverBaseTmp crossoverBase{2, 1.0};
 };
 
 TEST_F(CrossoverBaseTest, GetParentNum) { EXPECT_EQ(crossoverBase.GetParentNum(), 2); }
