@@ -9,7 +9,7 @@
 
 namespace Eacpp {
 
-class LZBase : public IProblem {
+class LZBase : public IProblem<double> {
    public:
     int objectiveNum;
     std::vector<std::array<double, 2>> variableBounds;
@@ -21,7 +21,7 @@ class LZBase : public IProblem {
         n = decisionNum;
 
         for (int i = 0; i < objectiveNum; i++) {
-            Js.push_back(Eigen::ArrayXi::LinSpaced(int(objectiveNum / 2) - (1 - i), i + 1, decisionNum - 1));
+            _Js.push_back(Eigen::ArrayXd::LinSpaced(int(objectiveNum / 2) - (1 - i), i + 1, decisionNum - 1));
         }
     }
     virtual ~LZBase() {}
@@ -30,7 +30,7 @@ class LZBase : public IProblem {
     std::vector<bool> EvaluateConstraints(const Eigen::ArrayXd& solution) const override;
 
    protected:
-    std::vector<Eigen::ArrayXd> Js;
+    std::vector<Eigen::ArrayXd> _Js;
 
     virtual double beta(const Eigen::ArrayXd& solution, const Eigen::ArrayXd& J) const = 0;
 

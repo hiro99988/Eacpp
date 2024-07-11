@@ -14,12 +14,12 @@ Eigen::ArrayXd LZ1::ComputeObjectiveSet(const Eigen::ArrayXd& solution) const {
 }
 
 double LZ1::f1(const Eigen::ArrayXd& solution) const {
-    double b = beta(solution, Js[0]);
+    double b = beta(solution, _Js[0]);
     return solution(0) + b;
 }
 
 double LZ1::f2(const Eigen::ArrayXd& solution) const {
-    double b = beta(solution, Js[1]);
+    double b = beta(solution, _Js[1]);
     return 1.0 - std::sqrt(solution(0)) + b;
 }
 

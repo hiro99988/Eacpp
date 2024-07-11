@@ -8,12 +8,13 @@
 
 namespace Eacpp {
 
+template <Number T>
 struct IProblem {
     virtual ~IProblem() {}
 
-    virtual Eigen::ArrayXd ComputeObjectiveSet(const Eigen::ArrayXd& solution) const = 0;
-    virtual bool IsFeasible(const Eigen::ArrayXd& solution) const = 0;
-    virtual std::vector<bool> EvaluateConstraints(const Eigen::ArrayXd& solution) const = 0;
+    virtual Eigen::ArrayXd ComputeObjectiveSet(const Eigen::ArrayX<T>& solution) const = 0;
+    virtual bool IsFeasible(const Eigen::ArrayX<T>& solution) const = 0;
+    virtual std::vector<bool> EvaluateConstraints(const Eigen::ArrayX<T>& solution) const = 0;
 };
 
 }  // namespace Eacpp
