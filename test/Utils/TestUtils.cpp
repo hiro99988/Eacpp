@@ -15,3 +15,25 @@ TEST(UtilsTest, SwapIfMaxLessThanMin) {
     ASSERT_EQ(1.1, dmin);
     ASSERT_EQ(2.1, dmax);
 }
+
+TEST(UtilsTest, Rangei) {
+    int start = 1;
+    int end = 10;
+    for (int step = 1; step <= end; ++step) {
+        std::vector<int> actual = Eacpp::Rangei(start, end, step);
+        for (int i = 0, j = start; i < actual.size(); ++i, j += step) {
+            ASSERT_EQ(j, actual[i]);
+        }
+    }
+}
+
+TEST(UtilsTest, Rangeea) {
+    int start = 1;
+    int end = 10;
+    for (int step = 1; step <= end; ++step) {
+        Eigen::ArrayXi actual = Eacpp::Rangeea(start, end, step);
+        for (int i = 0, j = start; i < actual.size(); ++i, j += step) {
+            ASSERT_EQ(j, actual(i));
+        }
+    }
+}
