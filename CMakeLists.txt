@@ -11,7 +11,7 @@ set(SRC_FILES
 
     "${SRC_DIRECTORY}/Mutations/BitFlipMutation.cpp"
 
-    # "${SRC_DIRECTORY}/Problems/LZ1.cpp"
+    "${SRC_DIRECTORY}/Problems/LZ1.cpp"
     "${SRC_DIRECTORY}/Problems/LZBase.cpp"
 
     "${SRC_DIRECTORY}/Rng/Rng.cpp"

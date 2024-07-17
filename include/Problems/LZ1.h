@@ -14,10 +14,10 @@ class LZ1 : public LZBase {
     Eigen::ArrayXd ComputeObjectiveSet(const Eigen::ArrayXd& solution) const override;
 
    private:
-    double f1(const Eigen::ArrayXd& solution) const;
-    double f2(const Eigen::ArrayXd& solution) const;
-    double beta(const Eigen::ArrayXd& solution, const Eigen::ArrayXd& J) const override;
-    Eigen::ArrayXd g(const Eigen::ArrayXd& solution, const Eigen::ArrayXd& J) const;
+    double F1(const Eigen::ArrayXd& solution) const;
+    double F2(const Eigen::ArrayXd& solution) const;
+    double Beta(const Eigen::ArrayXd& solution, const int JIndex) const override;
+    Eigen::ArrayXd G(const Eigen::ArrayXd& solution, const Eigen::ArrayXd& J) const;
 };
 
 }  // namespace Eacpp

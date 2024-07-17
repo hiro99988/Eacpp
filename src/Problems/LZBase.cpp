@@ -10,12 +10,15 @@ bool LZBase::IsFeasible(const Eigen::ArrayXd& solution) const {
 }
 
 std::vector<bool> LZBase::EvaluateConstraints(const Eigen::ArrayXd& solution) const {
-    std::vector<bool> evaluation;
+    std::vector<bool> evaluation(solution.size());
+    int index = 0;
     for (int i = 0; i < _lastBoundIndex; i++) {
-        evaluation.push_back(solution(i) >= variableBounds[i][0] && solution(i) <= variableBounds[i][1]);
+        evaluation[index] = solution(i) >= variableBounds[i][0] && solution(i) <= variableBounds[i][1];
+        ++index;
     }
     for (int i = _lastBoundIndex; i < solution.size(); i++) {
-        evaluation.push_back(solution(i) >= variableBounds[i][0] && solution(i) <= variableBounds[i][1]);
+        evaluation[i] = solution(i) >= variableBounds[_lastBoundIndex][0] && solution(i) <= variableBounds[_lastBoundIndex][1];
+        ++index;
     }
     return evaluation;
 }

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Problems/IProblem.h"
+#include "Utils/Utils.h"
 
 namespace Eacpp {
 
@@ -16,12 +17,13 @@ class LZBase : public IProblem<double> {
     int n;
 
     LZBase(int objectiveNum, std::vector<std::array<double, 2>> variableBounds, int decisionNum)
-        : objectiveNum(objectiveNum), n(decisionNum) {
+        : objectiveNum(objectiveNum), variableBounds(variableBounds), n(decisionNum) {
         _lastBoundIndex = variableBounds.size() - 1;
-        n = decisionNum;
 
-        for (int i = 0; i < objectiveNum; i++) {
-            _Js.push_back(Eigen::ArrayXd::LinSpaced(int(objectiveNum / 2) - (1 - i), i + 1, decisionNum - 1));
+        for (int i = 1; i <= objectiveNum; i++) {
+            Eigen::ArrayXi tmp = Rangeea(objectiveNum + (i % objectiveNum), decisionNum, objectiveNum);
+            _Jsi.push_back(tmp - 1);
+            _Jsd.push_back(tmp.cast<double>());
         }
     }
     virtual ~LZBase() {}
@@ -30,9 +32,10 @@ class LZBase : public IProblem<double> {
     std::vector<bool> EvaluateConstraints(const Eigen::ArrayXd& solution) const override;
 
    protected:
-    std::vector<Eigen::ArrayXd> _Js;
+    std::vector<Eigen::ArrayXi> _Jsi;
+    std::vector<Eigen::ArrayXd> _Jsd;
 
-    virtual double beta(const Eigen::ArrayXd& solution, const Eigen::ArrayXd& J) const = 0;
+    virtual double Beta(const Eigen::ArrayXd& solution, const int JIndex) const = 0;
 
    private:
     int _lastBoundIndex;
