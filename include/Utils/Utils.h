@@ -14,7 +14,7 @@ void swapIfMaxLessThanMin(T& min, T& max) {
     }
 }
 
-std::vector<int> Rangei(int start, int end, int step) {
+inline std::vector<int> Rangei(const int start, const int end, const int step) {
     std::vector<int> tmp((end - start) / step + 1);
     for (int i = start, j = 0; i <= end; i += step, ++j) {
         tmp[j] = i;
@@ -22,7 +22,7 @@ std::vector<int> Rangei(int start, int end, int step) {
     return tmp;
 }
 
-Eigen::ArrayXi Rangeea(int start, int end, int step) {
+inline Eigen::ArrayXi Rangeea(const int start, const int end, const int step) {
     int size = (end - start) / step + 1;
     Eigen::ArrayXi tmp = Eigen::ArrayXi::LinSpaced(size, start, start + step * (size - 1));
     return tmp;
