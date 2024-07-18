@@ -39,7 +39,11 @@ class Rng : public IRng {
     std::mt19937 _mt;
 
     template <typename T>
-    Eigen::ArrayXX<T> Choice(Eigen::ArrayXX<T>, int size, bool replace = true);
+    Eigen::ArrayXX<T> Choice(Eigen::ArrayXX<T> array, int size, bool replace = true) {
+        Eigen::ArrayXX<T> result(array.rows(), size);
+        auto v = Integers(0, array.cols() - 1, size, replace);
+        return result;
+    };
 };
 
 }  // namespace Eacpp
