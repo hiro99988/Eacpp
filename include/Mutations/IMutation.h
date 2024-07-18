@@ -3,10 +3,15 @@
 
 #include <eigen3/Eigen/Core>
 
+#include "Rng/HasRng.h"
+#include "Rng/IRng.h"
+
 namespace Eacpp {
 
 template <typename T>
-struct IMutation {
+struct IMutation : protected HasRng {
+    IMutation() {}
+    explicit IMutation(IRng* rng) : HasRng(rng) {}
     virtual ~IMutation() {}
 
     virtual void Mutate(Eigen::ArrayX<T>& individual) const = 0;

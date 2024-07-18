@@ -16,7 +16,7 @@ set(SRC_FILES
 
     "${SRC_DIRECTORY}/Rng/Rng.cpp"
 
-    # "${SRC_DIRECTORY}/Samplings/UniformRandomSampling.cpp"
+    "${SRC_DIRECTORY}/Samplings/UniformRandomSampling.cpp"
 
     # "${SRC_DIRECTORY}/Selections/RandomSelection.cpp"
 )

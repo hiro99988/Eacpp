@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "Crossovers/CrossoverBase.h"
+#include "Rng/HasRng.h"
 #include "Rng/IRng.h"
-#include "Rng/Rng.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {
@@ -15,27 +15,16 @@ namespace Eacpp {
 template <Number T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
-    OnePointCrossover(double crossoverRate) : CrossoverBase<T>(2, crossoverRate) {
-        _rng = new Rng();
-        _isRngCreated = true;
-    }
-    explicit OnePointCrossover(double crossoverRate, IRng* rng) : CrossoverBase<T>(2, crossoverRate), _rng(rng) {}
-    ~OnePointCrossover() {
-        if (_isRngCreated) {
-            delete _rng;
-        }
-    }
+    explicit OnePointCrossover(double crossoverRate) : CrossoverBase<T>(2, crossoverRate) {}
+    OnePointCrossover(double crossoverRate, IRng* rng) : CrossoverBase<T>(2, crossoverRate, rng) {}
 
    private:
-    IRng* _rng;
-    bool _isRngCreated = false;
-
     Eigen::ArrayX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const override {
-        if (_rng->Random() > this->crossoverRate) {
+        if (this->_rng->Random() > this->crossoverRate) {
             return parents.col(0);
         }
         int size = parents.rows();
-        int crossoverPoint = _rng->Integer(1, size - 1);
+        int crossoverPoint = this->_rng->Integer(1, size - 1);
         Eigen::ArrayX<T> child(size);
         child << parents.block(0, 0, crossoverPoint, 1), parents.block(crossoverPoint, 1, size - crossoverPoint, 1);
         return child;

@@ -4,16 +4,20 @@
 #include <eigen3/Eigen/Core>
 
 #include "Crossovers/ICrossover.h"
+#include "Rng/HasRng.h"
+#include "Rng/IRng.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {
 
 template <Number T>
-class CrossoverBase : public ICrossover<T> {
+class CrossoverBase : public ICrossover<T>, protected HasRng {
    public:
     double crossoverRate;
 
-    explicit CrossoverBase(int parentNum, double crossoverRate) : _parentNum(parentNum), crossoverRate(crossoverRate) {}
+    CrossoverBase(int parentNum, double crossoverRate) : _parentNum(parentNum), crossoverRate(crossoverRate) {}
+    CrossoverBase(int parentNum, double crossoverRate, IRng* rng)
+        : _parentNum(parentNum), crossoverRate(crossoverRate), HasRng(rng) {}
     virtual ~CrossoverBase() {}
 
     int GetParentNum() const override { return _parentNum; }

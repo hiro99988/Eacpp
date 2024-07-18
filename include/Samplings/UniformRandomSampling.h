@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Core>
 
+#include "Rng/IRng.h"
 #include "Samplings/RandomSamplingBase.h"
 #include "Utils/TemplateType.h"
 
@@ -14,18 +15,19 @@ class UniformRandomSampling : public RandomSamplingBase<double> {
     double max = 1.0;
 
     UniformRandomSampling() : RandomSamplingBase() {}
-    UniformRandomSampling(double min, double max) : RandomSamplingBase(), min(min), max(max) {
-        if (min > max) {
-            throw std::invalid_argument("min must be less than or equal to max");
-        };
-    }
-    UniformRandomSampling(double min, double max, SeedType seed) : RandomSamplingBase(seed), min(min), max(max) {
-        if (min > max) {
-            throw std::invalid_argument("min must be less than or equal to max");
-        };
+    UniformRandomSampling(double min, double max) : RandomSamplingBase(), min(min), max(max) { CheckMinMax(min, max); }
+    UniformRandomSampling(double min, double max, IRng* rng) : RandomSamplingBase(rng), min(min), max(max) {
+        CheckMinMax(min, max);
     }
 
-    Eigen::ArrayXXd Sample(int sampleNum, int variableNum) const override;
+    Eigen::ArrayXXd Sample(int sampleNum, int variableNum) override;
+
+   private:
+    void CheckMinMax(const int min, const int max) const {
+        if (min > max) {
+            throw std::invalid_argument("min must be less than or equal to max");
+        }
+    }
 };
 
 }  // namespace Eacpp

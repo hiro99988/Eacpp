@@ -11,7 +11,7 @@ template <Number T>
 struct ISampling {
     virtual ~ISampling() {}
 
-    virtual Eigen::ArrayXX<T> Sample(int sampleNum, int variableNum) const = 0;
+    virtual Eigen::ArrayXX<T> Sample(int sampleNum, int variableNum) = 0;
 };
 
 }  // namespace Eacpp
