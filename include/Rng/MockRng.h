@@ -25,8 +25,8 @@ class MockRng : public IRng {
     MOCK_METHOD1(Random, Eigen::ArrayXd(const int));
     MOCK_METHOD1(Random, Eigen::ArrayXXd(const std::tuple<int, int>));
 
-    MOCK_METHOD3(Choice, Eigen::ArrayXXi(Eigen::ArrayXXi, int, bool));
-    MOCK_METHOD3(Choice, Eigen::ArrayXXd(Eigen::ArrayXXd, int, bool));
+    MOCK_METHOD3(Choice, Eigen::ArrayXXi(const Eigen::ArrayXXi&, const int, const bool));
+    MOCK_METHOD3(Choice, Eigen::ArrayXXd(const Eigen::ArrayXXd&, const int, const bool));
 };
 
 }  // namespace Eacpp

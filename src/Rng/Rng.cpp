@@ -1,6 +1,5 @@
 #include "Rng/Rng.h"
 
-#include <hash_map>
 #include <iostream>
 #include <unordered_map>
 

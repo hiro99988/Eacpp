@@ -5,9 +5,10 @@
 #include <unordered_set>
 
 #include "Rng/Rng.h"
+namespace Eacpp::Test {
 
 TEST(RngTest, IntegerMax0) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expected = 0;
     for (int i = 0; i < 10; i++) {
         int actual = rng.Integer(0);
@@ -16,7 +17,7 @@ TEST(RngTest, IntegerMax0) {
 }
 
 TEST(RngTest, IntegerMax2) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = 0;
     int expectedMax = 2;
     for (int i = 0; i < 10; i++) {
@@ -27,7 +28,7 @@ TEST(RngTest, IntegerMax2) {
 }
 
 TEST(RngTest, IntegerMaxMinus2) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = -2;
     int expectedMax = 0;
     for (int i = 0; i < 10; i++) {
@@ -38,7 +39,7 @@ TEST(RngTest, IntegerMaxMinus2) {
 }
 
 TEST(RngTest, IntegerMinEqualMax) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expected = 0;
     for (int i = 0; i < 10; i++) {
         int actual = rng.Integer(expected, expected);
@@ -47,7 +48,7 @@ TEST(RngTest, IntegerMinEqualMax) {
 }
 
 TEST(RngTest, IntegerMinLessThanMax) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = 1;
     int expectedMax = 3;
     for (int i = 0; i < 10; i++) {
@@ -58,7 +59,7 @@ TEST(RngTest, IntegerMinLessThanMax) {
 }
 
 TEST(RngTest, IntegerMinGreaterThanMax) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = 1;
     int expectedMax = 3;
     for (int i = 0; i < 10; i++) {
@@ -69,7 +70,7 @@ TEST(RngTest, IntegerMinGreaterThanMax) {
 }
 
 TEST(RngTest, IntegersReplaceTrue) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = 0;
     int expectedMax = 2;
     int size = 10;
@@ -82,7 +83,7 @@ TEST(RngTest, IntegersReplaceTrue) {
 }
 
 TEST(RngTest, IntergersMinMaxLessThanSizeReplaceFalseException) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = 0;
     int expectedMax = 2;
     int size = 10;
@@ -90,7 +91,7 @@ TEST(RngTest, IntergersMinMaxLessThanSizeReplaceFalseException) {
 }
 
 TEST(RngTest, IntegersReplaceFalse) {
-    Eacpp::Rng rng;
+    Rng rng;
     int expectedMin = 1;
     int expectedMax = 100;
     int size = 100;
@@ -101,7 +102,7 @@ TEST(RngTest, IntegersReplaceFalse) {
 }
 
 TEST(RngTest, UniformMinGreaterThanMax) {
-    Eacpp::Rng rng;
+    Rng rng;
     double expectedMin = 0.0;
     double expectedMax = 1.0;
     for (int i = 0; i < 10; i++) {
@@ -112,7 +113,7 @@ TEST(RngTest, UniformMinGreaterThanMax) {
 }
 
 TEST(RngTest, UniformMinEqualMax) {
-    Eacpp::Rng rng;
+    Rng rng;
     double expected = 0.0;
     for (int i = 0; i < 10; i++) {
         double actual = rng.Uniform(expected, expected);
@@ -121,7 +122,7 @@ TEST(RngTest, UniformMinEqualMax) {
 }
 
 TEST(RngTest, UniformMinLessThanMax) {
-    Eacpp::Rng rng;
+    Rng rng;
     double expectedMin = 0.0;
     double expectedMax = 1.0;
     for (int i = 0; i < 10; i++) {
@@ -132,7 +133,7 @@ TEST(RngTest, UniformMinLessThanMax) {
 }
 
 TEST(RngTest, UniformSize10) {
-    Eacpp::Rng rng;
+    Rng rng;
     double expectedMin = 0.0;
     double expectedMax = 1.0;
     int size = 10;
@@ -143,7 +144,7 @@ TEST(RngTest, UniformSize10) {
 }
 
 TEST(RngTest, UniformSize10x10) {
-    Eacpp::Rng rng;
+    Rng rng;
     double expectedMin = 0.0;
     double expectedMax = 1.0;
     std::tuple<int, int> size(10, 10);
@@ -153,3 +154,59 @@ TEST(RngTest, UniformSize10x10) {
     ASSERT_TRUE((actual >= expectedMin).all());
     ASSERT_TRUE((actual <= expectedMax).all());
 }
+
+TEST(RngTest, ChoiceInt) {
+    Eigen::ArrayXXi array(2, 5);
+    array << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+    int size = 2;
+    Rng rngWithDuplicates(0);
+    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.cols() - 1, size, true);
+    Rng UnduplicatedRng(0);
+    auto expecUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.cols() - 1, size, false);
+
+    Rng rng1(0);
+    Eigen::ArrayXXi actual = rng1.Choice(array, size, true);
+    ASSERT_EQ(array.rows(), actual.rows());
+    ASSERT_EQ(size, actual.cols());
+    for (int i = 0; i < size; i++) {
+        ASSERT_TRUE((array.col(expectedIndexWithDuplicates[i]) == actual.col(i)).all());
+    }
+
+    Rng rng2(0);
+    size = array.cols();
+    actual = rng2.Choice(array, size, false);
+    ASSERT_EQ(array.rows(), actual.rows());
+    ASSERT_EQ(size, actual.cols());
+    for (int i = 0; i < size; i++) {
+        ASSERT_TRUE((array.col(expecUnduplicatedtedIndex[i]) == actual.col(i)).all());
+    }
+}
+
+TEST(RngTest, ChoiceDouble) {
+    Eigen::ArrayXXd array(2, 5);
+    array << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+    int size = 2;
+    Rng rngWithDuplicates(0);
+    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.cols() - 1, size, true);
+    Rng UnduplicatedRng(0);
+    auto expecUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.cols() - 1, size, false);
+
+    Rng rng1(0);
+    Eigen::ArrayXXd actual = rng1.Choice(array, size, true);
+    ASSERT_EQ(array.rows(), actual.rows());
+    ASSERT_EQ(size, actual.cols());
+    for (int i = 0; i < size; i++) {
+        ASSERT_TRUE((array.col(expectedIndexWithDuplicates[i]) == actual.col(i)).all());
+    }
+
+    Rng rng2(0);
+    size = array.cols();
+    actual = rng2.Choice(array, size, false);
+    ASSERT_EQ(array.rows(), actual.rows());
+    ASSERT_EQ(size, actual.cols());
+    for (int i = 0; i < size; i++) {
+        ASSERT_TRUE((array.col(expecUnduplicatedtedIndex[i]) - actual.col(i)).isZero(1e-3));
+    }
+}
+
+}  // namespace Eacpp::Test
