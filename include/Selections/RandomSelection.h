@@ -1,22 +1,24 @@
 #ifndef RandomSelection_h
 #define RandomSelection_h
 
-#include "Rng/Rng.h"
+#include <eigen3/Eigen/Core>
+
+#include "Rng/HasRng.h"
+#include "Rng/IRng.h"
 #include "Selections/ISelection.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {
 
 template <Number T>
-class RandomSelection : public ISelection<T> {
+class RandomSelection : public ISelection<T>, protected HasRng {
    public:
-    RandomSelection() : _rng() {}
-    RandomSelection(SeedType seed) : _rng(seed) {}
+    RandomSelection() {}
+    RandomSelection(IRng* rng) : HasRng(rng) {}
 
-    Eigen::ArrayXX<T> select(int parentNum, const Eigen::ArrayXX<T>& population) const override;
-
-   private:
-    Rng _rng;
+    Eigen::ArrayXX<T> Select(int parentNum, const Eigen::ArrayXX<T>& population) const override {
+        return _rng->Choice(population, parentNum, false);
+    };
 };
 
 }  // namespace Eacpp
