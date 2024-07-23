@@ -6,7 +6,7 @@
 namespace Eacpp {
 
 Eigen::ArrayXXd UniformRandomSampling::Sample(int sampleNum, int variableNum) {
-    return _rng->Uniform(min, max, {sampleNum, variableNum});
+    return _rng->Uniform(min, max, {variableNum, sampleNum});
 }
 
 }  // namespace Eacpp
