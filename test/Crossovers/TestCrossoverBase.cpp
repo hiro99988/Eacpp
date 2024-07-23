@@ -12,7 +12,7 @@ class CrossoverBaseTest : public ::testing::Test {
     class CrossoverBaseTmp : public CrossoverBase<int> {
        public:
         CrossoverBaseTmp(int parentNum, double crossoverRate) : CrossoverBase<int>(parentNum, crossoverRate) {}
-        Eigen::ArrayX<int> performCrossover(const Eigen::ArrayXX<int>& parents) const override { return parents.row(0); }
+        Eigen::ArrayXi performCrossover(const std::vector<Eigen::ArrayXi>& parents) const override { return parents[0]; }
     };
 
     CrossoverBaseTmp crossoverBase{2, 1.0};
@@ -21,14 +21,15 @@ class CrossoverBaseTest : public ::testing::Test {
 TEST_F(CrossoverBaseTest, GetParentNum) { EXPECT_EQ(crossoverBase.GetParentNum(), 2); }
 
 TEST_F(CrossoverBaseTest, CrossException) {
-    Eigen::ArrayXXi parents = Eigen::ArrayXXi::Zero(5, 3);
+    Eigen::ArrayXi parent = Eigen::ArrayXi::Zero(5);
+    std::vector parents = {parent};
     EXPECT_THROW(crossoverBase.Cross(parents), std::invalid_argument);
 
-    parents = Eigen::ArrayXXi::Zero(5, 1);
-    EXPECT_THROW(crossoverBase.Cross(parents), std::invalid_argument);
-
-    parents = Eigen::ArrayXXi::Zero(5, 2);
+    parents.push_back(parent);
     EXPECT_NO_THROW(crossoverBase.Cross(parents));
+
+    parents.push_back(parent);
+    EXPECT_THROW(crossoverBase.Cross(parents), std::invalid_argument);
 }
 
 }  // namespace Eacpp::Test
