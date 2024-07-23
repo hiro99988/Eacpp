@@ -15,14 +15,13 @@ void Moead<DecisionVariableType>::GenerateWeightVectors() {
     product.erase(std::remove_if(product.begin(), product.end(),
                                  [&](std::vector<int> v) { return std::reduce(v.begin(), v.end()) != H; }),
                   product.end());
-    weightVectors = Eigen::Map
 
-        Eigen::ArrayXXd product = Eigen::ArrayXXd::Zero(std::pow(H + 1, decisionVariableNum), decisionVariableNum);
-    for (int i = 0; i < decisionVariableNum; i++) {
-        product.col(i) = takedSetTop;
-    }
-    Eigen::ArrayXXd wvTop = product.rowwise().sum();
-    weightVectors = wvTop.rowwise() / H;
+    //     Eigen::ArrayXXd product = Eigen::ArrayXXd::Zero(std::pow(H + 1, decisionVariableNum), decisionVariableNum);
+    // for (int i = 0; i < decisionVariableNum; i++) {
+    //     product.col(i) = takedSetTop;
+    // }
+    // Eigen::ArrayXXd wvTop = product.rowwise().sum();
+    // weightVectors = wvTop.rowwise() / H;
 }
 
 // def generate_weight_vector(m, H):
