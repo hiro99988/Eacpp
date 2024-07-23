@@ -1,48 +1,44 @@
-// import numpy as np
+#ifndef _POLYNOMIAL_MUTATION_H_
+#define _POLYNOMIAL_MUTATION_H_
 
-// from src.mutations.i_mutation import IMutation
+#include <array>
+#include <eigen3/Eigen/Core>
+#include <vector>
 
-// class PolynomialMutation(IMutation):
-//     def __init__(
-//         self,
-//         mutation_rate: float,
-//         distribution_index: float,
-//         variable_bounds: list[list[int | float]],
-//         seed: int = None,
-//     ):
-//         self.mutation_rate = mutation_rate
-//         self.distribution_index = distribution_index
-//         self.variable_bounds = variable_bounds
+#include "Mutations/IMutation.h"
 
-//         self._rng = np.random.default_rng(seed)
-//         self._length = len(variable_bounds)
-//         self._last_bound_index = len(variable_bounds) - 1
+namespace Eacpp {
 
-//     def mutate(self, individual: list[int | float]):
-//         rnd = self._rng.random(len(individual))
-//         mutated_index = np.where(rnd < self.mutation_rate)[0]
-//         if self._length == 1:
-//             for i in mutated_index:
-//                 individual[i] += self._sigma() * (
-//                     self.variable_bounds[0, 1] - self.variable_bounds[0, 0]
-//                 )
-//         else:
-//             for i in mutated_index:
-//                 if i < self._last_bound_index:
-//                     individual[i] += self._sigma() * (
-//                         self.variable_bounds[i, 1] - self.variable_bounds[i, 0]
-//                     )
-//                 else:
-//                     individual[i] += self._sigma() * (
-//                         self.variable_bounds[-1, 1] - self.variable_bounds[-1, 0]
-//                     )
+class PolynomialMutation : public IMutation<double> {
+   public:
+    double mutationRate;
+    double distributionIndex;
+    std::vector<std::array<double, 2>> variableBounds;
 
-//     def _sigma(self):
-//         if self._rng.random() < 0.5:
-//             return (
-//                 np.power(2 * self._rng.random(), 1 / (self.distribution_index + 1)) - 1
-//             )
-//         else:
-//             return 1 - np.power(
-//                 2 - 2 * self._rng.random(), 1 / (self.distribution_index + 1)
-//             )
+    PolynomialMutation(double mutationRate, double distributionIndex, std::vector<std::array<double, 2>> variableBounds)
+        : mutationRate(mutationRate),
+          distributionIndex(distributionIndex),
+          variableBounds(variableBounds),
+          _length(variableBounds.size()),
+          _lastBoundIndex(variableBounds.size() - 1) {}
+    PolynomialMutation(double mutationRate, double distributionIndex, std::vector<std::array<double, 2>> variableBounds,
+                       IRng* rng)
+        : IMutation(rng),
+          mutationRate(mutationRate),
+          distributionIndex(distributionIndex),
+          variableBounds(variableBounds),
+          _length(variableBounds.size()),
+          _lastBoundIndex(variableBounds.size() - 1) {}
+
+    void Mutate(Eigen::ArrayXd& individual) const override;
+
+   private:
+    int _length;
+    int _lastBoundIndex;
+
+    double Sigma() const;
+};
+
+}  // namespace Eacpp
+
+#endif
