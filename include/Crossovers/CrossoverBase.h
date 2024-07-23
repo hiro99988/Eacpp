@@ -2,6 +2,7 @@
 #define CrossoverBase_H
 
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 #include "Crossovers/ICrossover.h"
 #include "Rng/HasRng.h"
@@ -22,8 +23,8 @@ class CrossoverBase : public ICrossover<T>, protected HasRng {
 
     int GetParentNum() const override { return _parentNum; }
 
-    Eigen::ArrayX<T> Cross(const Eigen::ArrayXX<T>& parents) const override {
-        int actualParentNum = parents.cols();
+    Eigen::ArrayX<T> Cross(const std::vector<Eigen::ArrayX<T>>& parents) const override {
+        int actualParentNum = parents.size();
         if (actualParentNum != _parentNum) {
             throw std::invalid_argument("Invalid size of parents");
         }
@@ -31,7 +32,7 @@ class CrossoverBase : public ICrossover<T>, protected HasRng {
     }
 
    protected:
-    virtual Eigen::ArrayX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const = 0;
+    virtual Eigen::ArrayX<T> performCrossover(const std::vector<Eigen::ArrayX<T>>& parents) const = 0;
 
    private:
     int _parentNum;

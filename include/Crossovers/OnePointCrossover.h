@@ -19,14 +19,14 @@ class OnePointCrossover : public CrossoverBase<T> {
     OnePointCrossover(double crossoverRate, IRng* rng) : CrossoverBase<T>(2, crossoverRate, rng) {}
 
    private:
-    Eigen::ArrayX<T> performCrossover(const Eigen::ArrayXX<T>& parents) const override {
+    Eigen::ArrayX<T> performCrossover(const std::vector<Eigen::ArrayX<T>>& parents) const override {
         if (this->_rng->Random() > this->crossoverRate) {
-            return parents.col(0);
+            return parents[0];
         }
-        int size = parents.rows();
+        int size = parents[0].size();
         int crossoverPoint = this->_rng->Integer(1, size - 1);
         Eigen::ArrayX<T> child(size);
-        child << parents.block(0, 0, crossoverPoint, 1), parents.block(crossoverPoint, 1, size - crossoverPoint, 1);
+        child << parents[0].head(crossoverPoint), parents[1].tail(size - crossoverPoint);
         return child;
     }
 };

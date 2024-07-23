@@ -8,25 +8,25 @@
 
 namespace Eacpp {
 
-class BinomialCrossover : public CrossoverBase<double> {
-   public:
-    double F;
+// class BinomialCrossover : public CrossoverBase<double> {
+//    public:
+//     double F;
 
-    explicit BinomialCrossover(double crossoverRate, double F) : CrossoverBase(3, crossoverRate), F(F) {}
-    virtual ~BinomialCrossover() {}
+//     explicit BinomialCrossover(double crossoverRate, double F) : CrossoverBase(3, crossoverRate), F(F) {}
+//     virtual ~BinomialCrossover() {}
 
-   protected:
-    Eigen::ArrayX<double> performCrossover(const Eigen::ArrayXX<double>& parents) const override {
-        Eigen::ArrayX<double> child = parents.col(0);
-        int jr = _rng.integers(child.size());
-        for (int i = 0; i < child.size(); i++) {
-            if (_rng.random() < crossoverRate || i == jr) {
-                child[i] += F * (parents(1, i) - parents(2, i));
-            }
-        }
-        return child;
-    }
-};
+//    protected:
+//     Eigen::ArrayX<double> performCrossover(const Eigen::ArrayXX<double>& parents) const override {
+//         Eigen::ArrayX<double> child = parents.col(0);
+//         int jr = _rng->Integers(child.size());
+//         for (int i = 0; i < child.size(); i++) {
+//             if (_rng->Random() < crossoverRate || i == jr) {
+//                 child[i] += F * (parents(1, i) - parents(2, i));
+//             }
+//         }
+//         return child;
+//     }
+// };
 
 }  // namespace Eacpp
 

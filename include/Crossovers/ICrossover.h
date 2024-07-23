@@ -2,6 +2,7 @@
 #define ICrossover_H
 
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 #include "Utils/TemplateType.h"
 
@@ -12,7 +13,7 @@ struct ICrossover {
     virtual ~ICrossover() {}
 
     virtual int GetParentNum() const = 0;
-    virtual Eigen::ArrayX<T> Cross(const Eigen::ArrayXX<T>& parents) const = 0;
+    virtual Eigen::ArrayX<T> Cross(const std::vector<Eigen::ArrayX<T>>& parents) const = 0;
 };
 
 }  // namespace Eacpp
