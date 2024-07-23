@@ -1,3 +1,7 @@
-add_executable(test.out test.cpp)
+file(GLOB_RECURSE TESTS *.cpp)
 
-target_link_libraries(test.out Eacpp)
+foreach(test ${TESTS})
+    get_filename_component(target ${test} NAME_WE)
+    add_executable(${target}.out ${test})
+    target_link_libraries(${target}.out Eacpp)
+endforeach()
