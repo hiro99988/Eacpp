@@ -1,3 +1,2 @@
 # TODO
-- MoeadのneiborhoodIndexesをvectorにする？
-- そのために，Selectionをvectorからできるようにする
+- ArrayXXではなく，std::vector<Eigen::ArrayX>をつかう
