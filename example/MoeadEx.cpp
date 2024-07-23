@@ -16,7 +16,6 @@ int main() {
     int decisionVariableNum = 10;
     int neighborNum = 20;
     int H = 299;
-    int objectiveNum = 2;
     LZ1 problem(decisionVariableNum);
     int objectiveNum = problem.objectiveNum;
     OnePointCrossover<double> crossover(1.0);
