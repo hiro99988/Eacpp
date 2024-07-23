@@ -3,12 +3,21 @@
 #include <algorithm>
 #include <eigen3/Eigen/Core>
 
+#include "Utils/Utils.h"
+
 namespace Eacpp {
 
 template <Number DecisionVariableType>
 void Moead<DecisionVariableType>::GenerateWeightVectors() {
-    Eigen::ArrayXd takedSetTop = Eigen::ArrayXd::LinSpaced(H + 1, 0, H);
-    Eigen::ArrayXXd product = Eigen::ArrayXXd::Zero(std::pow(H + 1, decisionVariableNum), decisionVariableNum);
+    std::vector<double> takedSetTop(H + 1);
+    std::iota(takedSetTop.begin(), takedSetTop.end(), 0);
+    auto product = Product(takedSetTop, objectiveNum);
+    product.erase(std::remove_if(product.begin(), product.end(),
+                                 [&](std::vector<int> v) { return std::reduce(v.begin(), v.end()) != H; }),
+                  product.end());
+    weightVectors = Eigen::Map
+
+        Eigen::ArrayXXd product = Eigen::ArrayXXd::Zero(std::pow(H + 1, decisionVariableNum), decisionVariableNum);
     for (int i = 0; i < decisionVariableNum; i++) {
         product.col(i) = takedSetTop;
     }
