@@ -11,7 +11,7 @@ template <Number T>
 struct ISelection {
     virtual ~ISelection() {}
 
-    virtual Eigen::ArrayXX<T> Select(int parentNum, const Eigen::ArrayXX<T>& population) const = 0;
+    virtual Eigen::ArrayX<T> Select(int parentNum, const Eigen::ArrayX<T>& population) const = 0;
 };
 
 }  // namespace Eacpp

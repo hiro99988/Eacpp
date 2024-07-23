@@ -28,10 +28,10 @@ class Rng : public IRng {
     Eigen::ArrayXd Random(const int size) override;
     Eigen::ArrayXXd Random(const std::tuple<int, int> size) override;
 
-    Eigen::ArrayXXi Choice(const Eigen::ArrayXXi& array, const int size, const bool replace = true) override {
+    Eigen::ArrayXi Choice(const Eigen::ArrayXi& array, const int size, const bool replace = true) override {
         return ChoiceTemplate(array, size, replace);
     }
-    Eigen::ArrayXXd Choice(const Eigen::ArrayXXd& array, const int size, const bool replace = true) override {
+    Eigen::ArrayXd Choice(const Eigen::ArrayXd& array, const int size, const bool replace = true) override {
         return ChoiceTemplate(array, size, replace);
     }
 
@@ -39,11 +39,11 @@ class Rng : public IRng {
     std::mt19937 _mt;
 
     template <typename T>
-    Eigen::ArrayXX<T> ChoiceTemplate(const Eigen::ArrayXX<T>& array, const int size, const bool replace = true) {
-        auto choicedIndex = Integers(0, array.cols() - 1, size, replace);
-        Eigen::ArrayXX<T> choicedArray(array.rows(), size);
+    Eigen::ArrayX<T> ChoiceTemplate(const Eigen::ArrayX<T>& array, const int size, const bool replace = true) {
+        auto choicedIndex = Integers(0, array.rows() - 1, size, replace);
+        Eigen::ArrayX<T> choicedArray(size);
         for (int i = 0; i < size; ++i) {
-            choicedArray.col(i) = array.col(choicedIndex[i]);
+            choicedArray(i) = array(choicedIndex[i]);
         }
         return choicedArray;
     };

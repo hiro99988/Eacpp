@@ -156,56 +156,52 @@ TEST(RngTest, UniformSize10x10) {
 }
 
 TEST(RngTest, ChoiceInt) {
-    Eigen::ArrayXXi array(2, 5);
+    Eigen::ArrayXi array(10);
     array << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
     Rng rngWithDuplicates(0);
-    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.cols() - 1, 2, true);
+    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.rows() - 1, 2, true);
     Rng UnduplicatedRng(0);
-    auto expecUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.cols() - 1, 5, false);
+    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.rows() - 1, 5, false);
 
     int size = 2;
     Rng rng1(0);
-    Eigen::ArrayXXi actual = rng1.Choice(array, size, true);
-    ASSERT_EQ(array.rows(), actual.rows());
-    ASSERT_EQ(size, actual.cols());
+    Eigen::ArrayXi actual = rng1.Choice(array, size, true);
+    ASSERT_EQ(size, actual.rows());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE((array.col(expectedIndexWithDuplicates[i]) == actual.col(i)).all());
+        ASSERT_TRUE(array(expectedIndexWithDuplicates[i]) == actual(i));
     }
 
     Rng rng2(0);
     size = array.cols();
     actual = rng2.Choice(array, size, false);
-    ASSERT_EQ(array.rows(), actual.rows());
-    ASSERT_EQ(size, actual.cols());
+    ASSERT_EQ(size, actual.rows());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE((array.col(expecUnduplicatedtedIndex[i]) == actual.col(i)).all());
+        ASSERT_TRUE(array(expectedUnduplicatedtedIndex[i]) == actual(i));
     }
 }
 
 TEST(RngTest, ChoiceDouble) {
-    Eigen::ArrayXXd array(2, 5);
+    Eigen::ArrayXd array(10);
     array << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
     Rng rngWithDuplicates(0);
-    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.cols() - 1, 2, true);
+    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.rows() - 1, 2, true);
     Rng UnduplicatedRng(0);
-    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.cols() - 1, 5, false);
+    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.rows() - 1, 5, false);
 
     int size = 2;
     Rng rng1(0);
-    Eigen::ArrayXXd actual = rng1.Choice(array, size, true);
-    ASSERT_EQ(array.rows(), actual.rows());
-    ASSERT_EQ(size, actual.cols());
+    Eigen::ArrayXd actual = rng1.Choice(array, size, true);
+    ASSERT_EQ(size, actual.rows());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE((array.col(expectedIndexWithDuplicates[i]) == actual.col(i)).all());
+        ASSERT_TRUE(array(expectedIndexWithDuplicates[i]) == actual(i));
     }
 
     Rng rng2(0);
     size = array.cols();
     actual = rng2.Choice(array, size, false);
-    ASSERT_EQ(array.rows(), actual.rows());
-    ASSERT_EQ(size, actual.cols());
+    ASSERT_EQ(size, actual.rows());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE((array.col(expectedUnduplicatedtedIndex[i]) - actual.col(i)).isZero(1e-3));
+        ASSERT_TRUE(array(expectedUnduplicatedtedIndex[i]) == actual(i));
     }
 }
 

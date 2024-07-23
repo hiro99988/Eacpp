@@ -16,7 +16,7 @@ class RandomSelection : public ISelection<T>, protected HasRng {
     RandomSelection() {}
     RandomSelection(IRng* rng) : HasRng(rng) {}
 
-    Eigen::ArrayXX<T> Select(int parentNum, const Eigen::ArrayXX<T>& population) const override {
+    Eigen::ArrayX<T> Select(int parentNum, const Eigen::ArrayX<T>& population) const override {
         return _rng->Choice(population, parentNum, false);
     };
 };
