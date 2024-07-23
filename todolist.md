@@ -1,4 +1,3 @@
 # TODO
-- 各クラスにおいてコンストラクタでseedを渡しメンバにRngを持つのではなく，Rngを渡すようにする
-- Problemがエラー，クラスがEigen::Arrayを保持するときにやることがある
-- IRngを保持するときに，スマートスマートポインタを使う，shared_ptrとunique_prtの変数をどちらも作ってやる
+- MoeadのneiborhoodIndexesをvectorにする？
+- そのために，Selectionをvectorからできるようにする
