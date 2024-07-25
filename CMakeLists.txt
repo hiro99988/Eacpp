@@ -7,8 +7,6 @@ set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # List of source files
 set(SRC_FILES
-    "${SRC_DIRECTORY}/Algorithms/Moead.cpp"
-
     "${SRC_DIRECTORY}/Decompositions/Tchebycheff.cpp"
 
     "${SRC_DIRECTORY}/Mutations/BitFlipMutation.cpp"
