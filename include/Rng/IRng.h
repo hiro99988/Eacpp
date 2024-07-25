@@ -18,11 +18,11 @@ struct IRng {
 
     virtual double Uniform(double min, double max) = 0;
     virtual Eigen::ArrayXd Uniform(double min, double max, const int size) = 0;
-    virtual Eigen::ArrayXXd Uniform(double min, double max, const std::tuple<int, int> size) = 0;
+    virtual std::vector<Eigen::ArrayXd> Uniform(double min, double max, const std::tuple<int, int> size) = 0;
 
     virtual double Random() = 0;
     virtual Eigen::ArrayXd Random(const int size) = 0;
-    virtual Eigen::ArrayXXd Random(const std::tuple<int, int> size) = 0;
+    virtual std::vector<Eigen::ArrayXd> Random(const std::tuple<int, int> size) = 0;
 
     virtual Eigen::ArrayXi Choice(const Eigen::ArrayXi& array, const int size, const bool replace) = 0;
     virtual Eigen::ArrayXd Choice(const Eigen::ArrayXd& array, const int size, const bool replace) = 0;

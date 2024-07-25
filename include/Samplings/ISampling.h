@@ -2,6 +2,7 @@
 #define ISampling_h
 
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 #include "Utils/TemplateType.h"
 
@@ -11,7 +12,7 @@ template <Number T>
 struct ISampling {
     virtual ~ISampling() {}
 
-    virtual Eigen::ArrayXX<T> Sample(int sampleNum, int variableNum) = 0;
+    virtual std::vector<Eigen::ArrayX<T>> Sample(const int sampleNum, const int variableNum) const = 0;
 };
 
 }  // namespace Eacpp

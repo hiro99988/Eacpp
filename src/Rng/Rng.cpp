@@ -73,16 +73,19 @@ Eigen::ArrayXd Rng::Uniform(double min, double max, const int size) {
     return result;
 }
 
-Eigen::ArrayXXd Rng::Uniform(double min, double max, const std::tuple<int, int> size) {
+std::vector<Eigen::ArrayXd> Rng::Uniform(double min, double max, const std::tuple<int, int> size) {
     swapIfMaxLessThanMin(min, max);
     std::uniform_real_distribution<double> dist(min, max);
-    Eigen::ArrayXXd result =
-        Eigen::ArrayXXd::Zero(std::get<0>(size), std::get<1>(size)).unaryExpr([&](double) { return dist(_mt); });
+    std::vector<Eigen::ArrayXd> result;
+    result.reserve(std::get<0>(size));
+    for (int i = 0; i < std::get<0>(size); ++i) {
+        result.push_back(Eigen::ArrayXd::Zero(std::get<1>(size)).unaryExpr([&](double) { return dist(_mt); }));
+    }
     return result;
 }
 
 double Rng::Random() { return Uniform(0.0, 1.0); }
 Eigen::ArrayXd Rng::Random(const int size) { return Uniform(0.0, 1.0, size); }
-Eigen::ArrayXXd Rng::Random(const std::tuple<int, int> size) { return Uniform(0.0, 1.0, size); }
+std::vector<Eigen::ArrayXd> Rng::Random(const std::tuple<int, int> size) { return Uniform(0.0, 1.0, size); }
 
 }  // namespace Eacpp

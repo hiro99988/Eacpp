@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <eigen3/Eigen/Core>
 #include <iostream>
 #include <unordered_set>
+#include <vector>
 
 #include "Rng/Rng.h"
 namespace Eacpp::Test {
@@ -148,11 +150,11 @@ TEST(RngTest, UniformSize10x10) {
     double expectedMin = 0.0;
     double expectedMax = 1.0;
     std::tuple<int, int> size(10, 10);
-    Eigen::ArrayXXd actual = rng.Uniform(expectedMin, expectedMax, size);
-    ASSERT_EQ(std::get<0>(size), actual.rows());
-    ASSERT_EQ(std::get<1>(size), actual.cols());
-    ASSERT_TRUE((actual >= expectedMin).all());
-    ASSERT_TRUE((actual <= expectedMax).all());
+    std::vector<Eigen::ArrayXd> actual = rng.Uniform(expectedMin, expectedMax, size);
+    ASSERT_EQ(std::get<0>(size), actual.size());
+    ASSERT_EQ(std::get<1>(size), actual[0].size());
+    ASSERT_TRUE(std::all_of(actual.begin(), actual.end(), [&](Eigen::ArrayXd a) { return (a >= expectedMin).all(); }));
+    ASSERT_TRUE(std::all_of(actual.begin(), actual.end(), [&](Eigen::ArrayXd a) { return (a <= expectedMax).all(); }));
 }
 
 TEST(RngTest, ChoiceInt) {

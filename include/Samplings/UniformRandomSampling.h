@@ -2,6 +2,7 @@
 #define UniformRandomSampling_h
 
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 #include "Rng/IRng.h"
 #include "Samplings/RandomSamplingBase.h"
@@ -20,7 +21,7 @@ class UniformRandomSampling : public RandomSamplingBase<double> {
         CheckMinMax(min, max);
     }
 
-    Eigen::ArrayXXd Sample(int sampleNum, int variableNum) override;
+    std::vector<Eigen::ArrayXd> Sample(const int sampleNum, const int variableNum) const override;
 
    private:
     void CheckMinMax(const int min, const int max) const {

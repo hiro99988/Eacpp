@@ -19,11 +19,11 @@ class MockRng : public IRng {
 
     MOCK_METHOD2(Uniform, double(double, double));
     MOCK_METHOD3(Uniform, Eigen::ArrayXd(double, double, const int));
-    MOCK_METHOD3(Uniform, Eigen::ArrayXXd(double, double, const std::tuple<int, int>));
+    MOCK_METHOD3(Uniform, std::vector<Eigen::ArrayXd>(double, double, const std::tuple<int, int>));
 
     MOCK_METHOD0(Random, double());
     MOCK_METHOD1(Random, Eigen::ArrayXd(const int));
-    MOCK_METHOD1(Random, Eigen::ArrayXXd(const std::tuple<int, int>));
+    MOCK_METHOD1(Random, std::vector<Eigen::ArrayXd>(const std::tuple<int, int>));
 
     MOCK_METHOD3(Choice, Eigen::ArrayXi(const Eigen::ArrayXi&, const int, const bool));
     MOCK_METHOD3(Choice, Eigen::ArrayXd(const Eigen::ArrayXd&, const int, const bool));

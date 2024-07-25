@@ -2,10 +2,11 @@
 
 #include <eigen3/Eigen/Dense>
 #include <iostream>
+#include <vector>
 
 namespace Eacpp {
 
-Eigen::ArrayXXd UniformRandomSampling::Sample(int sampleNum, int variableNum) {
+std::vector<Eigen::ArrayXd> UniformRandomSampling::Sample(const int sampleNum, const int variableNum) const {
     return _rng->Uniform(min, max, {variableNum, sampleNum});
 }
 
