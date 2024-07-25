@@ -2,18 +2,16 @@
 #define BitFlipMutation_h
 
 #include <eigen3/Eigen/Core>
-#include <iostream>
+#include <memory>
 
-#include "Mutations/IMutation.h"
+#include "Mutations/MutationBase.h"
 #include "Rng/IRng.h"
 
 namespace Eacpp {
-class BitFlipMutation : public IMutation<int> {
+class BitFlipMutation : public MutationBase<int> {
    public:
-    double mutationRate;
-
-    explicit BitFlipMutation(double mutationRate) : mutationRate(mutationRate) {}
-    BitFlipMutation(double mutationRate, IRng* rng) : mutationRate(mutationRate), IMutation(rng) {}
+    explicit BitFlipMutation(double mutationRate) : MutationBase(mutationRate) {}
+    BitFlipMutation(double mutationRate, std::shared_ptr<IRng> rng) : MutationBase(mutationRate, rng) {}
 
     void Mutate(Eigen::ArrayXi& individual) const override;
 };

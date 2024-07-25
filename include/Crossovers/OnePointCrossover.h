@@ -3,11 +3,12 @@
 
 #include <cstdint>
 #include <eigen3/Eigen/Core>
+#include <memory>
 #include <vector>
 
 #include "Crossovers/CrossoverBase.h"
-#include "Rng/HasRng.h"
 #include "Rng/IRng.h"
+#include "Rng/Rng.h"
 #include "Utils/TemplateType.h"
 
 namespace Eacpp {
@@ -16,7 +17,7 @@ template <Number T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
     explicit OnePointCrossover(double crossoverRate) : CrossoverBase<T>(2, crossoverRate) {}
-    OnePointCrossover(double crossoverRate, IRng* rng) : CrossoverBase<T>(2, crossoverRate, rng) {}
+    OnePointCrossover(double crossoverRate, std::shared_ptr<IRng> rng) : CrossoverBase<T>(2, crossoverRate, rng) {}
 
    private:
     Eigen::ArrayX<T> performCrossover(const std::vector<Eigen::ArrayX<T>>& parents) const override {

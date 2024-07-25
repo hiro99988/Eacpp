@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include <eigen3/Eigen/Core>
+#include <memory>
 
 #include "Crossovers/OnePointCrossover.h"
 #include "Rng/MockRng.h"
@@ -12,10 +13,10 @@ using ::testing::Return;
 namespace Eacpp::Test {
 
 TEST(OnePointCrossoverTest, PerformCrossover) {
-    MockRng mockRng;
-    OnePointCrossover<int> onePointCrossover(1.0, &mockRng);
-    EXPECT_CALL(mockRng, Random()).WillRepeatedly(testing::Return(0.1));
-    EXPECT_CALL(mockRng, Integer(_, _)).Times(3).WillOnce(Return(1)).WillOnce(Return(3)).WillOnce(Return(4));
+    std::shared_ptr<MockRng> mockRng = std::make_shared<MockRng>();
+    OnePointCrossover<int> onePointCrossover(1.0, mockRng);
+    EXPECT_CALL(*mockRng, Random()).WillRepeatedly(testing::Return(0.1));
+    EXPECT_CALL(*mockRng, Integer(_, _)).Times(3).WillOnce(Return(1)).WillOnce(Return(3)).WillOnce(Return(4));
 
     Eigen::ArrayXi parent1(5);
     parent1 << 1, 2, 3, 4, 5;

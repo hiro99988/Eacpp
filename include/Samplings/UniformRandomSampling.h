@@ -2,6 +2,7 @@
 #define UniformRandomSampling_h
 
 #include <eigen3/Eigen/Core>
+#include <memory>
 #include <vector>
 
 #include "Rng/IRng.h"
@@ -16,8 +17,8 @@ class UniformRandomSampling : public RandomSamplingBase<double> {
     double max = 1.0;
 
     UniformRandomSampling() : RandomSamplingBase() {}
-    UniformRandomSampling(double min, double max) : RandomSamplingBase(), min(min), max(max) { CheckMinMax(min, max); }
-    UniformRandomSampling(double min, double max, IRng* rng) : RandomSamplingBase(rng), min(min), max(max) {
+    UniformRandomSampling(double min, double max) : min(min), max(max) { CheckMinMax(min, max); }
+    UniformRandomSampling(double min, double max, std::shared_ptr<IRng> rng) : RandomSamplingBase(rng), min(min), max(max) {
         CheckMinMax(min, max);
     }
 
