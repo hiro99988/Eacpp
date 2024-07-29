@@ -88,4 +88,14 @@ double Rng::Random() { return Uniform(0.0, 1.0); }
 Eigen::ArrayXd Rng::Random(const int size) { return Uniform(0.0, 1.0, size); }
 std::vector<Eigen::ArrayXd> Rng::Random(const std::tuple<int, int> size) { return Uniform(0.0, 1.0, size); }
 
+std::vector<int> Rng::Choice(const std::vector<int>& vector, const int size, const bool replace) {
+    auto choicedIndex = Integers(0, vector.size() - 1, size, replace);
+    std::vector<int> choice;
+    choice.reserve(size);
+    for (int i = 0; i < size; ++i) {
+        choice.push_back(vector[choicedIndex[i]]);
+    }
+    return choice;
+}
+
 }  // namespace Eacpp

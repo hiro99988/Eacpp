@@ -158,52 +158,26 @@ TEST(RngTest, UniformSize10x10) {
 }
 
 TEST(RngTest, ChoiceInt) {
-    Eigen::ArrayXi array(10);
-    array << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+    std::vector<int> vector = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     Rng rngWithDuplicates(0);
-    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.rows() - 1, 2, true);
+    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, vector.size() - 1, 2, true);
     Rng UnduplicatedRng(0);
-    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.rows() - 1, 5, false);
+    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, vector.size() - 1, 5, false);
 
     int size = 2;
     Rng rng1(0);
-    Eigen::ArrayXi actual = rng1.Choice(array, size, true);
-    ASSERT_EQ(size, actual.rows());
+    std::vector<int> actual = rng1.Choice(vector, size, true);
+    ASSERT_EQ(size, actual.size());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE(array(expectedIndexWithDuplicates[i]) == actual(i));
+        ASSERT_TRUE(vector[expectedIndexWithDuplicates[i]] == actual[i]);
     }
 
     Rng rng2(0);
-    size = array.cols();
-    actual = rng2.Choice(array, size, false);
-    ASSERT_EQ(size, actual.rows());
+    size = 5;
+    actual = rng2.Choice(vector, size, false);
+    ASSERT_EQ(size, actual.size());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE(array(expectedUnduplicatedtedIndex[i]) == actual(i));
-    }
-}
-
-TEST(RngTest, ChoiceDouble) {
-    Eigen::ArrayXd array(10);
-    array << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
-    Rng rngWithDuplicates(0);
-    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, array.rows() - 1, 2, true);
-    Rng UnduplicatedRng(0);
-    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, array.rows() - 1, 5, false);
-
-    int size = 2;
-    Rng rng1(0);
-    Eigen::ArrayXd actual = rng1.Choice(array, size, true);
-    ASSERT_EQ(size, actual.rows());
-    for (int i = 0; i < size; i++) {
-        ASSERT_TRUE(array(expectedIndexWithDuplicates[i]) == actual(i));
-    }
-
-    Rng rng2(0);
-    size = array.cols();
-    actual = rng2.Choice(array, size, false);
-    ASSERT_EQ(size, actual.rows());
-    for (int i = 0; i < size; i++) {
-        ASSERT_TRUE(array(expectedUnduplicatedtedIndex[i]) == actual(i));
+        ASSERT_TRUE(vector[expectedUnduplicatedtedIndex[i]] == actual[i]);
     }
 }
 

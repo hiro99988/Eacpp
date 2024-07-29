@@ -28,25 +28,10 @@ class Rng : public IRng {
     Eigen::ArrayXd Random(const int size) override;
     std::vector<Eigen::ArrayXd> Random(const std::tuple<int, int> size) override;
 
-    Eigen::ArrayXi Choice(const Eigen::ArrayXi& array, const int size, const bool replace = true) override {
-        return ChoiceTemplate(array, size, replace);
-    }
-    Eigen::ArrayXd Choice(const Eigen::ArrayXd& array, const int size, const bool replace = true) override {
-        return ChoiceTemplate(array, size, replace);
-    }
+    std::vector<int> Choice(const std::vector<int>& array, const int size, const bool replace = true) override;
 
    private:
     std::mt19937 _mt;
-
-    template <typename T>
-    Eigen::ArrayX<T> ChoiceTemplate(const Eigen::ArrayX<T>& array, const int size, const bool replace = true) {
-        auto choicedIndex = Integers(0, array.rows() - 1, size, replace);
-        Eigen::ArrayX<T> choicedArray(size);
-        for (int i = 0; i < size; ++i) {
-            choicedArray(i) = array(choicedIndex[i]);
-        }
-        return choicedArray;
-    };
 };
 
 }  // namespace Eacpp

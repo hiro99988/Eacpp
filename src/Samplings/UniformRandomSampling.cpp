@@ -7,7 +7,7 @@
 namespace Eacpp {
 
 std::vector<Eigen::ArrayXd> UniformRandomSampling::Sample(const int sampleNum, const int variableNum) const {
-    return _rng->Uniform(min, max, {variableNum, sampleNum});
+    return _rng->Uniform(min, max, {sampleNum, variableNum});
 }
 
 }  // namespace Eacpp
