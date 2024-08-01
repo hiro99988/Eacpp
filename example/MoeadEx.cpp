@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -12,11 +13,20 @@
 
 using namespace Eacpp;
 
-int main() {
+int main(int argc, char* argv[]) {
     int generationNum = 500;
-    int decisionVariableNum = 10;
-    int neighborNum = 20;
     int H = 299;
+    if (argc == 2) {
+        generationNum = std::stoi(argv[1]);
+    } else if (argc == 3) {
+        generationNum = std::stoi(argv[1]);
+        H = std::stoi(argv[2]);
+    } else if (argc >= 4) {
+        std::cerr << "Usage: " << argv[0] << " <generation: int1> <H: int2>" << std::endl;
+        return 1;
+    }
+    int decisionVariableNum = 10;
+    int neighborNum = 7;
     std::shared_ptr<LZ1> problem = std::make_shared<LZ1>(decisionVariableNum);
     int objectiveNum = problem->objectiveNum;
     std::shared_ptr<OnePointCrossover<double>> crossover = std::make_shared<OnePointCrossover<double>>(1.0);
