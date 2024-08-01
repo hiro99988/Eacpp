@@ -71,6 +71,7 @@
         "mutex": "cpp",
         "span": "cpp",
         "variant": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "cinttypes": "cpp"
     }
 }
