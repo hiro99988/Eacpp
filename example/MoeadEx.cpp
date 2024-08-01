@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "Algorithms/Moead.h"
-#include "Crossovers/OnePointCrossover.h"
+#include "Crossovers/BinomialCrossover.h"
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
 #include "Problems/LZ1.h"
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     int neighborNum = 7;
     std::shared_ptr<LZ1> problem = std::make_shared<LZ1>(decisionVariableNum);
     int objectiveNum = problem->objectiveNum;
-    std::shared_ptr<OnePointCrossover<double>> crossover = std::make_shared<OnePointCrossover<double>>(1.0);
+    std::shared_ptr<BinomialCrossover> crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
     std::shared_ptr<Tchebycheff> decomposition = std::make_shared<Tchebycheff>();
     std::shared_ptr<PolynomialMutation> mutation = std::make_shared<PolynomialMutation>(0.1, 20.0, problem->variableBounds);
     std::shared_ptr<UniformRandomSampling> sampling =
