@@ -1,3 +1,4 @@
 # TODO
-- ArrayXXではなく，std::vector<Eigen::ArrayX>をつかう
-- HasRngを消して，std::shared_ptr<IRng>を使う
+- Moeadで一定確率で親を近傍からではなく母集団全体から選択する
+- Moeadで親を選択した集団のうち更新する個体の数を制限する
+- 並列化のためMPIを使ってみる
