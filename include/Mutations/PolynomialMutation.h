@@ -19,23 +19,26 @@ class PolynomialMutation : public MutationBase<double> {
         : MutationBase(mutationRate),
           distributionIndex(distributionIndex),
           variableBounds(variableBounds),
-          _length(variableBounds.size()),
           _lastBoundIndex(variableBounds.size() - 1) {}
     PolynomialMutation(double mutationRate, double distributionIndex, std::vector<std::array<double, 2>> variableBounds,
                        std::shared_ptr<IRng> rng)
         : MutationBase(mutationRate, rng),
           distributionIndex(distributionIndex),
           variableBounds(variableBounds),
-          _length(variableBounds.size()),
           _lastBoundIndex(variableBounds.size() - 1) {}
 
     void Mutate(Eigen::ArrayXd& individual) const override;
 
    private:
-    int _length;
     int _lastBoundIndex;
 
+    void PerformMutation(int index, Eigen::ArrayXd& individual, double sigma) const;
     double Sigma() const;
+
+   public:
+#ifdef _TEST_
+    friend class PolynomialMutationTest;
+#endif
 };
 
 }  // namespace Eacpp
