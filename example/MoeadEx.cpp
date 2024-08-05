@@ -16,22 +16,32 @@ using namespace Eacpp;
 int main(int argc, char* argv[]) {
     int generationNum = 500;
     int H = 299;
+    int decisionVariableNum = 30;
+    int neighborNum = 20;
     if (argc == 2) {
         generationNum = std::stoi(argv[1]);
     } else if (argc == 3) {
         generationNum = std::stoi(argv[1]);
         H = std::stoi(argv[2]);
-    } else if (argc >= 4) {
-        std::cerr << "Usage: " << argv[0] << " <generation: int1> <H: int2>" << std::endl;
+    } else if (argc == 4) {
+        generationNum = std::stoi(argv[1]);
+        H = std::stoi(argv[2]);
+        decisionVariableNum = std::stoi(argv[3]);
+    } else if (argc == 5) {
+        generationNum = std::stoi(argv[1]);
+        H = std::stoi(argv[2]);
+        decisionVariableNum = std::stoi(argv[3]);
+        neighborNum = std::stoi(argv[4]);
+    } else if (argc >= 6) {
+        std::cerr << "Usage: " << argv[0] << " [generationNum] [H] [decisionVariableNum] [neighborNum]" << std::endl;
         return 1;
     }
-    int decisionVariableNum = 10;
-    int neighborNum = 7;
     std::shared_ptr<LZ1> problem = std::make_shared<LZ1>(decisionVariableNum);
     int objectiveNum = problem->objectiveNum;
     std::shared_ptr<BinomialCrossover> crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
     std::shared_ptr<Tchebycheff> decomposition = std::make_shared<Tchebycheff>();
-    std::shared_ptr<PolynomialMutation> mutation = std::make_shared<PolynomialMutation>(0.1, 20.0, problem->variableBounds);
+    std::shared_ptr<PolynomialMutation> mutation =
+        std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, problem->variableBounds);
     std::shared_ptr<UniformRandomSampling> sampling =
         std::make_shared<UniformRandomSampling>(problem->variableBounds[0][0], problem->variableBounds[1][0]);
     std::shared_ptr<RandomSelection> selection = std::make_shared<RandomSelection>();
