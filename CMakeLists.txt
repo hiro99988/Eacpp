@@ -16,6 +16,8 @@ set(SRC_FILES
 
     "${SRC_DIRECTORY}/Problems/LZ1.cpp"
     "${SRC_DIRECTORY}/Problems/LZBase.cpp"
+    "${SRC_DIRECTORY}/Problems/ZDTBase.cpp"
+    "${SRC_DIRECTORY}/Problems/ZDT1.cpp"
 
     "${SRC_DIRECTORY}/Rng/Rng.cpp"
 
