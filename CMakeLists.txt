@@ -7,6 +7,8 @@ set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # List of source files
 set(SRC_FILES
+    "${SRC_DIRECTORY}/Algorithms/MpMoead.cpp"
+
     "${SRC_DIRECTORY}/Crossovers/BinomialCrossover.cpp"
 
     "${SRC_DIRECTORY}/Decompositions/Tchebycheff.cpp"
@@ -27,6 +29,9 @@ set(SRC_FILES
 add_library(Eacpp STATIC "${SRC_FILES}")
 
 target_compile_features(Eacpp PUBLIC cxx_std_20)
+
+find_package(MPI REQUIRED)
+target_link_libraries(Eacpp MPI::MPI_CXX)
 
 target_include_directories(Eacpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
