@@ -2,6 +2,7 @@
 #include <mpi.h>
 
 #include <type_traits>
+#include <vector>
 
 namespace Eacpp {
 
@@ -23,7 +24,7 @@ class MpiEnvironment : public ::testing::Environment {
 };
 
 template <typename T>
-MPI_Datatype GetMpiDataType(T var) {
+MPI_Datatype GetMpiDataType(std::vector<T> var) {
     if constexpr (std::is_same_v<signed char, T>) {
         return MPI_CHAR;
     } else if constexpr (std::is_same_v<signed short int, T>) {
