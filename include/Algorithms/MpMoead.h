@@ -69,7 +69,6 @@ class MpMoead {
     void Update();
 
    private:
-    MPI_Datatype GetMpiDataType();
     void CaluculatePopulationNum(int totalPopulationSize);
     std::vector<double> GenerateAllWeightVectors(int H);
     std::vector<int> GenerateAllNeighborhoods(int totalPopulationSize, std::vector<double>& allWeightVectors);

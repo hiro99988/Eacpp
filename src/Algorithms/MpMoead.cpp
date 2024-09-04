@@ -107,19 +107,6 @@ void MpMoead<DecisionVariableType>::Update() {}
 // }
 
 template <typename DecisionVariableType>
-MPI_Datatype MpMoead<DecisionVariableType>::GetMpiDataType() {
-    if constexpr (std::is_same_v<DecisionVariableType, int>) {
-        return MPI_INT;
-    } else if constexpr (std::is_same_v<DecisionVariableType, float>) {
-        return MPI_FLOAT;
-    } else if constexpr (std::is_same_v<DecisionVariableType, double>) {
-        return MPI_DOUBLE;
-    } else {
-        throw std::runtime_error("Unsupported DecisionVariableType");
-    }
-}
-
-template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::CaluculatePopulationNum(int totalPopulationSize) {
     populationSize = totalPopulationSize / parallelSize;
     if (rank < totalPopulationSize % parallelSize) {
