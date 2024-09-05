@@ -19,7 +19,7 @@ class MpMpeadTest : public ::testing::Test {
     template <typename T>
     std::vector<int> GenerateAllNeighborhoods(MpMoead<T>& moead, int totalPopulationSize,
                                               std::vector<double>& allWeightVectors) {
-        return moead.GenerateAllNeighborhoods(totalPopulationSize, allWeightVectors);
+        return moead.GenerateNeighborhoods(totalPopulationSize, allWeightVectors);
     }
 };
 
