@@ -3,6 +3,7 @@
 
 #include <eigen3/Eigen/Core>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 namespace Eacpp {
@@ -72,11 +73,37 @@ inline long long Combination(int n, int r) {
 
 template <typename T>
 std::vector<T> TransformTo1d(const std::vector<std::vector<T>> &v) {
-    std::vector<T> tmp;
+    std::vector<T> transformed;
     for (const auto &i : v) {
-        tmp.insert(tmp.end(), i.begin(), i.end());
+        transformed.insert(transformed.end(), i.begin(), i.end());
     }
-    return tmp;
+    return transformed;
+}
+
+template <typename T>
+std::vector<std::vector<T>> TransformTo2d(std::vector<T> &vec1d, int separation) {
+    if (vec1d.size() % separation != 0) {
+        throw std::invalid_argument("Vector size is not a multiple of separation");
+    }
+    int size = vec1d.size() / separation;
+    std::vector<std::vector<T>> transformed(size);
+    for (int i = 0; i < size; i++) {
+        transformed[i] = std::vector<T>(vec1d.begin() + i * separation, vec1d.begin() + (i + 1) * separation);
+    }
+    return transformed;
+}
+
+template <typename T>
+std::vector<Eigen::ArrayX<T>> TransformToEigenArrayX2d(std::vector<T> &vec1d, int separation) {
+    if (vec1d.size() % separation != 0) {
+        throw std::invalid_argument("Vector size is not a multiple of separation");
+    }
+    int size = vec1d.size() / separation;
+    std::vector<Eigen::ArrayX<T>> transformed(size);
+    for (int i = 0; i < size; i++) {
+        transformed[i] = Eigen::Map<Eigen::ArrayX<T>>(vec1d.data() + i * separation, separation);
+    }
+    return transformed;
 }
 
 }  // namespace Eacpp

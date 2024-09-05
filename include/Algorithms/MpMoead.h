@@ -91,9 +91,6 @@ class MpMoead {
     std::pair<std::vector<int>, std::vector<double>> ScatterExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                  std::vector<int>& neighborhoodSizes,
                                                                                  std::vector<double>& weightVectors);
-    std::vector<Eigen::ArrayXd> ConvertWeightVectorsToEigenArrayXd(std::vector<double>& allWeightVectors);
-    std::vector<std::vector<int>> ConvertNeighborhoodIndexesToVector2d(std::vector<int>& allNeighborhoods);
-    std::vector<Eigen::ArrayXd> ConvertNeighborWeightVectorToEigenArrayXd(std::vector<double>& receivedNeighborWeightVectors);
 
     void InitializePopulation();
     void InitializeIdealPoint();
@@ -158,10 +155,10 @@ void MpMoead<DecisionVariableType>::Initialize(int totalPopulationSize, int H) {
     }
 
     std::vector<double> receivedWeightVectors = Scatter(weightVectors1d, populationSizes, objectiveNum);
-    weightVectors = ConvertWeightVectorsToEigenArrayXd(receivedWeightVectors);
+    weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectiveNum);
 
     std::vector<int> receivedNeighborhoodIndexes = Scatter(allNeighborhoodIndexes, populationSizes, neighborNum);
-    neighborhoodIndexes = ConvertNeighborhoodIndexesToVector2d(receivedNeighborhoodIndexes);
+    neighborhoodIndexes = TransformTo2d(receivedNeighborhoodIndexes, neighborNum);
 
     std::vector<int> unduplicatedNeighborhoodIndexes;
     std::vector<int> neighborhoodSizes;
@@ -174,7 +171,7 @@ void MpMoead<DecisionVariableType>::Initialize(int totalPopulationSize, int H) {
     std::vector<double> receivedExternalNeighboringWeightVectors;
     std::tie(externalNeighborhoodIndexes, receivedExternalNeighboringWeightVector) =
         ScatterExternalNeighborhood(unduplicatedNeighborhoodIndexes, neighborhoodSizes, sendExternalNeighboringWeightVectors);
-    externalNeighboringWeightVectors = ConvertNeighborWeightVectorToEigenArrayXd(receivedExternalNeighboringWeightVector);
+    externalNeighboringWeightVectors = TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors, objectiveNum);
 }
 
 // template <typename DecisionVariableType>
@@ -352,40 +349,6 @@ std::pair<std::vector<int>, std::vector<double>> MpMoead<DecisionVariableType>::
                  receivedDataCount * objectiveNum, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     return {receivedNeighborhoodIndexes, receivedWeightVectors};
-}
-
-template <typename DecisionVariableType>
-std::vector<Eigen::ArrayXd> MpMoead<DecisionVariableType>::ConvertWeightVectorsToEigenArrayXd(
-    std::vector<double>& weightVectors1d) {
-    std::vector<Eigen::ArrayXd> weightVectors;
-    weightVectors.reserve(populationSize);
-    for (int i = 0; i < populationSize; i++) {
-        weightVectors.push_back(Eigen::Map<Eigen::ArrayXd>(weightVectors1d.data() + i * objectiveNum, objectiveNum));
-    }
-    return weightVectors;
-}
-
-template <typename DecisionVariableType>
-std::vector<std::vector<int>> MpMoead<DecisionVariableType>::ConvertNeighborhoodIndexesToVector2d(
-    std::vector<int>& neighborhoods1d) {
-    std::vector<std::vector<int>> neighborhoodIndexes;
-    neighborhoodIndexes.reserve(populationSize);
-    for (int i = 0; i < populationSize; i++) {
-        neighborhoodIndexes.push_back(
-            std::vector<int>(neighborhoods1d.begin() + i * neighborNum, neighborhoods1d.begin() + (i + 1) * neighborNum));
-    }
-    return neighborhoodIndexes;
-}
-
-template <typename DecisionVariableType>
-std::vector<Eigen::ArrayXd> MpMoead<DecisionVariableType>::ConvertNeighborWeightVectorToEigenArrayXd(
-    std::vector<double>& receivedNeighborWeightVectors) {
-    std::vector<Eigen::ArrayXd> convertedWeightVectors;
-    for (int i = 0; i < receivedNeighborWeightVectors.size() / objectiveNum; i++) {
-        convertedWeightVectors.push_back(
-            Eigen::Map<Eigen::ArrayXd>(receivedNeighborWeightVectors.data() + i * objectiveNum, objectiveNum));
-    }
-    return convertedWeightVectors;
 }
 
 template <typename DecisionVariableType>

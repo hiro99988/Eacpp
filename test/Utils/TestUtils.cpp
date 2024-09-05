@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <eigen3/Eigen/Core>
+#include <stdexcept>
 #include <vector>
 
 #include "Utils/Utils.h"
@@ -71,6 +72,28 @@ TEST(UtilsTest, TransformTo1d) {
     std::vector<int> actual = TransformTo1d(v2d);
     std::vector<int> expected = {1, 2, 3, 4, 5, 6};
     ASSERT_TRUE(expected == actual);
+}
+
+TEST(UtilsTest, TransformTo2d) {
+    std::vector<int> v1d = {1, 2, 3, 4, 5, 6};
+    std::vector<std::vector<int>> expected = {{1, 2, 3}, {4, 5, 6}};
+    ASSERT_NO_THROW(TransformTo2d(v1d, 3));
+    std::vector<std::vector<int>> actual = TransformTo2d(v1d, 3);
+    ASSERT_TRUE(expected == actual);
+
+    ASSERT_THROW(TransformTo2d(v1d, 4), std::invalid_argument);
+}
+
+TEST(UtilsTest, TransformToEigenArrayX2d) {
+    std::vector<int> v1d = {1, 2, 3, 4, 5, 6};
+    std::vector<Eigen::ArrayXi> expected = {Eigen::ArrayXi::LinSpaced(3, 1, 3), Eigen::ArrayXi::LinSpaced(3, 4, 6)};
+    ASSERT_NO_THROW(TransformToEigenArrayX2d(v1d, 3));
+    std::vector<Eigen::ArrayXi> actual = TransformToEigenArrayX2d(v1d, 3);
+    for (int i = 0; i < expected.size(); ++i) {
+        ASSERT_TRUE((expected[i] == actual[i]).all());
+    }
+
+    ASSERT_THROW(TransformToEigenArrayX2d(v1d, 4), std::invalid_argument);
 }
 
 }  // namespace Eacpp::Test
