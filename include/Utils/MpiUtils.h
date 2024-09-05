@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <mpi.h>
 
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -68,6 +69,42 @@ MPI_Datatype GetMpiDataType(std::vector<T> var) {
     } else {
         static_assert(false, "Unsupported type");
     }
+}
+
+inline int CalculateNodeWorkload(int totalTasks, int rank, int parallelSize) {
+    int nodeWorkload = totalTasks / parallelSize;
+    if (rank < totalTasks % parallelSize) {
+        nodeWorkload++;
+    }
+    return nodeWorkload;
+}
+
+inline std::vector<int> CalculateNodeWorkloads(int totalTasks, int parallelSize) {
+    std::vector<int> nodeWorkloads(parallelSize);
+    for (int i = 0; i < parallelSize; i++) {
+        nodeWorkloads[i] = CalculateNodeWorkload(totalTasks, i, parallelSize);
+    }
+    return nodeWorkloads;
+}
+
+inline int CalculateNodeStartIndex(int totalTasks, int rank, int parallelSize) {
+    int startIndex = 0;
+    for (int i = 0; i < rank; i++) {
+        int nodeWorkload = CalculateNodeWorkload(totalTasks, i, parallelSize);
+        startIndex += nodeWorkload;
+    }
+    return startIndex;
+}
+
+inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDisplacements(std::vector<int>& nodeWorkloads,
+                                                                                        int dataSize, int parallelSize) {
+    std::vector<int> dataCounts(parallelSize);
+    std::vector<int> displacements(parallelSize);
+    for (int i = 0; i < parallelSize; i++) {
+        dataCounts[i] = nodeWorkloads[i] * dataSize;
+        displacements[i] = i == 0 ? 0 : displacements[i - 1] + dataCounts[i - 1];
+    }
+    return {dataCounts, displacements};
 }
 
 }  // namespace Eacpp
