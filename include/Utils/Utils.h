@@ -37,7 +37,7 @@ std::vector<std::vector<T>> ProductRecurse(const std::vector<T> &choices, const 
         return result;
     }
 
-    std::vector<std::vector<T>> provisionalResult;  // 作成途中のデカルト積
+    std::vector<std::vector<T>> provisionalResult;
     for (auto re : result) {
         for (auto c : choices) {
             std::vector<T> tmp = re;
@@ -68,6 +68,15 @@ inline long long Combination(int n, int r) {
         }
     }
     return v[n][r];
+}
+
+template <typename T>
+std::vector<T> ConvertVectorFrom2dTo1d(const std::vector<std::vector<T>> &v) {
+    std::vector<T> tmp;
+    for (const auto &i : v) {
+        tmp.insert(tmp.end(), i.begin(), i.end());
+    }
+    return tmp;
 }
 
 }  // namespace Eacpp
