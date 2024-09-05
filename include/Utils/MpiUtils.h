@@ -107,4 +107,28 @@ inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDispla
     return {dataCounts, displacements};
 }
 
+template <typename T>
+std::vector<T> Scatterv(std::vector<T>& send, std::vector<int>& nodeWorkloads, int dataCount, int dataSize, int rank,
+                        int parallelSize) {
+    std::vector<int> dataCounts;
+    std::vector<int> displacements;
+    if (rank == 0) {
+        std::tie(dataCounts, displacements) = GenerateDataCountsAndDisplacements(nodeWorkloads, dataSize, parallelSize);
+    }
+    int receivedDataCount = dataCount * dataSize;
+    std::vector<T> received(receivedDataCount);
+    MPI_Scatterv(send.data(), dataCounts.data(), displacements.data(), GetMpiDataType(send), received.data(), receivedDataCount,
+                 GetMpiDataType(received), 0, MPI_COMM_WORLD);
+    return received;
+}
+
+template <typename T>
+std::vector<T> Scatterv(std::vector<T>& send, int dataCount, int dataSize, int rank, int parallelSize) {
+    std::vector<int> nodeWorkloads;
+    if (rank == 0) {
+        nodeWorkloads = CalculateNodeWorkloads(send.size(), parallelSize);
+    }
+    return Scatterv(send, nodeWorkloads, dataCount, dataSize, rank, parallelSize);
+}
+
 }  // namespace Eacpp
