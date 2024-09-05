@@ -71,7 +71,7 @@ inline long long Combination(int n, int r) {
 }
 
 template <typename T>
-std::vector<T> TransformFrom2dTo1d(const std::vector<std::vector<T>> &v) {
+std::vector<T> TransformTo1d(const std::vector<std::vector<T>> &v) {
     std::vector<T> tmp;
     for (const auto &i : v) {
         tmp.insert(tmp.end(), i.begin(), i.end());
