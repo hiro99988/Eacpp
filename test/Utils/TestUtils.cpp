@@ -53,7 +53,7 @@ TEST(UtilsTest, Product) {
 
 TEST(UtilsTest, ConvertVectorFrom2dTo1d) {
     std::vector<std::vector<int>> v2d = {{1}, {2, 3}, {4, 5, 6}};
-    std::vector<int> actual = ConvertVectorFrom2dTo1d(v2d);
+    std::vector<int> actual = TransformFrom2dTo1d(v2d);
     std::vector<int> expected = {1, 2, 3, 4, 5, 6};
     ASSERT_TRUE(expected == actual);
 }
