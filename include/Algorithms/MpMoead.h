@@ -150,7 +150,7 @@ void MpMoead<DecisionVariableType>::Initialize(int totalPopulationSize, int H) {
     std::vector<int> allNeighborhoodIndexes;
     if (rank == 0) {
         std::vector<std::vector<double>> weightVectors2d = GenerateWeightVectors(H);
-        weightVectors1d = ConvertVectorFrom2dTo1d(weightVectors2d);
+        weightVectors1d = TransformFrom2dTo1d(weightVectors2d);
         allNeighborhoodIndexes = GenerateNeighborhoods(totalPopulationSize, weightVectors1d);
     }
 
