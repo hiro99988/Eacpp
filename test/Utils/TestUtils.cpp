@@ -51,7 +51,20 @@ TEST(UtilsTest, Product) {
     ASSERT_TRUE(expected == actual);
 }
 
-TEST(UtilsTest, ConvertVectorFrom2dTo1d) {
+TEST(UtilsTest, Combination) {
+    ASSERT_EQ(1, Combination(0, 0));
+    ASSERT_EQ(1, Combination(1, 0));
+    ASSERT_EQ(1, Combination(1, 1));
+    ASSERT_EQ(1, Combination(2, 0));
+    ASSERT_EQ(2, Combination(2, 1));
+    ASSERT_EQ(1, Combination(2, 2));
+    ASSERT_EQ(1, Combination(3, 0));
+    ASSERT_EQ(3, Combination(3, 1));
+    ASSERT_EQ(3, Combination(3, 2));
+    ASSERT_EQ(1, Combination(3, 3));
+}
+
+TEST(UtilsTest, TransformFrom2dTo1d) {
     std::vector<std::vector<int>> v2d = {{1}, {2, 3}, {4, 5, 6}};
     std::vector<int> actual = TransformFrom2dTo1d(v2d);
     std::vector<int> expected = {1, 2, 3, 4, 5, 6};
