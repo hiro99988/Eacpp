@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <eigen3/Eigen/Core>
 #include <vector>
 
 #include "Utils/Utils.h"
