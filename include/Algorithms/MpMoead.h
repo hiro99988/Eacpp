@@ -82,8 +82,8 @@ class MpMoead {
     std::vector<int> CalculateNeighborhoodIndexes(int totalPopulationSize,
                                                   std::vector<std::vector<std::pair<double, int>>>& euclideanDistances);
 
-    template <typename T>
-    std::vector<T> Scatter(std::vector<T>& data, std::vector<int>& populationSizes, int singleDataSize);
+    // template <typename T>
+    // std::vector<T> Scatter(std::vector<T>& data, std::vector<int>& populationSizes, int singleDataSize);
 
     std::tuple<std::vector<int>, std::vector<int>> GenerateExternalNeighbourhood(std::vector<int>& neighborhoodIndexes,
                                                                                  std::vector<int>& populationSizes);
@@ -154,10 +154,11 @@ void MpMoead<DecisionVariableType>::Initialize(int totalPopulationSize, int H) {
         populationSizes = CalculateNodeWorkloads(totalPopulationSize, parallelSize);
     }
 
-    std::vector<double> receivedWeightVectors = Scatter(weightVectors1d, populationSizes, objectiveNum);
+    std::vector<double> receivedWeightVectors = Scatterv(weightVectors1d, populationSizes, objectiveNum, rank, parallelSize);
     weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectiveNum);
 
-    std::vector<int> receivedNeighborhoodIndexes = Scatter(allNeighborhoodIndexes, populationSizes, neighborNum);
+    std::vector<int> receivedNeighborhoodIndexes =
+        Scatterv(allNeighborhoodIndexes, populationSizes, neighborNum, rank, parallelSize);
     neighborhoodIndexes = TransformTo2d(receivedNeighborhoodIndexes, neighborNum);
 
     std::vector<int> unduplicatedNeighborhoodIndexes;
@@ -273,22 +274,6 @@ std::vector<int> MpMoead<DecisionVariableType>::CalculateNeighborhoodIndexes(
         }
     }
     return neighborhoodIndexes;
-}
-
-template <typename DecisionVariableType>
-template <typename T>
-std::vector<T> MpMoead<DecisionVariableType>::Scatter(std::vector<T>& sendData, std::vector<int>& populationSizes,
-                                                      int singleDataSize) {
-    std::vector<int> dataCounts;
-    std::vector<int> displacements;
-    if (rank == 0) {
-        std::tie(dataCounts, displacements) = GenerateDataCountsAndDisplacements(populationSizes, singleDataSize, parallelSize);
-    }
-    int receivedDataCount = populationSize * singleDataSize;
-    std::vector<T> receivedData(receivedDataCount);
-    MPI_Scatterv(sendData.data(), dataCounts.data(), displacements.data(), GetMpiDataType(sendData), receivedData.data(),
-                 receivedDataCount, GetMpiDataType(receivedData), 0, MPI_COMM_WORLD);
-    return receivedData;
 }
 
 template <typename DecisionVariableType>
