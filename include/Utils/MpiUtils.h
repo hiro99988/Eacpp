@@ -141,27 +141,18 @@ inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDispla
  * @return std::vector<T> 現在のノードで受信されたデータ。
  */
 template <typename T>
-std::vector<T> Scatterv(std::vector<T>& send, std::vector<int>& nodeWorkloads, int dataCount, int dataSize, int rank,
-                        int parallelSize) {
+std::vector<T> Scatterv(std::vector<T>& send, std::vector<int>& nodeWorkloads, int dataSize, int rank, int parallelSize) {
     std::vector<int> dataCounts;
     std::vector<int> displacements;
     if (rank == 0) {
         std::tie(dataCounts, displacements) = GenerateDataCountsAndDisplacements(nodeWorkloads, dataSize, parallelSize);
     }
-    int receivedDataCount = dataCount * dataSize;
+    int receivedDataCount;
+    MPI_Scatter(dataCounts.data(), 1, MPI_INT, &receivedDataCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
     std::vector<T> received(receivedDataCount);
     MPI_Scatterv(send.data(), dataCounts.data(), displacements.data(), GetMpiDataType(send), received.data(), receivedDataCount,
                  GetMpiDataType(received), 0, MPI_COMM_WORLD);
     return received;
-}
-
-template <typename T>
-std::vector<T> Scatterv(std::vector<T>& send, int dataCount, int dataSize, int rank, int parallelSize) {
-    std::vector<int> nodeWorkloads;
-    if (rank == 0) {
-        nodeWorkloads = CalculateNodeWorkloads(send.size(), parallelSize);
-    }
-    return Scatterv(send, nodeWorkloads, dataCount, dataSize, rank, parallelSize);
 }
 
 }  // namespace Eacpp
