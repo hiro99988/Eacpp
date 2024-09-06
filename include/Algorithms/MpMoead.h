@@ -209,19 +209,8 @@ void MpMoead<DecisionVariableType>::Update() {}
 
 template <typename DecisionVariableType>
 std::vector<int> MpMoead<DecisionVariableType>::GenerateSolutionIndexes(int totalPopulationSize) {
-    std::vector<int> solutionIndexes;
-    int start = 0;
-    for (int i = 0; i <= rank; i++) {
-        int size = totalPopulationSize / parallelSize;
-        if (i < totalPopulationSize % parallelSize) {
-            size++;
-        }
-        if (i != rank) {
-            start += size;
-        } else {
-            solutionIndexes = Rangei(start, start + size - 1, 1);
-        }
-    }
+    int start = CalculateNodeStartIndex(totalPopulationSize, rank, parallelSize);
+    std::vector<int> solutionIndexes = Rangei(start, start + populationSize - 1, 1);
     return solutionIndexes;
 }
 
