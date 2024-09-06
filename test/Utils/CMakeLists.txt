@@ -1,8 +1,20 @@
-add_executable(TestUtils.out TestUtils.cpp)
-add_executable(TestMpiUtils.out TestMpiUtils.cpp)
+file(GLOB_RECURSE TESTS Test*.cpp)
 
-target_link_libraries(TestUtils.out gtest_main Eacpp)
-target_link_libraries(TestMpiUtils.out gtest_main Eacpp MPI::MPI_CXX)
+foreach(test ${TESTS})
+    get_filename_component(target ${test} NAME_WE)
+    add_executable(${target}.out ${test})
+    target_link_libraries(${target}.out gtest_main Eacpp)
+    include(GoogleTest)
+    gtest_discover_tests(${target}.out)
+endforeach()
 
-include(GoogleTest)
-gtest_discover_tests(TestUtils.out)
+
+file(GLOB_RECURSE MPI_TESTS MpiTest*.cpp)
+
+foreach(test ${MPI_TESTS})
+    get_filename_component(target ${test} NAME_WE)
+    add_executable(${target}.out ${test})
+    target_link_libraries(${target}.out gtest_main Eacpp MPI::MPI_CXX)
+    include(GoogleTest)
+    gtest_discover_tests(${target}.out)
+endforeach()
