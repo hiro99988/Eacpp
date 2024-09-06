@@ -9,6 +9,13 @@
 
 namespace Eacpp {
 
+/**
+ * @brief 与えられたC++の型に対応するMPIデータ型を取得します。
+ *
+ * @tparam T C++の型。
+ * @param var 型Tの変数。
+ * @return MPI_Datatype 対応するMPIデータ型。
+ */
 template <typename T>
 MPI_Datatype GetMpiDataType(std::vector<T> var) {
     if constexpr (std::is_same_v<signed char, T>) {
@@ -54,6 +61,14 @@ MPI_Datatype GetMpiDataType(std::vector<T> var) {
     }
 }
 
+/**
+ * @brief ノードのワークロードを計算します。
+ *
+ * @param totalTasks 全タスクの数。
+ * @param rank ノードのランク。
+ * @param parallelSize ノードの総数。
+ * @return int ノードのワークロード。
+ */
 inline int CalculateNodeWorkload(int totalTasks, int rank, int parallelSize) {
     int nodeWorkload = totalTasks / parallelSize;
     if (rank < totalTasks % parallelSize) {
@@ -62,6 +77,13 @@ inline int CalculateNodeWorkload(int totalTasks, int rank, int parallelSize) {
     return nodeWorkload;
 }
 
+/**
+ * @brief すべてのノードのワークロードを計算します。
+ *
+ * @param totalTasks 全タスクの数。
+ * @param parallelSize ノードの総数。
+ * @return std::vector<int> すべてのノードのワークロード。
+ */
 inline std::vector<int> CalculateNodeWorkloads(int totalTasks, int parallelSize) {
     std::vector<int> nodeWorkloads(parallelSize);
     for (int i = 0; i < parallelSize; i++) {
@@ -70,6 +92,14 @@ inline std::vector<int> CalculateNodeWorkloads(int totalTasks, int parallelSize)
     return nodeWorkloads;
 }
 
+/**
+ * @brief ノードの開始インデックスを計算します。
+ *
+ * @param totalTasks 全タスクの数。
+ * @param rank ノードのランク。
+ * @param parallelSize ノードの総数。
+ * @return int ノードの開始インデックス。
+ */
 inline int CalculateNodeStartIndex(int totalTasks, int rank, int parallelSize) {
     int startIndex = 0;
     for (int i = 0; i < rank; i++) {
@@ -79,6 +109,15 @@ inline int CalculateNodeStartIndex(int totalTasks, int rank, int parallelSize) {
     return startIndex;
 }
 
+/**
+ * @brief
+ * scatterv操作のための各ノードのデータ数と変位を生成します。
+ *
+ * @param nodeWorkloads すべてのノードのワークロード。
+ * @param dataSize 各データ要素のサイズ。
+ * @param parallelSize ノードの総数。
+ * @return std::pair<std::vector<int>, std::vector<int>> データカウントとディスプレースメント。
+ */
 inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDisplacements(std::vector<int>& nodeWorkloads,
                                                                                         int dataSize, int parallelSize) {
     std::vector<int> dataCounts(parallelSize);
@@ -90,6 +129,17 @@ inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDispla
     return {dataCounts, displacements};
 }
 
+/**
+ * @brief scatterv操作を使用して、送信ベクトルからすべてのノードにデータを分散します。
+ *
+ * @tparam T データの型。
+ * @param send ルートノードから送信されるデータ。
+ * @param nodeWorkloads すべてのノードのワークロード。
+ * @param dataSize 各データ要素のサイズ。
+ * @param rank 現在のノードのランク。
+ * @param parallelSize ノードの総数。
+ * @return std::vector<T> 現在のノードで受信されたデータ。
+ */
 template <typename T>
 std::vector<T> Scatterv(std::vector<T>& send, std::vector<int>& nodeWorkloads, int dataCount, int dataSize, int rank,
                         int parallelSize) {
