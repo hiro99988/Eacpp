@@ -7,7 +7,6 @@
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
 #include "Selections/ISelection.h"
-#include "Utils/TemplateType.h"
 
 namespace Eacpp {
 

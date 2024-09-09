@@ -15,12 +15,11 @@
 #include "Problems/IProblem.h"
 #include "Samplings/ISampling.h"
 #include "Selections/ISelection.h"
-#include "Utils/TemplateType.h"
 #include "Utils/Utils.h"
 
 namespace Eacpp {
 
-template <Number DecisionVariableType>
+template <typename DecisionVariableType>
 class Moead {
    public:
     int generationNum;

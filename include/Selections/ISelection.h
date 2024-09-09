@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#include "Utils/TemplateType.h"
-
 namespace Eacpp {
 
 struct ISelection {

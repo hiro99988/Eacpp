@@ -4,11 +4,9 @@
 #include <eigen3/Eigen/Core>
 #include <vector>
 
-#include "Utils/TemplateType.h"
-
 namespace Eacpp {
 
-template <Number T>
+template <typename T>
 struct IProblem {
     virtual ~IProblem() {}
 

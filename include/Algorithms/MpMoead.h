@@ -19,7 +19,6 @@
 #include "Samplings/ISampling.h"
 #include "Selections/ISelection.h"
 #include "Utils/MpiUtils.h"
-#include "Utils/TemplateType.h"
 #include "Utils/Utils.h"
 
 namespace Eacpp {

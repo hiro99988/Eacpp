@@ -8,11 +8,10 @@
 #include "Crossovers/ICrossover.h"
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
-#include "Utils/TemplateType.h"
 
 namespace Eacpp {
 
-template <Number T>
+template <typename T>
 class CrossoverBase : public ICrossover<T> {
    public:
     double crossoverRate;

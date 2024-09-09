@@ -6,11 +6,10 @@
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
 #include "Samplings/ISampling.h"
-#include "Utils/TemplateType.h"
 
 namespace Eacpp {
 
-template <Number T>
+template <typename T>
 class RandomSamplingBase : public ISampling<T> {
    public:
     RandomSamplingBase() { _rng = std::make_shared<Rng>(); }

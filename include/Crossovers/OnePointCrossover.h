@@ -9,11 +9,10 @@
 #include "Crossovers/CrossoverBase.h"
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
-#include "Utils/TemplateType.h"
 
 namespace Eacpp {
 
-template <Number T>
+template <typename T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
     explicit OnePointCrossover(double crossoverRate) : CrossoverBase<T>(2, crossoverRate) {}
