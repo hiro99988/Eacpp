@@ -10,7 +10,7 @@ using ::testing::Return;
 
 namespace Eacpp {
 
-class MpMpeadTest : public ::testing::Test {
+class MpMoeadTest : public ::testing::Test {
    protected:
     template <typename T>
     std::vector<double> GenerateAllWeightVectors(MpMoead<T>& moead, int H) {
@@ -27,7 +27,7 @@ class MpMpeadTest : public ::testing::Test {
 
 namespace Eacpp::Test {
 
-TEST_F(MpMpeadTest, GenerateWeightVectors) {
+TEST_F(MpMoeadTest, GenerateWeightVectors) {
     int objectiveNum = 3;
     int H = 3;
     MpMoead<int> moead = MpMoead<int>(0, 0, objectiveNum, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -47,7 +47,7 @@ TEST_F(MpMpeadTest, GenerateWeightVectors) {
     }
 }
 
-TEST_F(MpMpeadTest, GenerateNeighborhoods) {
+TEST_F(MpMoeadTest, GenerateNeighborhoods) {
     int totalPopulationSize = 4;
     int objectiveNum = 2;
     int neighborNum = 3;
