@@ -76,21 +76,27 @@ TEST_F(MpMoeadTest, GenerateWeightVectors) {
     }
 }
 
-TEST_F(MpMoeadTest, GenerateNeighborhoods) {
-    int totalPopulationSize = 4;
+TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
+    int totalPopulationSize = 5;
     int objectiveNum = 2;
-    int neighborNum = 3;
-    std::vector<double> allWeightVectors = {0.0, 1.0, 0.2, 0.8, 0.8, 0.2, 1.0, 0.0};
-    MpMoead<int> moead = MpMoead<int>(0, 0, objectiveNum, neighborNum, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
-    std::vector<int> actual = GenerateAllNeighborhoods(moead, totalPopulationSize, allWeightVectors);
-
-    int expectedSize = totalPopulationSize * neighborNum;
-    EXPECT_EQ(actual.size(), expectedSize);
-
-    // 各重みベクトルの近傍が正しく設定されているか確認
-    std::vector<int> expected = {0, 1, 2, 1, 0, 2, 2, 3, 1, 3, 2, 1};
-    for (int i = 0; i < expectedSize; i++) {
-        EXPECT_EQ(actual[i], expected[i]);
+    MpMoead<int> moead = MpMoead<int>(0, 0, objectiveNum, 0);
+    std::vector<double> weightVectors = {0.0,  1.0,   //
+                                         0.25, 0.75,  //
+                                         0.5,  0.5,   //
+                                         0.75, 0.25,  //
+                                         1.0,  0.0};
+    std::vector<std::vector<std::pair<double, int>>> expected = {{{0.0, 0}, {0.5, 1}, {1.0, 2}, {1.5, 3}, {2.0, 4}},  //
+                                                                 {{0.5, 0}, {0.0, 1}, {0.5, 2}, {1.0, 3}, {1.5, 4}},  //
+                                                                 {{1.0, 0}, {0.5, 1}, {0.0, 2}, {0.5, 3}, {1.0, 4}},  //
+                                                                 {{1.5, 0}, {1.0, 1}, {0.5, 2}, {0.0, 3}, {0.5, 4}},  //
+                                                                 {{2.0, 0}, {1.5, 1}, {1.0, 2}, {0.5, 3}, {0.0, 4}}};
+    auto actual = CalculateEuclideanDistanceBetweenEachWeightVector(moead, totalPopulationSize, weightVectors);
+    for (int i = 0; i < actual.size(); i++) {
+        for (int j = 0; j < actual[i].size(); j++) {
+            EXPECT_EQ(actual[i].size(), totalPopulationSize);
+            EXPECT_EQ(actual[i][j].first, expected[i][j].first);
+            EXPECT_EQ(actual[i][j].second, expected[i][j].second);
+        }
     }
 }
 
