@@ -3,6 +3,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <tuple>
+#include <vector>
+
 #include "Algorithms/MpMoead.h"
 #include "Utils/Utils.h"
 
@@ -13,12 +16,22 @@ namespace Eacpp {
 class MpMoeadTest : public ::testing::Test {
    protected:
     template <typename T>
-    std::vector<double> GenerateAllWeightVectors(MpMoead<T>& moead, int H) {
-        return moead.GenerateAllWeightVectors(H);
+    std::vector<int> GenerateSolutionIndexes(MpMoead<T>& moead, int totalPopulationSize, int rank, int parallelSize) {
+        moead.rank = rank;
+        moead.parallelSize = parallelSize;
+        return moead.GenerateSolutionIndexes(totalPopulationSize);
     }
     template <typename T>
-    std::vector<int> GenerateAllNeighborhoods(MpMoead<T>& moead, int totalPopulationSize,
-                                              std::vector<double>& allWeightVectors) {
+    std::vector<std::vector<double>> GenerateWeightVectors(MpMoead<T>& moead, int H) {
+        return moead.GenerateWeightVectors(H);
+    }
+    template <typename T>
+    std::vector<std::vector<std::pair<double, int>>> CalculateEuclideanDistanceBetweenEachWeightVector(
+        MpMoead<T>& moead, int totalPopulationSize, std::vector<double>& weightVectors) {
+        return moead.CalculateEuclideanDistanceBetweenEachWeightVector(totalPopulationSize, weightVectors);
+    }
+    template <typename T>
+    std::vector<int> GenerateNeighborhoods(MpMoead<T>& moead, int totalPopulationSize, std::vector<double>& allWeightVectors) {
         return moead.GenerateNeighborhoods(totalPopulationSize, allWeightVectors);
     }
 };
@@ -27,23 +40,39 @@ class MpMoeadTest : public ::testing::Test {
 
 namespace Eacpp::Test {
 
-TEST_F(MpMoeadTest, GenerateWeightVectors) {
-    int objectiveNum = 3;
-    int H = 3;
-    MpMoead<int> moead = MpMoead<int>(0, 0, objectiveNum, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
-    std::vector<double> actual = GenerateAllWeightVectors(moead, H);
+TEST_F(MpMoeadTest, GenerateSolutionIndexes) {
+    MpMoead<int> moead = MpMoead<int>(0, 0, 0, 0);
+    int totalPopulationSize = 9;
+    int parallelSize = 4;
 
-    int n = Combination(H + objectiveNum - 1, objectiveNum - 1);
-    int expectedSize = n * objectiveNum;
+    auto actual = GenerateSolutionIndexes(moead, totalPopulationSize, 0, parallelSize);
+    std::vector<int> expected = {0, 1, 2};
+    EXPECT_TRUE(actual == expected);
+
+    actual = GenerateSolutionIndexes(moead, totalPopulationSize, 1, parallelSize);
+    expected = {3, 4};
+    EXPECT_TRUE(actual == expected);
+
+    actual = GenerateSolutionIndexes(moead, totalPopulationSize, 3, parallelSize);
+    expected = {7, 8};
+    EXPECT_TRUE(actual == expected);
+}
+
+TEST_F(MpMoeadTest, GenerateWeightVectors) {
+    int objectiveNum = 2;
+    int H = 2;
+    MpMoead<int> moead = MpMoead<int>(0, 0, objectiveNum, 0);
+    auto actual = GenerateWeightVectors(moead, H);
+
+    int expectedSize = 3;
     EXPECT_EQ(actual.size(), expectedSize);
 
-    // 各重みベクトルの各要素の合計がHになっているか確認
-    for (int i = 0; i < n; i++) {
-        double sum = 0.0;
-        for (int j = 0; j < objectiveNum; j++) {
-            sum += actual[i * objectiveNum + j];
+    std::vector<std::vector<double>> expected = {{0.0, 1.0}, {0.5, 0.5}, {1.0, 0.0}};
+    for (int i = 0; i < actual.size(); i++) {
+        for (int j = 0; j < actual[i].size(); j++) {
+            EXPECT_EQ(actual[i].size(), objectiveNum);
+            EXPECT_EQ(actual[i][j], expected[i][j]);
         }
-        EXPECT_EQ(sum, H);
     }
 }
 
