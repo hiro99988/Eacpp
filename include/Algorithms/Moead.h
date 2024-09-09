@@ -58,7 +58,7 @@ class Moead {
     virtual ~Moead() {}
 
     void Initialize() {
-        CaluculatePopulationNum();
+        CalculatePopulationNum();
         GenerateWeightVectors();
         GenerateNeighborhoods();
         InitializePopulation();
@@ -85,21 +85,24 @@ class Moead {
     }
 
    private:
-    void CaluculatePopulationNum() {
+    void CalculatePopulationNum() {
         int n = H + objectiveNum - 1;
         int r = objectiveNum - 1;
         populationSize = Combination(n, r);
     }
 
     void GenerateWeightVectors() {
-        std::vector<double> takedSetTop(H + 1);
-        std::iota(takedSetTop.begin(), takedSetTop.end(), 0);
-        std::vector<std::vector<double>> product = Product(takedSetTop, objectiveNum);
+        std::vector<double> numeratorOfWeightVector(H + 1);
+        std::iota(numeratorOfWeightVector.begin(), numeratorOfWeightVector.end(), 0);
+        std::vector<std::vector<double>> product = Product(numeratorOfWeightVector, objectiveNum);
         product.erase(
             std::remove_if(product.begin(), product.end(), [&](auto v) { return std::reduce(v.begin(), v.end()) != H; }),
             product.end());
-        for (auto&& v : product) {
-            weightVectors.push_back(Eigen::Map<Eigen::ArrayXd>(v.data(), v.size()));
+        for (auto&& p : product) {
+            weightVectors.push_back(Eigen::Map<Eigen::ArrayXd>(p.data(), p.size()));
+        }
+        for (auto&& wv : weightVectors) {
+            wv /= H;
         }
     }
 
