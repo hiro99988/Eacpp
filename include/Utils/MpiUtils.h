@@ -156,4 +156,23 @@ std::vector<T> Scatterv(const std::vector<T>& send, const std::vector<int>& node
     return received;
 }
 
+int GetRankFromIndex(int totalTasks, int index, int parallelSize) {
+    int start = 0;
+    int end = 0;
+    int tasksPerNode = totalTasks / parallelSize;
+    int tasksRemainder = totalTasks % parallelSize;
+    int loop = parallelSize - 1;
+    for (int i = 0; i < loop; i++) {
+        start = end;
+        end += tasksPerNode;
+        if (i < tasksRemainder) {
+            end++;
+        }
+        if (start <= index && index < end) {
+            return i;
+        }
+    }
+    return parallelSize - 1;
+}
+
 }  // namespace Eacpp
