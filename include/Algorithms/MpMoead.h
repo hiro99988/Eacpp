@@ -57,10 +57,8 @@ class MpMoead {
 
     void Run(int argc, char** argv);
     void Initialize(int totalPopulationSize, int H);
+    void InitializeMpi(int argc, char** argv);
     void InitializeIsland(int totalPopulationSize, int H);
-    void InitializeIndividualAndWeightVector(int totalPopulationSize, std::vector<Eigen::ArrayXd>& weightVectors,
-                                             std::vector<std::vector<int>>& neighborhoodIndexes,
-                                             std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
     void Update();
 
    private:
@@ -93,7 +91,9 @@ class MpMoead {
     // std::vector<Eigen::ArrayX<DecisionVariableType>> externalNeighboringSolutions;
     // std::vector<Individual> externalNeighboringSolutionCopies;
 
-    void InitializeMpi(int argc, char** argv);
+    void InitializeIndividualAndWeightVector(int totalPopulationSize, std::vector<Eigen::ArrayXd>& weightVectors,
+                                             std::vector<std::vector<int>>& neighborhoodIndexes,
+                                             std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
     std::vector<int> GenerateSolutionIndexes(int totalPopulationSize);
     std::vector<std::vector<double>> GenerateWeightVectors(int H);
     std::vector<int> GenerateNeighborhoods(int totalPopulationSize, std::vector<double>& allWeightVectors);
@@ -130,6 +130,7 @@ class MpMoead {
           neighborNum(neighborNum) {}
 
     friend class MpMoeadTest;
+    friend class MpMoeadMpiTest;
 #endif
 };
 
@@ -164,6 +165,7 @@ void MpMoead<DecisionVariableType>::InitializeMpi(int argc, char** argv) {
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Initialize(int totalPopulationSize, int H) {
+    InitializeMpi(nullptr, nullptr);
     InitializeIsland(totalPopulationSize, H);
     InitializePopulation();
     InitializeIdealPoint();
@@ -312,17 +314,18 @@ std::tuple<std::vector<int>, std::vector<int>> MpMoead<DecisionVariableType>::Ge
     std::vector<int> noduplicateNeighborhoodIndexes;
     std::vector<int> neighborhoodSizes;
     for (int i = 0; i < parallelSize; i++) {
-        std::vector<int> indexes(neighborhoodIndexes.begin() + (i == 0 ? 0 : populationSizes[i - 1] * neighborNum),
-                                 neighborhoodIndexes.begin() + populationSizes[i] * neighborNum);
+        int start = std::reduce(populationSizes.begin(), populationSizes.begin() + i);
+        int end = start + populationSizes[i];
+
+        std::vector<int> indexes(neighborhoodIndexes.begin() + (start * neighborNum),
+                                 neighborhoodIndexes.begin() + (end * neighborNum));
+
         // 重複を削除
         std::sort(indexes.begin(), indexes.end());
         indexes.erase(std::unique(indexes.begin(), indexes.end()), indexes.end());
 
         // 自分の担当する解のインデックスを削除
-        int start = std::reduce(populationSizes.begin(), populationSizes.begin() + i);
-        int end = start + populationSizes[i] - 1;
-        indexes.erase(
-            std::remove_if(indexes.begin(), indexes.end(), [&](int index) { return start <= index && index <= end; }));
+        std::erase_if(indexes, [&](int index) { return start <= index && index < end; });
 
         noduplicateNeighborhoodIndexes.insert(noduplicateNeighborhoodIndexes.end(), indexes.begin(), indexes.end());
         neighborhoodSizes.push_back(indexes.size());
@@ -345,7 +348,7 @@ template <typename DecisionVariableType>
 std::pair<std::vector<int>, std::vector<double>> MpMoead<DecisionVariableType>::ScatterExternalNeighborhood(
     std::vector<int>& neighborhoodIndexes, std::vector<int>& neighborhoodSizes, std::vector<double>& weightVectors) {
     std::vector<int> receivedNeighborhoodIndexes;
-    receivedNeighborhoodIndexes = Scatterv(neighborhoodSizes, neighborhoodSizes, 1, rank, parallelSize);
+    receivedNeighborhoodIndexes = Scatterv(neighborhoodIndexes, neighborhoodSizes, 1, rank, parallelSize);
 
     std::vector<double> receivedWeightVectors;
     receivedWeightVectors = Scatterv(weightVectors, neighborhoodSizes, objectiveNum, rank, parallelSize);
