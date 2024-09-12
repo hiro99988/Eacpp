@@ -118,7 +118,7 @@ inline int CalculateNodeStartIndex(int totalTasks, int rank, int parallelSize) {
  * @param parallelSize ノードの総数。
  * @return std::pair<std::vector<int>, std::vector<int>> データカウントとディスプレースメント。
  */
-inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDisplacements(std::vector<int>& nodeWorkloads,
+inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDisplacements(const std::vector<int>& nodeWorkloads,
                                                                                         int dataSize, int parallelSize) {
     std::vector<int> dataCounts(parallelSize);
     std::vector<int> displacements(parallelSize);
@@ -141,7 +141,8 @@ inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDispla
  * @return std::vector<T> 現在のノードで受信されたデータ。
  */
 template <typename T>
-std::vector<T> Scatterv(std::vector<T>& send, std::vector<int>& nodeWorkloads, int dataSize, int rank, int parallelSize) {
+std::vector<T> Scatterv(const std::vector<T>& send, const std::vector<int>& nodeWorkloads, int dataSize, int rank,
+                        int parallelSize) {
     std::vector<int> dataCounts;
     std::vector<int> displacements;
     if (rank == 0) {
