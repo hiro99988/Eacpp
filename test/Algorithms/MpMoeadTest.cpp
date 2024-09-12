@@ -4,13 +4,19 @@
 #include <gtest/gtest.h>
 
 #include <eigen3/Eigen/Core>
+#include <memory>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
 
 #include "Algorithms/MpMoead.h"
+#include "Problems/IProblem.h"
+#include "Problems/MockProblem.h"
+#include "Samplings/ISampling.h"
+#include "Samplings/MockSampling.h"
 #include "Utils/Utils.h"
 
+using ::testing::_;
 using ::testing::Return;
 
 namespace Eacpp {
@@ -33,6 +39,12 @@ class MpMoeadTest : public ::testing::Test {
     template <typename T>
     void SetExternalSolutionIndexes(MpMoead<T>& moead, std::vector<int> externalSolutionIndexes) {
         moead.externalSolutionIndexes = externalSolutionIndexes;
+    }
+    template <typename T>
+    void SetIndividuals(MpMoead<T>& moead, int size) {
+        for (int i = 0; i < size; i++) {
+            moead.individuals[i] = typename MpMoead<T>::Individual();
+        }
     }
     // 初期化
     template <typename T>
@@ -266,7 +278,29 @@ TEST_F(MpMoeadTest, InitializeIndividualAndWeightVector) {
     }
 }
 
-TEST_F(MpMoeadTest, InitializePopulation) {}
+TEST_F(MpMoeadTest, InitializePopulation) {
+    int decisionVariableNum = 2;
+    int sampleNum = 2;
+
+    auto mockSampling = std::make_shared<MockSampling<int>>();
+    // Eigen::ArrayXi samplingResult = Eigen::ArrayXi::LinSpaced(decisionVariableNum, 0, decisionVariableNum - 1);
+    // std::vector<Eigen::ArrayXi> samplingResults(sampleNum, samplingResult);
+    // EXPECT_CALL(*mockSampling, Sample(_, _)).WillRepeatedly(Return(samplingResults));
+
+    // std::shared_ptr<MockProblem<int>> mockProblem = std::make_shared<MockProblem<int>>();
+    // Eigen::ArrayXd objectiveSetResult = Eigen::ArrayXd::LinSpaced(2, 0, 1);
+    // EXPECT_CALL(*mockProblem, ComputeObjectiveSet(_)).WillRepeatedly(Return(objectiveSetResult));
+
+    // auto moead = MpMoead<int>(0, 0, decisionVariableNum, 0, 0, nullptr, nullptr, nullptr, nullptr, mockSampling, nullptr);
+    // SetIndividuals(moead, sampleNum);
+    // InitializePopulation(moead);
+
+    // auto individuals = GetIndividuals(moead);
+    // for (auto&& i : individuals) {
+    //     EXPECT_TRUE((i.second.solution == samplingResult).all());
+    //     EXPECT_TRUE((i.second.objectives == objectiveSetResult).all());
+    // }
+}
 
 TEST_F(MpMoeadTest, InitializeIdealPoint) {}
 
