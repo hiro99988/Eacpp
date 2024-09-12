@@ -117,7 +117,7 @@ class MpMoead {
     Eigen::ArrayX<DecisionVariableType> GenerateNewSolution(int index);
     void RepairSolution(Eigen::ArrayX<DecisionVariableType>& solution);
     void UpdateIdealPoint(Eigen::ArrayXd& objectiveSet);
-    void updateSolution(int index, Eigen::ArrayX<DecisionVariableType>& solution, Eigen::ArrayXd& objectiveSet);
+    void UpdateSolution(int index, Eigen::ArrayX<DecisionVariableType>& solution, Eigen::ArrayXd& objectiveSet);
     void UpdateNeighboringSolutions(int index, Eigen::ArrayX<DecisionVariableType>& solution, Eigen::ArrayXd& objectiveSet,
                                     std::unordered_map<int, Individual> externalIndividualCopies);
 
@@ -399,7 +399,7 @@ void MpMoead<DecisionVariableType>::UpdateIdealPoint(Eigen::ArrayXd& objectiveSe
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::updateSolution(int index, Eigen::ArrayX<DecisionVariableType>& solution,
+void MpMoead<DecisionVariableType>::UpdateSolution(int index, Eigen::ArrayX<DecisionVariableType>& solution,
                                                    Eigen::ArrayXd& objectiveSet) {
     double newSubObjective = decomposition->ComputeObjective(weightVectors[index], objectiveSet, idealPoint);
     double oldSubObjective = decomposition->ComputeObjective(weightVectors[index], individuals[index].objectives, idealPoint);
