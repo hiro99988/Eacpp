@@ -17,6 +17,24 @@ namespace Eacpp {
 
 class MpMoeadTest : public ::testing::Test {
    protected:
+    // getter and setter
+    template <typename T>
+    std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {
+        return moead.individuals;
+    }
+    template <typename T>
+    std::unordered_map<int, Eigen::ArrayXd> GetWeightVectors(MpMoead<T>& moead) {
+        return moead.weightVectors;
+    }
+    template <typename T>
+    void SetSolutionIndexes(MpMoead<T>& moead, std::vector<int> solutionIndexes) {
+        moead.solutionIndexes = solutionIndexes;
+    }
+    template <typename T>
+    void SetExternalSolutionIndexes(MpMoead<T>& moead, std::vector<int> externalSolutionIndexes) {
+        moead.externalSolutionIndexes = externalSolutionIndexes;
+    }
+    // 初期化
     template <typename T>
     std::vector<int> GenerateSolutionIndexes(MpMoead<T>& moead, int rank, int parallelSize) {
         moead.rank = rank;
@@ -58,21 +76,35 @@ class MpMoeadTest : public ::testing::Test {
                                              std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
         moead.InitializeIndividualAndWeightVector(weightVectors, neighborhoodIndexes, externalNeighboringWeightVectors);
     }
+    // Update
     template <typename T>
-    std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {
-        return moead.individuals;
+    void InitializePopulation(MpMoead<T>& moead) {
+        moead.InitializePopulation();
     }
     template <typename T>
-    std::unordered_map<int, Eigen::ArrayXd> GetWeightVectors(MpMoead<T>& moead) {
-        return moead.weightVectors;
+    void InitializeIdealPoint(MpMoead<T>& moead) {
+        moead.InitializeIdealPoint();
     }
     template <typename T>
-    void SetSolutionIndexes(MpMoead<T>& moead, std::vector<int> solutionIndexes) {
-        moead.solutionIndexes = solutionIndexes;
+    Eigen::ArrayX<T> GenerateNewSolution(MpMoead<T>& moead, int index) {
+        return moead.GenerateNewSolution(index);
     }
     template <typename T>
-    void SetExternalSolutionIndexes(MpMoead<T>& moead, std::vector<int> externalSolutionIndexes) {
-        moead.externalSolutionIndexes = externalSolutionIndexes;
+    void RepairSolution(MpMoead<T>& moead, Eigen::ArrayX<T>& solution) {
+        moead.RepairSolution(solution);
+    }
+    template <typename T>
+    void UpdateIdealPoint(MpMoead<T>& mead, Eigen::ArrayXd& objectiveSet) {
+        mead.UpdateIdealPoint(objectiveSet);
+    }
+    template <typename T>
+    void UpdateSolution(MpMoead<T>& moead, int index, Eigen::ArrayX<T>& solution, Eigen::ArrayXd& objectiveSet) {
+        moead.UpdateSolution(index, solution, objectiveSet);
+    }
+    template <typename T>
+    void UpdateNeighboringSolutions(MpMoead<T>& moead, int index, Eigen::ArrayX<T>& solution, Eigen::ArrayXd& objectiveSet,
+                                    std::unordered_map<int, typename MpMoead<T>::Individual> externalIndividualCopies) {
+        moead.UpdateNeighboringSolutions(index, solution, objectiveSet, externalIndividualCopies);
     }
 };
 
@@ -233,5 +265,19 @@ TEST_F(MpMoeadTest, InitializeIndividualAndWeightVector) {
         count++;
     }
 }
+
+TEST_F(MpMoeadTest, InitializePopulation) {}
+
+TEST_F(MpMoeadTest, InitializeIdealPoint) {}
+
+TEST_F(MpMoeadTest, GenerateNewSolution) {}
+
+TEST_F(MpMoeadTest, RepairSolution) {}
+
+TEST_F(MpMoeadTest, UpdateIdealPoint) {}
+
+TEST_F(MpMoeadTest, UpdateSolution) {}
+
+TEST_F(MpMoeadTest, UpdateNeighboringSolutions) {}
 
 }  // namespace Eacpp::Test
