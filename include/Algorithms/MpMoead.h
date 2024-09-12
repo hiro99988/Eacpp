@@ -360,6 +360,7 @@ void MpMoead<DecisionVariableType>::InitializePopulation() {
     for (int i = 0; auto&& individual : individuals) {
         individual.second.solution = solutions[i];
         individual.second.objectives = problem->ComputeObjectiveSet(solutions[i]);
+        i++;
     }
 }
 
