@@ -3,7 +3,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <eigen3/Eigen/Core>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include "Algorithms/MpMoead.h"
@@ -31,8 +33,46 @@ class MpMoeadTest : public ::testing::Test {
         return moead.CalculateEuclideanDistanceBetweenEachWeightVector(weightVectors);
     }
     template <typename T>
+    std::vector<int> CalculateNeighborhoodIndexes(MpMoead<T>& moead,
+                                                  std::vector<std::vector<std::pair<double, int>>>& euclideanDistances) {
+        return moead.CalculateNeighborhoodIndexes(euclideanDistances);
+    }
+    template <typename T>
     std::vector<int> GenerateNeighborhoods(MpMoead<T>& moead, std::vector<double>& allWeightVectors) {
         return moead.GenerateNeighborhoods(allWeightVectors);
+    }
+    template <typename T>
+    std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(MpMoead<T>& moead,
+                                                                               std::vector<int>& neighborhoodIndexes,
+                                                                               std::vector<int>& populationSizes) {
+        return moead.GenerateExternalNeighborhood(neighborhoodIndexes, populationSizes);
+    }
+    template <typename T>
+    std::vector<double> GetWeightVectorsMatchingIndexes(MpMoead<T>& moead, std::vector<double>& weightVectors,
+                                                        std::vector<int>& indexes) {
+        return moead.GetWeightVectorsMatchingIndexes(weightVectors, indexes);
+    }
+    template <typename T>
+    void InitializeIndividualAndWeightVector(MpMoead<T>& moead, std::vector<Eigen::ArrayXd>& weightVectors,
+                                             std::vector<std::vector<int>>& neighborhoodIndexes,
+                                             std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
+        moead.InitializeIndividualAndWeightVector(weightVectors, neighborhoodIndexes, externalNeighboringWeightVectors);
+    }
+    template <typename T>
+    std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {
+        return moead.individuals;
+    }
+    template <typename T>
+    std::unordered_map<int, Eigen::ArrayXd> GetWeightVectors(MpMoead<T>& moead) {
+        return moead.weightVectors;
+    }
+    template <typename T>
+    void SetSolutionIndexes(MpMoead<T>& moead, std::vector<int> solutionIndexes) {
+        moead.solutionIndexes = solutionIndexes;
+    }
+    template <typename T>
+    void SetExternalSolutionIndexes(MpMoead<T>& moead, std::vector<int> externalSolutionIndexes) {
+        moead.externalSolutionIndexes = externalSolutionIndexes;
     }
 };
 
@@ -95,6 +135,102 @@ TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
             EXPECT_EQ(actual[i][j].first, expected[i][j].first);
             EXPECT_EQ(actual[i][j].second, expected[i][j].second);
         }
+    }
+}
+
+TEST_F(MpMoeadTest, CalculateNeighborhoodIndexes) {
+    int totalPopulationSize = 3;
+    int neighborNum = 2;
+    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, neighborNum);
+    std::vector<std::vector<std::pair<double, int>>> euclideanDistances = {{{0.0, 0}, {306.0, 1}, {50.0, 2}},   //
+                                                                           {{306.0, 0}, {0.0, 1}, {296.0, 2}},  //
+                                                                           {{50.0, 0}, {296.0, 1}, {0.0, 2}}};
+    auto actual = CalculateNeighborhoodIndexes(moead, euclideanDistances);
+    std::vector<int> expected = {0, 2, 1, 2, 2, 0};
+    EXPECT_EQ(actual, expected);
+}
+
+TEST_F(MpMoeadTest, GenerateNeighborhoods) {
+    int totalPopulationSize = 3;
+    int objectiveNum = 2;
+    int neighborNum = 2;
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, neighborNum);
+    std::vector<double> allWeightVectors = {
+        10.0, 5.0,   //
+        1.0,  20.0,  //
+        15.0, 10.0,
+    };
+    std::vector<int> expected = {0, 2, 1, 2, 2, 0};
+    auto actual = GenerateNeighborhoods(moead, allWeightVectors);
+    EXPECT_EQ(actual, expected);
+}
+
+TEST_F(MpMoeadTest, GenerateExternalNeighborhood) {
+    int totalPopulationSize = 4;
+    int neighborNum = 2;
+    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, 2);
+    std::vector<int> neighborhoodIndexes = {0, 1, 1, 0, 2, 3, 3, 2};
+    std::vector<int> populationSizes = {2, 1, 1};
+    auto actual = GenerateExternalNeighborhood(moead, neighborhoodIndexes, populationSizes);
+    std::vector<int> expectedIndexes = {3, 2};
+    std::vector<int> expectedSizes = {0, 1, 1};
+    EXPECT_EQ(actual.first, expectedIndexes);
+    EXPECT_EQ(actual.second, expectedSizes);
+}
+
+TEST_F(MpMoeadTest, GetWeightVectorsMatchingIndexes) {
+    int objectiveNum = 2;
+    auto moead = MpMoead<int>(0, 0, 0, objectiveNum, 0);
+    std::vector<double> weightVectors = {
+        1.0, 2.0,  //
+        3.0, 4.0,  //
+        5.0, 6.0,
+    };
+    std::vector<int> indexes = {0, 2};
+    std::vector<double> expected = {1.0, 2.0, 5.0, 6.0};
+    auto actual = GetWeightVectorsMatchingIndexes(moead, weightVectors, indexes);
+    EXPECT_EQ(actual, expected);
+}
+
+TEST_F(MpMoeadTest, InitializeIndividualAndWeightVector) {
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0);
+    std::vector<int> solutionIndexes = {0, 1, 2};
+    std::vector<int> externalSolutionIndexes = {3};
+    SetSolutionIndexes(moead, solutionIndexes);
+    SetExternalSolutionIndexes(moead, externalSolutionIndexes);
+    std::vector<Eigen::ArrayXd> weightVectors(3);
+    for (int i = 0; i < weightVectors.size(); i++) {
+        Eigen::ArrayXd wv(2);
+        wv << (double)i, (double)(i + 1);
+        weightVectors[i] = wv;
+    }
+    std::vector<std::vector<int>> neighborhoodIndexes = {{0, 1}, {1, 2}, {2, 3}};
+    std::vector<Eigen::ArrayXd> externalNeighboringWeightVectors;
+    Eigen::ArrayXd wv(2);
+    wv << 10.0, 11.0;
+    externalNeighboringWeightVectors.push_back(wv);
+
+    InitializeIndividualAndWeightVector(moead, weightVectors, neighborhoodIndexes, externalNeighboringWeightVectors);
+
+    auto individuals = GetIndividuals(moead);
+    EXPECT_EQ(individuals.size(), 4);
+    for (int count = 0; auto&& i : solutionIndexes) {
+        EXPECT_EQ(individuals[i].neighborhood, neighborhoodIndexes[count]);
+        count++;
+    }
+    for (auto&& i : externalSolutionIndexes) {
+        EXPECT_EQ(individuals[i].neighborhood.size(), 0);
+    }
+
+    auto weightVectorsMap = GetWeightVectors(moead);
+    EXPECT_EQ(weightVectorsMap.size(), 4);
+    for (int count = 0; auto&& i : solutionIndexes) {
+        EXPECT_TRUE((weightVectorsMap[i] == weightVectors[count]).all());
+        count++;
+    }
+    for (int count = 0; auto&& i : externalSolutionIndexes) {
+        EXPECT_TRUE((weightVectorsMap[i] == externalNeighboringWeightVectors[count]).all());
+        count++;
     }
 }
 

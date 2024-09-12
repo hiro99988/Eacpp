@@ -92,9 +92,6 @@ class MpMoead {
     // std::vector<Eigen::ArrayX<DecisionVariableType>> externalNeighboringSolutions;
     // std::vector<Individual> externalNeighboringSolutionCopies;
 
-    void InitializeIndividualAndWeightVector(std::vector<Eigen::ArrayXd>& weightVectors,
-                                             std::vector<std::vector<int>>& neighborhoodIndexes,
-                                             std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
     std::vector<int> GenerateSolutionIndexes();
     std::vector<std::vector<double>> GenerateWeightVectors(int H);
     std::vector<int> GenerateNeighborhoods(std::vector<double>& allWeightVectors);
@@ -105,12 +102,15 @@ class MpMoead {
     // template <typename T>
     // std::vector<T> Scatter(std::vector<T>& data, std::vector<int>& populationSizes, int singleDataSize);
 
-    std::tuple<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
-                                                                                std::vector<int>& populationSizes);
-    std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double> weightVectors, std::vector<int> indexes);
+    std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
+                                                                               std::vector<int>& populationSizes);
+    std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors, std::vector<int>& indexes);
     std::pair<std::vector<int>, std::vector<double>> ScatterExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                  std::vector<int>& neighborhoodSizes,
                                                                                  std::vector<double>& weightVectors);
+    void InitializeIndividualAndWeightVector(std::vector<Eigen::ArrayXd>& weightVectors,
+                                             std::vector<std::vector<int>>& neighborhoodIndexes,
+                                             std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
 
     void InitializePopulation();
     void InitializeIdealPoint();
@@ -215,20 +215,6 @@ void MpMoead<DecisionVariableType>::InitializeIsland(int H) {
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
-    std::vector<Eigen::ArrayXd>& weightVectors, std::vector<std::vector<int>>& neighborhoodIndexes,
-    std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
-    for (int i = 0; i < solutionIndexes.size(); i++) {
-        individuals[solutionIndexes[i]] = Individual(neighborhoodIndexes[i]);
-        this->weightVectors[solutionIndexes[i]] = weightVectors[i];
-    }
-    for (int i = 0; i < externalSolutionIndexes.size(); i++) {
-        individuals[externalSolutionIndexes[i]] = Individual();
-        this->weightVectors[externalSolutionIndexes[i]] = externalNeighboringWeightVectors[i];
-    }
-}
-
-template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Update() {
     std::unordered_map<int, Individual> externalIndividualCopies;
     for (auto&& i : externalSolutionIndexes) {
@@ -307,11 +293,11 @@ std::vector<int> MpMoead<DecisionVariableType>::CalculateNeighborhoodIndexes(
 }
 
 template <typename DecisionVariableType>
-std::tuple<std::vector<int>, std::vector<int>> MpMoead<DecisionVariableType>::GenerateExternalNeighborhood(
+std::pair<std::vector<int>, std::vector<int>> MpMoead<DecisionVariableType>::GenerateExternalNeighborhood(
     std::vector<int>& neighborhoodIndexes, std::vector<int>& populationSizes) {
     std::vector<int> noduplicateNeighborhoodIndexes;
     std::vector<int> neighborhoodSizes;
-    for (int i = 0; i < parallelSize; i++) {
+    for (int i = 0; i < populationSizes.size(); i++) {
         int start = std::reduce(populationSizes.begin(), populationSizes.begin() + i);
         int end = start + populationSizes[i];
 
@@ -332,8 +318,8 @@ std::tuple<std::vector<int>, std::vector<int>> MpMoead<DecisionVariableType>::Ge
 }
 
 template <typename DecisionVariableType>
-std::vector<double> MpMoead<DecisionVariableType>::GetWeightVectorsMatchingIndexes(std::vector<double> weightVectors,
-                                                                                   std::vector<int> indexes) {
+std::vector<double> MpMoead<DecisionVariableType>::GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors,
+                                                                                   std::vector<int>& indexes) {
     std::vector<double> matchingWeightVectors;
     for (int i = 0; i < indexes.size(); i++) {
         matchingWeightVectors.insert(matchingWeightVectors.end(), weightVectors.begin() + indexes[i] * objectiveNum,
@@ -352,6 +338,20 @@ std::pair<std::vector<int>, std::vector<double>> MpMoead<DecisionVariableType>::
     receivedWeightVectors = Scatterv(weightVectors, neighborhoodSizes, objectiveNum, rank, parallelSize);
 
     return {receivedNeighborhoodIndexes, receivedWeightVectors};
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
+    std::vector<Eigen::ArrayXd>& weightVectors, std::vector<std::vector<int>>& neighborhoodIndexes,
+    std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
+    for (int i = 0; i < solutionIndexes.size(); i++) {
+        individuals[solutionIndexes[i]] = Individual(neighborhoodIndexes[i]);
+        this->weightVectors[solutionIndexes[i]] = weightVectors[i];
+    }
+    for (int i = 0; i < externalSolutionIndexes.size(); i++) {
+        individuals[externalSolutionIndexes[i]] = Individual();
+        this->weightVectors[externalSolutionIndexes[i]] = externalNeighboringWeightVectors[i];
+    }
 }
 
 template <typename DecisionVariableType>
