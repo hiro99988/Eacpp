@@ -357,9 +357,9 @@ void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializePopulation() {
     std::vector<Eigen::ArrayX<DecisionVariableType>> solutions = sampling->Sample(individuals.size(), decisionVariableNum);
-    for (int i = 0; i < individuals.size(); i++) {
-        individuals[i].solution = solutions[i];
-        individuals[i].objectives = problem->ComputeObjectiveSet(solutions[i]);
+    for (int i = 0; auto&& individual : individuals) {
+        individual.second.solution = solutions[i];
+        individual.second.objectives = problem->ComputeObjectiveSet(solutions[i]);
     }
 }
 
