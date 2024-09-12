@@ -39,11 +39,12 @@ class MpMoead {
     };
 
    public:
-    MpMoead(int generationNum, int decisionVariableNum, int objectiveNum, int neighborNum,
+    MpMoead(int totalPopulationSize, int generationNum, int decisionVariableNum, int objectiveNum, int neighborNum,
             std::shared_ptr<ICrossover<DecisionVariableType>> crossover, std::shared_ptr<IDecomposition> decomposition,
             std::shared_ptr<IMutation<DecisionVariableType>> mutation, std::shared_ptr<IProblem<DecisionVariableType>> problem,
             std::shared_ptr<ISampling<DecisionVariableType>> sampling, std::shared_ptr<ISelection> selection)
-        : generationNum(generationNum),
+        : totalPopulationSize(totalPopulationSize),
+          generationNum(generationNum),
           decisionVariableNum(decisionVariableNum),
           objectiveNum(objectiveNum),
           neighborNum(neighborNum),
@@ -56,13 +57,13 @@ class MpMoead {
     virtual ~MpMoead() {}
 
     void Run(int argc, char** argv);
-    void Initialize(int totalPopulationSize, int H);
+    void Initialize(int H);
     void InitializeMpi(int argc, char** argv);
-    void InitializeIsland(int totalPopulationSize, int H);
+    void InitializeIsland(int H);
     void Update();
 
    private:
-    // NOTE: populationSizeはいらない？
+    int totalPopulationSize;
     int generationNum;
     int decisionVariableNum;
     int objectiveNum;
@@ -91,16 +92,15 @@ class MpMoead {
     // std::vector<Eigen::ArrayX<DecisionVariableType>> externalNeighboringSolutions;
     // std::vector<Individual> externalNeighboringSolutionCopies;
 
-    void InitializeIndividualAndWeightVector(int totalPopulationSize, std::vector<Eigen::ArrayXd>& weightVectors,
+    void InitializeIndividualAndWeightVector(std::vector<Eigen::ArrayXd>& weightVectors,
                                              std::vector<std::vector<int>>& neighborhoodIndexes,
                                              std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
-    std::vector<int> GenerateSolutionIndexes(int totalPopulationSize);
+    std::vector<int> GenerateSolutionIndexes();
     std::vector<std::vector<double>> GenerateWeightVectors(int H);
-    std::vector<int> GenerateNeighborhoods(int totalPopulationSize, std::vector<double>& allWeightVectors);
+    std::vector<int> GenerateNeighborhoods(std::vector<double>& allWeightVectors);
     std::vector<std::vector<std::pair<double, int>>> CalculateEuclideanDistanceBetweenEachWeightVector(
-        int totalPopulationSize, std::vector<double>& weightVectors);
-    std::vector<int> CalculateNeighborhoodIndexes(int totalPopulationSize,
-                                                  std::vector<std::vector<std::pair<double, int>>>& euclideanDistances);
+        std::vector<double>& weightVectors);
+    std::vector<int> CalculateNeighborhoodIndexes(std::vector<std::vector<std::pair<double, int>>>& euclideanDistances);
 
     // template <typename T>
     // std::vector<T> Scatter(std::vector<T>& data, std::vector<int>& populationSizes, int singleDataSize);
@@ -123,8 +123,9 @@ class MpMoead {
 
 #ifdef _TEST_
    public:
-    MpMoead(int generationNum, int decisionVariableNum, int objectiveNum, int neighborNum)
-        : generationNum(generationNum),
+    MpMoead(int totalPopulationSize, int generationNum, int decisionVariableNum, int objectiveNum, int neighborNum)
+        : totalPopulationSize(totalPopulationSize),
+          generationNum(generationNum),
           decisionVariableNum(decisionVariableNum),
           objectiveNum(objectiveNum),
           neighborNum(neighborNum) {}
@@ -164,21 +165,21 @@ void MpMoead<DecisionVariableType>::InitializeMpi(int argc, char** argv) {
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::Initialize(int totalPopulationSize, int H) {
+void MpMoead<DecisionVariableType>::Initialize(int H) {
     InitializeMpi(nullptr, nullptr);
-    InitializeIsland(totalPopulationSize, H);
+    InitializeIsland(H);
     InitializePopulation();
     InitializeIdealPoint();
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::InitializeIsland(int totalPopulationSize, int H) {
+void MpMoead<DecisionVariableType>::InitializeIsland(int H) {
     std::vector<double> weightVectors1d;
     std::vector<int> neighborhoodIndexes1d;
     if (rank == 0) {
         std::vector<std::vector<double>> weightVectors2d = GenerateWeightVectors(H);
         weightVectors1d = TransformTo1d(weightVectors2d);
-        neighborhoodIndexes1d = GenerateNeighborhoods(totalPopulationSize, weightVectors1d);
+        neighborhoodIndexes1d = GenerateNeighborhoods(weightVectors1d);
     }
 
     std::vector<int> populationSizes;
@@ -208,15 +209,14 @@ void MpMoead<DecisionVariableType>::InitializeIsland(int totalPopulationSize, in
     std::vector<Eigen::ArrayXd> externalNeighboringWeightVectors =
         TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors, objectiveNum);
 
-    solutionIndexes = GenerateSolutionIndexes(totalPopulationSize);
+    solutionIndexes = GenerateSolutionIndexes();
 
-    InitializeIndividualAndWeightVector(totalPopulationSize, weightVectors, neighborhoodIndexes,
-                                        externalNeighboringWeightVectors);
+    InitializeIndividualAndWeightVector(weightVectors, neighborhoodIndexes, externalNeighboringWeightVectors);
 }
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
-    int totalPopulationSize, std::vector<Eigen::ArrayXd>& weightVectors, std::vector<std::vector<int>>& neighborhoodIndexes,
+    std::vector<Eigen::ArrayXd>& weightVectors, std::vector<std::vector<int>>& neighborhoodIndexes,
     std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
     for (int i = 0; i < solutionIndexes.size(); i++) {
         individuals[solutionIndexes[i]] = Individual(neighborhoodIndexes[i]);
@@ -245,7 +245,7 @@ void MpMoead<DecisionVariableType>::Update() {
 }
 
 template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::GenerateSolutionIndexes(int totalPopulationSize) {
+std::vector<int> MpMoead<DecisionVariableType>::GenerateSolutionIndexes() {
     int start = CalculateNodeStartIndex(totalPopulationSize, rank, parallelSize);
     int populationSize = CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
     std::vector<int> solutionIndexes = Rangei(start, start + populationSize - 1, 1);
@@ -268,18 +268,16 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::GenerateWeightVe
 }
 
 template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::GenerateNeighborhoods(int totalPopulationSize,
-                                                                      std::vector<double>& allWeightVectors) {
+std::vector<int> MpMoead<DecisionVariableType>::GenerateNeighborhoods(std::vector<double>& allWeightVectors) {
     std::vector<std::vector<std::pair<double, int>>> euclideanDistances =
-        CalculateEuclideanDistanceBetweenEachWeightVector(totalPopulationSize, allWeightVectors);
-    std::vector<int> neighborhoodIndexes = CalculateNeighborhoodIndexes(totalPopulationSize, euclideanDistances);
+        CalculateEuclideanDistanceBetweenEachWeightVector(allWeightVectors);
+    std::vector<int> neighborhoodIndexes = CalculateNeighborhoodIndexes(euclideanDistances);
     return neighborhoodIndexes;
 }
 
 template <typename DecisionVariableType>
 std::vector<std::vector<std::pair<double, int>>>
-MpMoead<DecisionVariableType>::CalculateEuclideanDistanceBetweenEachWeightVector(int totalPopulationSize,
-                                                                                 std::vector<double>& weightVectors) {
+MpMoead<DecisionVariableType>::CalculateEuclideanDistanceBetweenEachWeightVector(std::vector<double>& weightVectors) {
     std::vector<std::vector<std::pair<double, int>>> euclideanDistances(
         totalPopulationSize, std::vector<std::pair<double, int>>(totalPopulationSize));
     for (int i = 0; i < totalPopulationSize; i++) {
@@ -297,7 +295,7 @@ MpMoead<DecisionVariableType>::CalculateEuclideanDistanceBetweenEachWeightVector
 
 template <typename DecisionVariableType>
 std::vector<int> MpMoead<DecisionVariableType>::CalculateNeighborhoodIndexes(
-    int totalPopulationSize, std::vector<std::vector<std::pair<double, int>>>& euclideanDistances) {
+    std::vector<std::vector<std::pair<double, int>>>& euclideanDistances) {
     std::vector<int> neighborhoodIndexes(totalPopulationSize * neighborNum);
     for (std::size_t i = 0; i < totalPopulationSize; i++) {
         std::sort(euclideanDistances[i].begin(), euclideanDistances[i].end());

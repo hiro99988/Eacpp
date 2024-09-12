@@ -48,9 +48,9 @@ namespace Eacpp::Test {
 TEST_F(MpMoeadMpiTest, InitializeIsland) {
     int totalPopulationSize = 9;
     int H = 8;
-    MpMoead<int> moead = MpMoead<int>(0, 0, 2, 3);
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, 2, 3);
     moead.InitializeMpi(0, nullptr);
-    moead.InitializeIsland(totalPopulationSize, H);
+    moead.InitializeIsland(H);
 
     std::vector<int> expectedSolutionIndexes;
     std::vector<int> expectedExternalSolutionIndexes;
