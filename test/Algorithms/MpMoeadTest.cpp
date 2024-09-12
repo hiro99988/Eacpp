@@ -77,19 +77,17 @@ TEST_F(MpMoeadTest, GenerateWeightVectors) {
 }
 
 TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
-    int totalPopulationSize = 5;
+    int totalPopulationSize = 3;
     int objectiveNum = 2;
     MpMoead<int> moead = MpMoead<int>(0, 0, objectiveNum, 0);
-    std::vector<double> weightVectors = {0.0,  1.0,   //
-                                         0.25, 0.75,  //
-                                         0.5,  0.5,   //
-                                         0.75, 0.25,  //
-                                         1.0,  0.0};
-    std::vector<std::vector<std::pair<double, int>>> expected = {{{0.0, 0}, {0.5, 1}, {1.0, 2}, {1.5, 3}, {2.0, 4}},  //
-                                                                 {{0.5, 0}, {0.0, 1}, {0.5, 2}, {1.0, 3}, {1.5, 4}},  //
-                                                                 {{1.0, 0}, {0.5, 1}, {0.0, 2}, {0.5, 3}, {1.0, 4}},  //
-                                                                 {{1.5, 0}, {1.0, 1}, {0.5, 2}, {0.0, 3}, {0.5, 4}},  //
-                                                                 {{2.0, 0}, {1.5, 1}, {1.0, 2}, {0.5, 3}, {0.0, 4}}};
+    std::vector<double> weightVectors = {
+        10.0, 5.0,   //
+        1.0,  20.0,  //
+        15.0, 10.0,
+    };
+    std::vector<std::vector<std::pair<double, int>>> expected = {{{0.0, 0}, {306.0, 1}, {50.0, 2}},   //
+                                                                 {{306.0, 0}, {0.0, 1}, {296.0, 2}},  //
+                                                                 {{50.0, 0}, {296.0, 1}, {0.0, 2}}};
     auto actual = CalculateEuclideanDistanceBetweenEachWeightVector(moead, totalPopulationSize, weightVectors);
     for (int i = 0; i < actual.size(); i++) {
         for (int j = 0; j < actual[i].size(); j++) {
