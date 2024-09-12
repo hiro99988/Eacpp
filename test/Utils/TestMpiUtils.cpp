@@ -48,4 +48,15 @@ TEST(MpiUtilsTest, GenerateDataCountsAndDisplacements) {
     EXPECT_EQ(actual.second, expectedDisplacements);
 }
 
+TEST(MpiUtilsTest, GetRankFromIndex) {
+    int totalTasks = 9;
+    int parallelSize = 4;
+    std::vector<int> indexes = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector<int> expected = {0, 0, 0, 1, 1, 2, 2, 3, 3};
+    for (int i = 0; i < indexes.size(); i++) {
+        int actual = GetRankFromIndex(totalTasks, indexes[i], parallelSize);
+        EXPECT_EQ(actual, expected[i]);
+    }
+}
+
 }  // namespace Eacpp::Test
