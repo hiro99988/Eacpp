@@ -56,9 +56,9 @@ TEST_F(MpMoeadMpiTest, InitializeIsland) {
     int totalPopulationSize = 9;
     int H = 8;
     int neighborNum = 3;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, 2, neighborNum);
-    moead.InitializeMpi(0, nullptr);
-    moead.InitializeIsland(H);
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, 2, neighborNum, 0, H);
+    moead.InitializeMpi();
+    moead.InitializeIsland();
 
     std::vector<int> expectedSolutionIndexes;
     std::vector<int> expectedExternalSolutionIndexes;
@@ -119,8 +119,8 @@ TEST_F(MpMoeadMpiTest, InitializeIsland) {
 }
 
 TEST_F(MpMoeadMpiTest, ScatterExternalNeighborhood) {
-    auto moead = MpMoead<int>(5, 0, 0, 2, 0);
-    moead.InitializeMpi(0, nullptr);
+    auto moead = MpMoead<int>(5, 0, 0, 2, 0, 0, 0);
+    moead.InitializeMpi();
     std::vector<int> neighborhoodIndexes = {0, 1, 2, 3, 4};
     std::vector<int> neighborhoodSizes = {2, 1, 1, 1};
     std::vector<double> weightVectors = {0.0, 0.1,  //
