@@ -510,16 +510,10 @@ void MpMoead<DecisionVariableType>::SendMessage(std::unordered_map<int, Individu
             continue;
         }
 
-        std::cout << "rank: " << rank << " message: ";
-        for (auto&& i : value.second) {
-            std::cout << i << " ";
-        }
-        std::cout << std::endl;
-
         int sendDataSize = value.second.size();
-        MPI_Isend(&sendDataSize, 1, MPI_INT, process, 0, MPI_COMM_WORLD, nullptr);
-        MPI_Isend(value.second.data(), sendDataSize, MPI_DOUBLE, process, 1, MPI_COMM_WORLD, nullptr);
-        std::cout << "send i send" << std::endl;
+        MPI_Request request;
+        MPI_Isend(&sendDataSize, 1, MPI_INT, process, 0, MPI_COMM_WORLD, &request);
+        MPI_Isend(value.second.data(), sendDataSize, MPI_DOUBLE, process, 1, MPI_COMM_WORLD, &request);
     }
 }
 
