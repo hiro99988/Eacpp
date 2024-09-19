@@ -10,10 +10,14 @@
 #include <vector>
 
 #include "Algorithms/MpMoead.h"
+#include "Crossovers/MockCrossover.h"
+#include "Decompositions/MockDecomposition.h"
+#include "Mutations/MockMutation.h"
 #include "Problems/IProblem.h"
 #include "Problems/MockProblem.h"
 #include "Samplings/ISampling.h"
 #include "Samplings/MockSampling.h"
+#include "Selections/MockSelection.h"
 #include "Utils/Utils.h"
 
 using ::testing::_;
@@ -23,6 +27,22 @@ namespace Eacpp {
 
 class MpMoeadTest : public ::testing::Test {
    protected:
+    std::shared_ptr<MockCrossover<int>> mockCrossover;
+    std::shared_ptr<MockDecomposition> mockDecomposition;
+    std::shared_ptr<MockMutation<int>> mockMutation;
+    std::shared_ptr<MockProblem<int>> mockProblem;
+    std::shared_ptr<MockSampling<int>> mockSampling;
+    std::shared_ptr<MockSelection> mockSelection;
+
+    void SetUp() override {
+        mockCrossover = std::make_shared<MockCrossover<int>>();
+        mockDecomposition = std::make_shared<MockDecomposition>();
+        mockMutation = std::make_shared<MockMutation<int>>();
+        mockProblem = std::make_shared<MockProblem<int>>();
+        mockSampling = std::make_shared<MockSampling<int>>();
+        mockSelection = std::make_shared<MockSelection>();
+    }
+
     // getter and setter
     template <typename T>
     std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {
@@ -31,6 +51,14 @@ class MpMoeadTest : public ::testing::Test {
     template <typename T>
     std::unordered_map<int, Eigen::ArrayXd> GetWeightVectors(MpMoead<T>& moead) {
         return moead.weightVectors;
+    }
+    template <typename T>
+    Eigen::ArrayXd GetIdealPoint(MpMoead<T>& moead) {
+        return moead.idealPoint;
+    }
+    template <typename T>
+    std::vector<int> GetUpdatedSolutionIndexes(MpMoead<T>& moead) {
+        return moead.updatedSolutionIndexes;
     }
     template <typename T>
     void SetSolutionIndexes(MpMoead<T>& moead, std::vector<int> solutionIndexes) {
@@ -45,6 +73,19 @@ class MpMoeadTest : public ::testing::Test {
         for (int i = 0; i < size; i++) {
             moead.individuals[i] = typename MpMoead<T>::Individual();
         }
+    }
+    template <typename T>
+    void AddIndividual(MpMoead<T>& moead, int index, Eigen::ArrayX<T> solution, Eigen::ArrayXd objectives,
+                       std::vector<int> neighborhood) {
+        moead.individuals[index] = typename MpMoead<T>::Individual(solution, objectives, neighborhood);
+    }
+    template <typename T>
+    void SetIdealPoint(MpMoead<T>& moead, Eigen::ArrayXd idealPoint) {
+        moead.idealPoint = idealPoint;
+    }
+    template <typename T>
+    void AddWeightVector(MpMoead<T>& moead, int index, Eigen::ArrayXd weightVector) {
+        moead.weightVectors[index] = weightVector;
     }
     // 初期化
     template <typename T>
@@ -98,6 +139,10 @@ class MpMoeadTest : public ::testing::Test {
         moead.InitializeIdealPoint();
     }
     template <typename T>
+    std::vector<Eigen::ArrayX<T>> SelectParents(MpMoead<T>& moead, int index) {
+        return moead.SelectParents(index);
+    }
+    template <typename T>
     Eigen::ArrayX<T> GenerateNewSolution(MpMoead<T>& moead, int index) {
         return moead.GenerateNewSolution(index);
     }
@@ -127,7 +172,7 @@ namespace Eacpp::Test {
 TEST_F(MpMoeadTest, GenerateSolutionIndexes) {
     int totalPopulationSize = 9;
     int parallelSize = 4;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, 0);
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, 0, 0, 0);
 
     auto actual = GenerateSolutionIndexes(moead, 0, parallelSize);
     std::vector<int> expected = {0, 1, 2};
@@ -145,7 +190,7 @@ TEST_F(MpMoeadTest, GenerateSolutionIndexes) {
 TEST_F(MpMoeadTest, GenerateWeightVectors) {
     int objectiveNum = 2;
     int H = 2;
-    MpMoead<int> moead = MpMoead<int>(0, 0, 0, objectiveNum, 0);
+    MpMoead<int> moead = MpMoead<int>(0, 0, 0, objectiveNum, 0, 0, 0);
     auto actual = GenerateWeightVectors(moead, H);
 
     int expectedSize = 3;
@@ -163,7 +208,7 @@ TEST_F(MpMoeadTest, GenerateWeightVectors) {
 TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
     int totalPopulationSize = 3;
     int objectiveNum = 2;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, 0);
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, 0, 0, 0);
     std::vector<double> weightVectors = {
         10.0, 5.0,   //
         1.0,  20.0,  //
@@ -185,7 +230,7 @@ TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
 TEST_F(MpMoeadTest, CalculateNeighborhoodIndexes) {
     int totalPopulationSize = 3;
     int neighborNum = 2;
-    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, neighborNum);
+    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, neighborNum, 0, 0);
     std::vector<std::vector<std::pair<double, int>>> euclideanDistances = {{{0.0, 0}, {306.0, 1}, {50.0, 2}},   //
                                                                            {{306.0, 0}, {0.0, 1}, {296.0, 2}},  //
                                                                            {{50.0, 0}, {296.0, 1}, {0.0, 2}}};
@@ -198,7 +243,7 @@ TEST_F(MpMoeadTest, GenerateNeighborhoods) {
     int totalPopulationSize = 3;
     int objectiveNum = 2;
     int neighborNum = 2;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, neighborNum);
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, neighborNum, 0, 0);
     std::vector<double> allWeightVectors = {
         10.0, 5.0,   //
         1.0,  20.0,  //
@@ -212,7 +257,7 @@ TEST_F(MpMoeadTest, GenerateNeighborhoods) {
 TEST_F(MpMoeadTest, GenerateExternalNeighborhood) {
     int totalPopulationSize = 4;
     int neighborNum = 2;
-    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, 2);
+    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, 2, 0, 0);
     std::vector<int> neighborhoodIndexes = {0, 1, 1, 0, 2, 3, 3, 2};
     std::vector<int> populationSizes = {2, 1, 1};
     auto actual = GenerateExternalNeighborhood(moead, neighborhoodIndexes, populationSizes);
@@ -224,7 +269,7 @@ TEST_F(MpMoeadTest, GenerateExternalNeighborhood) {
 
 TEST_F(MpMoeadTest, GetWeightVectorsMatchingIndexes) {
     int objectiveNum = 2;
-    auto moead = MpMoead<int>(0, 0, 0, objectiveNum, 0);
+    auto moead = MpMoead<int>(0, 0, 0, objectiveNum, 0, 0, 0);
     std::vector<double> weightVectors = {
         1.0, 2.0,  //
         3.0, 4.0,  //
@@ -237,7 +282,7 @@ TEST_F(MpMoeadTest, GetWeightVectorsMatchingIndexes) {
 }
 
 TEST_F(MpMoeadTest, InitializeIndividualAndWeightVector) {
-    auto moead = MpMoead<int>(0, 0, 0, 0, 0);
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0);
     std::vector<int> solutionIndexes = {0, 1, 2};
     std::vector<int> externalSolutionIndexes = {3};
     SetSolutionIndexes(moead, solutionIndexes);
@@ -282,35 +327,148 @@ TEST_F(MpMoeadTest, InitializePopulation) {
     int decisionVariableNum = 2;
     int sampleNum = 2;
 
-    auto mockSampling = std::make_shared<MockSampling<int>>();
-    // Eigen::ArrayXi samplingResult = Eigen::ArrayXi::LinSpaced(decisionVariableNum, 0, decisionVariableNum - 1);
-    // std::vector<Eigen::ArrayXi> samplingResults(sampleNum, samplingResult);
-    // EXPECT_CALL(*mockSampling, Sample(_, _)).WillRepeatedly(Return(samplingResults));
+    Eigen::ArrayXi samplingResult = Eigen::ArrayXi::LinSpaced(decisionVariableNum, 0, decisionVariableNum - 1);
+    std::vector<Eigen::ArrayXi> samplingResults(sampleNum, samplingResult);
+    EXPECT_CALL(*mockSampling, Sample(_, _)).WillRepeatedly(Return(samplingResults));
 
-    // std::shared_ptr<MockProblem<int>> mockProblem = std::make_shared<MockProblem<int>>();
-    // Eigen::ArrayXd objectiveSetResult = Eigen::ArrayXd::LinSpaced(2, 0, 1);
-    // EXPECT_CALL(*mockProblem, ComputeObjectiveSet(_)).WillRepeatedly(Return(objectiveSetResult));
+    Eigen::ArrayXd objectiveSetResult = Eigen::ArrayXd::LinSpaced(2, 0, 1);
+    EXPECT_CALL(*mockProblem, ComputeObjectiveSet(_)).WillRepeatedly(Return(objectiveSetResult));
 
-    // auto moead = MpMoead<int>(0, 0, decisionVariableNum, 0, 0, nullptr, nullptr, nullptr, nullptr, mockSampling, nullptr);
-    // SetIndividuals(moead, sampleNum);
-    // InitializePopulation(moead);
+    auto moead =
+        MpMoead<int>(0, 0, decisionVariableNum, 0, 0, 0, 0, nullptr, nullptr, nullptr, mockProblem, mockSampling, nullptr);
+    SetIndividuals(moead, sampleNum);
+    InitializePopulation(moead);
 
-    // auto individuals = GetIndividuals(moead);
-    // for (auto&& i : individuals) {
-    //     EXPECT_TRUE((i.second.solution == samplingResult).all());
-    //     EXPECT_TRUE((i.second.objectives == objectiveSetResult).all());
-    // }
+    auto individuals = GetIndividuals(moead);
+    for (auto&& i : individuals) {
+        EXPECT_TRUE((i.second.solution == samplingResult).all());
+        EXPECT_TRUE((i.second.objectives == objectiveSetResult).all());
+    }
 }
 
-TEST_F(MpMoeadTest, InitializeIdealPoint) {}
+TEST_F(MpMoeadTest, InitializeIdealPoint) {
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0);
+    AddIndividual(moead, 0, Eigen::ArrayXi(), Eigen::ArrayXd::LinSpaced(2, 0, 1), {});
+    Eigen::ArrayXd expected = Eigen::ArrayXd::LinSpaced(2, 0, 1);
 
-TEST_F(MpMoeadTest, GenerateNewSolution) {}
+    InitializeIdealPoint(moead);
+    auto actual = GetIdealPoint(moead);
 
-TEST_F(MpMoeadTest, RepairSolution) {}
+    EXPECT_TRUE((actual == expected).all());
 
-TEST_F(MpMoeadTest, UpdateIdealPoint) {}
+    Eigen::ArrayXd objectives = Eigen::ArrayXd(2);
+    objectives << 1.0, 0.0;
+    AddIndividual(moead, 1, Eigen::ArrayXi(), objectives, {});
+    expected << 0.0, 0.0;
 
-TEST_F(MpMoeadTest, UpdateSolution) {}
+    InitializeIdealPoint(moead);
+    actual = GetIdealPoint(moead);
+
+    EXPECT_TRUE((actual == expected).all());
+}
+
+TEST_F(MpMoeadTest, SelectParents) {
+    EXPECT_CALL(*mockSelection, Select(_, _)).WillRepeatedly(Return(std::vector<int>{1}));
+
+    EXPECT_CALL(*mockCrossover, GetParentNum()).WillRepeatedly(Return(2));
+
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0, mockCrossover, nullptr, nullptr, nullptr, nullptr, mockSelection);
+    Eigen::ArrayXi solution0 = Eigen::ArrayXi::LinSpaced(2, 0, 1);
+    Eigen::ArrayXi solution1 = Eigen::ArrayXi::LinSpaced(2, 1, 2);
+    AddIndividual(moead, 0, solution0, Eigen::ArrayXd(), {1});
+    AddIndividual(moead, 1, solution1, Eigen::ArrayXd(), {0});
+
+    auto actual = SelectParents(moead, 0);
+    std::vector<Eigen::ArrayXi> expected = {solution0, solution1};
+    for (int i = 0; i < actual.size(); i++) {
+        EXPECT_TRUE((actual[i] == expected[i]).all());
+    }
+}
+
+TEST_F(MpMoeadTest, GenerateNewSolution) {
+    EXPECT_CALL(*mockSelection, Select(_, _)).WillRepeatedly(Return(std::vector<int>{1}));
+
+    Eigen::ArrayXi expected = Eigen::ArrayXi::LinSpaced(2, 10, 11);
+    EXPECT_CALL(*mockCrossover, GetParentNum()).WillRepeatedly(Return(2));
+    EXPECT_CALL(*mockCrossover, Cross(_)).WillOnce(Return(expected));
+
+    EXPECT_CALL(*mockMutation, Mutate(_)).Times(1);
+
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0, mockCrossover, nullptr, mockMutation, nullptr, nullptr, mockSelection);
+    Eigen::ArrayXi solution0 = Eigen::ArrayXi::LinSpaced(2, 0, 1);
+    Eigen::ArrayXi solution1 = Eigen::ArrayXi::LinSpaced(2, 1, 2);
+    AddIndividual(moead, 0, solution0, Eigen::ArrayXd(), {1});
+    AddIndividual(moead, 1, solution1, Eigen::ArrayXd(), {0});
+
+    auto actual = GenerateNewSolution(moead, 0);
+
+    EXPECT_TRUE((actual == expected).all());
+}
+
+TEST_F(MpMoeadTest, RepairSolution) {
+    EXPECT_CALL(*mockProblem, IsFeasible(_)).WillOnce(Return(true)).WillOnce(Return(false));
+
+    Eigen::ArrayXi expected2 = Eigen::ArrayXi::LinSpaced(2, 10, 11);
+    EXPECT_CALL(*mockSampling, Sample(_, _)).WillRepeatedly(Return(std::vector<Eigen::ArrayXi>{expected2}));
+
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr, mockProblem, mockSampling, nullptr);
+    Eigen::ArrayXi solution = Eigen::ArrayXi::LinSpaced(2, 0, 1);
+    auto expected1 = solution;
+
+    RepairSolution(moead, solution);
+    EXPECT_TRUE((solution == expected1).all());
+
+    RepairSolution(moead, solution);
+    EXPECT_TRUE((solution == expected2).all());
+}
+
+TEST_F(MpMoeadTest, UpdateIdealPoint) {
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0);
+    Eigen::ArrayXd idealPoint = Eigen::ArrayXd::LinSpaced(2, 1, 2);
+    SetIdealPoint(moead, idealPoint);
+
+    Eigen::ArrayXd objectiveSet = Eigen::ArrayXd::LinSpaced(2, 0, 1);
+
+    UpdateIdealPoint(moead, objectiveSet);
+
+    auto actual = GetIdealPoint(moead);
+    EXPECT_TRUE((actual == objectiveSet).all());
+}
+
+TEST_F(MpMoeadTest, UpdateSolution) {
+    EXPECT_CALL(*mockDecomposition, ComputeObjective(_, _, _))
+        .WillOnce(Return(1.0))
+        .WillOnce(Return(0.0))
+        .WillOnce(Return(0.0))
+        .WillOnce(Return(1.0));
+    auto moead = MpMoead<int>(0, 0, 0, 0, 0, 0, 0, nullptr, mockDecomposition, nullptr, nullptr, nullptr, nullptr);
+    int index = 0;
+    SetIdealPoint(moead, Eigen::ArrayXd());
+    AddWeightVector(moead, index, Eigen::ArrayXd());
+
+    Eigen::ArrayXi indSolution = Eigen::ArrayXi::LinSpaced(2, 0, 1);
+    Eigen::ArrayXd indObjectives = Eigen::ArrayXd::LinSpaced(2, 0, 1);
+    AddIndividual(moead, index, indSolution, indObjectives, {});
+    Eigen::ArrayXi solution = Eigen::ArrayXi::LinSpaced(2, 1, 2);
+    Eigen::ArrayXd objectives = Eigen::ArrayXd::LinSpaced(2, 1, 2);
+
+    UpdateSolution(moead, index, solution, objectives);
+
+    auto individuals = GetIndividuals(moead);
+    auto updatedSolutionIndexes = GetUpdatedSolutionIndexes(moead);
+    EXPECT_TRUE((individuals[index].solution == indSolution).all());
+    EXPECT_TRUE((individuals[index].objectives == indObjectives).all());
+    EXPECT_TRUE(updatedSolutionIndexes.empty());
+
+    UpdateSolution(moead, index, solution, objectives);
+
+    individuals = GetIndividuals(moead);
+    updatedSolutionIndexes = GetUpdatedSolutionIndexes(moead);
+    EXPECT_TRUE((individuals[index].solution == solution).all());
+    EXPECT_TRUE((individuals[index].objectives == objectives).all());
+    EXPECT_EQ(updatedSolutionIndexes.size(), 1);
+    EXPECT_EQ(updatedSolutionIndexes[0], index);
+}
 
 TEST_F(MpMoeadTest, UpdateNeighboringSolutions) {}
 
