@@ -1,6 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
 project(Eacpp CXX)
 
+# GoogleTestをダウンロード
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+# 親プロジェクトのコンパイラ・リンカ設定を上書きするのを防ぐ（Windowsのみ）
+if(WIN32)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
+# googletestをターゲットとして使えるようにする
+FetchContent_MakeAvailable(googletest)
+
 enable_testing()
 
 set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -29,7 +43,7 @@ add_library(Eacpp STATIC "${SRC_FILES}")
 target_compile_features(Eacpp PUBLIC cxx_std_20)
 
 find_package(MPI REQUIRED)
-target_link_libraries(Eacpp MPI::MPI_CXX)
+target_link_libraries(Eacpp MPI::MPI_CXX gtest_main gmock_main)
 
 target_include_directories(Eacpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
