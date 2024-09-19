@@ -5,8 +5,7 @@ project(Eacpp CXX)
 include(FetchContent)
 FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip    
 )
 # 親プロジェクトのコンパイラ・リンカ設定を上書きするのを防ぐ（Windowsのみ）
 if(WIN32)
