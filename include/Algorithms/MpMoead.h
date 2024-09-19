@@ -77,6 +77,7 @@ class MpMoead {
     void InitializeMpi();
     void InitializeIsland();
     void Update();
+    std::vector<Eigen::ArrayXd> GetAllObjectives();
 
    private:
     int totalPopulationSize;
@@ -145,7 +146,6 @@ class MpMoead {
     void ReceiveMessage();
     void UpdateWithMessage(std::vector<double>& message);
     std::vector<double> GatherAllObjectives();
-    std::vector<Eigen::ArrayXd> GetAllObjectives();
 
 #ifdef _TEST_
    public:
@@ -171,8 +171,6 @@ void MpMoead<DecisionVariableType>::Run() {
     for (int i = 0; i < repeat; i++) {
         Update();
     }
-
-    MPI_Finalize();
 }
 
 template <typename DecisionVariableType>

@@ -1,5 +1,6 @@
 #include <mpi.h>
 
+#include <fstream>
 #include <iostream>
 
 #include "Algorithms/MpMoead.h"
@@ -13,11 +14,23 @@
 using namespace Eacpp;
 
 int main(int argc, char** argv) {
-    int generationNum = 300;
-    int H = 99;
-    int totalPopulationSize = H + 1;
+    int rank;
+    MPI_Init(nullptr, nullptr);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int generationNum = 100;
     int neighborNum = 3;
     int migrationInterval = 1;
+    int H = 99;
+
+    if (argc == 5) {
+        generationNum = std::stoi(argv[1]);
+        neighborNum = std::stoi(argv[2]);
+        migrationInterval = std::stoi(argv[3]);
+        H = std::stoi(argv[4]);
+    }
+
+    int totalPopulationSize = H + 1;
 
     std::shared_ptr<ZDT1> problem = std::make_shared<ZDT1>();
 
@@ -37,6 +50,18 @@ int main(int argc, char** argv) {
                           H, crossover, decomposition, mutation, problem, sampling, selection);
 
     moead.Run();
+
+    auto allObjectives = moead.GetAllObjectives();
+
+    if (rank == 0) {
+        std::ofstream ofs("out/data/result.txt");
+        for (const auto& set : allObjectives) {
+            for (const auto& value : set) {
+                ofs << value << " ";
+            }
+            ofs << std::endl;
+        }
+    }
 
     MPI_Finalize();
 
