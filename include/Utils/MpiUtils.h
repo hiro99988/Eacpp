@@ -8,6 +8,9 @@
 
 namespace Eacpp {
 
+template <typename T>
+constexpr bool false_v = false;
+
 /**
  * @brief 与えられたC++の型に対応するMPIデータ型を取得します。
  *
@@ -56,7 +59,7 @@ MPI_Datatype GetMpiDataType(std::vector<T> var) {
     } else if constexpr (std::is_same_v<std::pair<long double, int>, T>) {
         return MPI_LONG_DOUBLE_INT;
     } else {
-        static_assert(false, "Unsupported type");
+        static_assert(false_v<T>, "Unsupported type");
     }
 }
 
