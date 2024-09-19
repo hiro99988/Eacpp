@@ -7,14 +7,14 @@
 
 namespace Eacpp::Test {
 
-class MpiUtilsMpiTest : public ::testing::Test {
+class MpiUtilsTestM : public ::testing::Test {
    protected:
     static void SetUpTestSuite() { MPI_Init(nullptr, nullptr); }
 
     static void TearDownTestSuite() { MPI_Finalize(); }
 };
 
-TEST_F(MpiUtilsMpiTest, Scatterv) {
+TEST_F(MpiUtilsTestM, Scatterv) {
     int rank, parallelSize;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);

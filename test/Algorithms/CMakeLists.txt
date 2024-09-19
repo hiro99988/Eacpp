@@ -1,9 +1,20 @@
-add_executable(MpMoeadTest.out MpMoeadTest.cpp)
-target_link_libraries(MpMoeadTest.out gtest_main gmock_main Eacpp)
+file(GLOB_RECURSE TESTS *Test.cpp)
 
-add_executable(MpMoeadMpiTest.out MpMoeadMpiTest.cpp)
-target_link_libraries(MpMoeadMpiTest.out gtest_main gmock_main Eacpp MPI::MPI_CXX)
+foreach(test ${TESTS})
+    get_filename_component(target ${test} NAME_WE)
+    add_executable(${target}.out ${test})
+    target_link_libraries(${target}.out gtest_main gmock_main Eacpp)
+    include(GoogleTest)
+    gtest_discover_tests(${target}.out)
+endforeach()
 
-include(GoogleTest)
-gtest_discover_tests(MpMoeadTest.out)
-gtest_discover_tests(MpMoeadMpiTest.out)
+
+file(GLOB_RECURSE MPI_TESTS *TestM.cpp)
+
+foreach(test ${MPI_TESTS})
+    get_filename_component(target ${test} NAME_WE)
+    add_executable(${target}.out ${test})
+    target_link_libraries(${target}.out gtest_main gmock_main Eacpp MPI::MPI_CXX)
+    include(GoogleTest)
+    gtest_discover_tests(${target}.out)
+endforeach()

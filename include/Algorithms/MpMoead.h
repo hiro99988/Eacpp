@@ -160,7 +160,7 @@ class MpMoead {
           H(H) {}
 
     friend class MpMoeadTest;
-    friend class MpMoeadMpiTest;
+    friend class MpMoeadTestM;
 #endif
 };
 

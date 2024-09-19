@@ -1,4 +1,4 @@
-file(GLOB_RECURSE TESTS Test*.cpp)
+file(GLOB_RECURSE TESTS *Test.cpp)
 
 foreach(test ${TESTS})
     get_filename_component(target ${test} NAME_WE)

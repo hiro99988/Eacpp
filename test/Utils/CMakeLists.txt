@@ -1,4 +1,4 @@
-file(GLOB_RECURSE TESTS Test*.cpp)
+file(GLOB_RECURSE TESTS *Test.cpp)
 
 foreach(test ${TESTS})
     get_filename_component(target ${test} NAME_WE)
@@ -9,7 +9,7 @@ foreach(test ${TESTS})
 endforeach()
 
 
-file(GLOB_RECURSE MPI_TESTS MpiTest*.cpp)
+file(GLOB_RECURSE MPI_TESTS *TestM.cpp)
 
 foreach(test ${MPI_TESTS})
     get_filename_component(target ${test} NAME_WE)

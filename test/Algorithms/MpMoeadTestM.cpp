@@ -12,7 +12,7 @@
 
 namespace Eacpp {
 
-class MpMoeadMpiTest : public ::testing::Test {
+class MpMoeadTestM : public ::testing::Test {
    protected:
     static void SetUpTestSuite() { MPI_Init(nullptr, nullptr); }
 
@@ -52,7 +52,7 @@ class MpMoeadMpiTest : public ::testing::Test {
 
 namespace Eacpp::Test {
 
-TEST_F(MpMoeadMpiTest, InitializeIsland) {
+TEST_F(MpMoeadTestM, InitializeIsland) {
     int totalPopulationSize = 9;
     int H = 8;
     int neighborNum = 3;
@@ -118,7 +118,7 @@ TEST_F(MpMoeadMpiTest, InitializeIsland) {
     }
 }
 
-TEST_F(MpMoeadMpiTest, ScatterExternalNeighborhood) {
+TEST_F(MpMoeadTestM, ScatterExternalNeighborhood) {
     auto moead = MpMoead<int>(5, 0, 0, 2, 0, 0, 0);
     moead.InitializeMpi();
     std::vector<int> neighborhoodIndexes = {0, 1, 2, 3, 4};

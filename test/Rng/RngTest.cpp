@@ -149,7 +149,7 @@ TEST(RngTest, UniformSize10x10) {
     Rng rng;
     double expectedMin = 0.0;
     double expectedMax = 1.0;
-    std::tuple<int, int> size(10, 10);
+    std::pair<int, int> size(10, 10);
     std::vector<Eigen::ArrayXd> actual = rng.Uniform(expectedMin, expectedMax, size);
     ASSERT_EQ(std::get<0>(size), actual.size());
     ASSERT_EQ(std::get<1>(size), actual[0].size());
@@ -161,8 +161,8 @@ TEST(RngTest, ChoiceInt) {
     std::vector<int> vector = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     Rng rngWithDuplicates(0);
     auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, vector.size() - 1, 2, true);
-    Rng UnduplicatedRng(0);
-    auto expectedUnduplicatedtedIndex = UnduplicatedRng.Integers(0, vector.size() - 1, 5, false);
+    Rng noduplicateRng(0);
+    auto expectedNoduplicateIndex = noduplicateRng.Integers(0, vector.size() - 1, 5, false);
 
     int size = 2;
     Rng rng1(0);
@@ -177,7 +177,7 @@ TEST(RngTest, ChoiceInt) {
     actual = rng2.Choice(vector, size, false);
     ASSERT_EQ(size, actual.size());
     for (int i = 0; i < size; i++) {
-        ASSERT_TRUE(vector[expectedUnduplicatedtedIndex[i]] == actual[i]);
+        ASSERT_TRUE(vector[expectedNoduplicateIndex[i]] == actual[i]);
     }
 }
 
