@@ -1,5 +1,4 @@
-#ifndef _RANDOM_SELECTION_H
-#define _RANDOM_SELECTION_H
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <memory>
@@ -24,5 +23,3 @@ class RandomSelection : public ISelection {
 };
 
 }  // namespace Eacpp
-
-#endif

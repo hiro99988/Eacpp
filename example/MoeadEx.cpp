@@ -34,19 +34,17 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::shared_ptr<ZDT1> problem = std::make_shared<ZDT1>();
+    auto problem = std::make_shared<ZDT1>();
 
     int decisionVariableNum = problem->decisionNum;
     int objectiveNum = problem->objectiveNum;
     std::vector<std::array<double, 2>> variableBounds = {problem->variableBound};
 
-    std::shared_ptr<BinomialCrossover> crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
-    std::shared_ptr<Tchebycheff> decomposition = std::make_shared<Tchebycheff>();
-    std::shared_ptr<PolynomialMutation> mutation =
-        std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBounds);
-    std::shared_ptr<UniformRandomSampling> sampling =
-        std::make_shared<UniformRandomSampling>(problem->variableBound[0], problem->variableBound[1]);
-    std::shared_ptr<RandomSelection> selection = std::make_shared<RandomSelection>();
+    auto crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
+    auto decomposition = std::make_shared<Tchebycheff>();
+    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBounds);
+    auto sampling = std::make_shared<UniformRandomSampling>(problem->variableBound[0], problem->variableBound[1]);
+    auto selection = std::make_shared<RandomSelection>();
 
     Moead<double> moead(generationNum, decisionVariableNum, objectiveNum, neighborNum, H, crossover, decomposition, mutation,
                         problem, sampling, selection);

@@ -1,5 +1,4 @@
-#ifndef _RANDOM_SAMPLING_BASE_H
-#define _RANDOM_SAMPLING_BASE_H
+#pragma once
 
 #include <memory>
 
@@ -21,5 +20,3 @@ class RandomSamplingBase : public ISampling<T> {
 };
 
 }  // namespace Eacpp
-
-#endif

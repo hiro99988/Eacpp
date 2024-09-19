@@ -22,11 +22,11 @@ class Rng : public IRng {
 
     double Uniform(double min, double max) override;
     Eigen::ArrayXd Uniform(double min, double max, const int size) override;
-    std::vector<Eigen::ArrayXd> Uniform(double min, double max, const std::tuple<int, int> size) override;
+    std::vector<Eigen::ArrayXd> Uniform(double min, double max, const std::pair<int, int> size) override;
 
     double Random() override;
     Eigen::ArrayXd Random(const int size) override;
-    std::vector<Eigen::ArrayXd> Random(const std::tuple<int, int> size) override;
+    std::vector<Eigen::ArrayXd> Random(const std::pair<int, int> size) override;
 
     std::vector<int> Choice(const std::vector<int>& array, const int size, const bool replace = true) override;
 

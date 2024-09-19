@@ -1,5 +1,4 @@
-#ifndef ISelection_h
-#define ISelection_h
+#pragma once
 
 #include <vector>
 
@@ -12,5 +11,3 @@ struct ISelection {
 };
 
 }  // namespace Eacpp
-
-#endif

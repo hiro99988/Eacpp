@@ -1,7 +1,8 @@
-#ifndef LZ1_h
-#define LZ1_h
+#pragma once
 
+#include <array>
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 #include "Problems/LZBase.h"
 
@@ -21,5 +22,3 @@ class LZ1 : public LZBase {
 };
 
 }  // namespace Eacpp
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef IRNG_H
-#define IRNG_H
+#pragma once
 
 #include <cstdint>
 #include <eigen3/Eigen/Core>
@@ -18,15 +17,13 @@ struct IRng {
 
     virtual double Uniform(double min, double max) = 0;
     virtual Eigen::ArrayXd Uniform(double min, double max, const int size) = 0;
-    virtual std::vector<Eigen::ArrayXd> Uniform(double min, double max, const std::tuple<int, int> size) = 0;
+    virtual std::vector<Eigen::ArrayXd> Uniform(double min, double max, const std::pair<int, int> size) = 0;
 
     virtual double Random() = 0;
     virtual Eigen::ArrayXd Random(const int size) = 0;
-    virtual std::vector<Eigen::ArrayXd> Random(const std::tuple<int, int> size) = 0;
+    virtual std::vector<Eigen::ArrayXd> Random(const std::pair<int, int> size) = 0;
 
     virtual std::vector<int> Choice(const std::vector<int>& array, const int size, const bool replace) = 0;
 };
 
 }  // namespace Eacpp
-
-#endif

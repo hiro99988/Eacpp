@@ -1,5 +1,4 @@
-#ifndef BitFlipMutation_h
-#define BitFlipMutation_h
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <memory>
@@ -17,5 +16,3 @@ class BitFlipMutation : public MutationBase<int> {
 };
 
 }  // namespace Eacpp
-
-#endif

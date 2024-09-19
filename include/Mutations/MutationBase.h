@@ -1,5 +1,4 @@
-#ifndef _MUTATION_BASE_H
-#define _MUTATION_BASE_H
+#pragma once
 
 #include <memory>
 
@@ -23,5 +22,3 @@ class MutationBase : public IMutation<T> {
 };
 
 }  // namespace Eacpp
-
-#endif

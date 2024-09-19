@@ -1,5 +1,4 @@
-#ifndef UniformRandomSampling_h
-#define UniformRandomSampling_h
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <memory>
@@ -32,5 +31,3 @@ class UniformRandomSampling : public RandomSamplingBase<double> {
 };
 
 }  // namespace Eacpp
-
-#endif

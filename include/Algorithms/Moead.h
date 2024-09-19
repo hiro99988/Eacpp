@@ -1,5 +1,4 @@
-#ifndef Moead_H
-#define Moead_H
+#pragma once
 
 #include <algorithm>
 #include <eigen3/Eigen/Dense>
@@ -165,5 +164,3 @@ class Moead {
 };
 
 }  // namespace Eacpp
-
-#endif

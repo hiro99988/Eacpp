@@ -1,8 +1,8 @@
-#ifndef CrossoverBase_H
-#define CrossoverBase_H
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "Crossovers/ICrossover.h"
@@ -43,5 +43,3 @@ class CrossoverBase : public ICrossover<T> {
 };
 
 }  // namespace Eacpp
-
-#endif

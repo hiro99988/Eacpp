@@ -1,5 +1,4 @@
-#ifndef IDeomposition_h
-#define IDeomposition_h
+#pragma once
 
 #include <eigen3/Eigen/Core>
 namespace Eacpp {
@@ -12,5 +11,3 @@ struct IDecomposition {
 };
 
 }  // namespace Eacpp
-
-#endif

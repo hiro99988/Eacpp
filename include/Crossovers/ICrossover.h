@@ -1,5 +1,4 @@
-#ifndef ICrossover_H
-#define ICrossover_H
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <vector>
@@ -15,5 +14,3 @@ struct ICrossover {
 };
 
 }  // namespace Eacpp
-
-#endif

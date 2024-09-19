@@ -3,7 +3,6 @@
 #include <gmock/gmock.h>
 
 #include <eigen3/Eigen/Core>
-#include <vector>
 
 #include "Decompositions/IDecomposition.h"
 

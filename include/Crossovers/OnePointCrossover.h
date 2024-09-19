@@ -1,5 +1,4 @@
-#ifndef OnePointCrossover_H
-#define OnePointCrossover_H
+#pragma once
 
 #include <cstdint>
 #include <eigen3/Eigen/Core>
@@ -8,7 +7,6 @@
 
 #include "Crossovers/CrossoverBase.h"
 #include "Rng/IRng.h"
-#include "Rng/Rng.h"
 
 namespace Eacpp {
 
@@ -32,5 +30,3 @@ class OnePointCrossover : public CrossoverBase<T> {
 };
 
 }  // namespace Eacpp
-
-#endif

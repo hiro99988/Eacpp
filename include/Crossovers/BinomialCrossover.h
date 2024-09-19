@@ -1,5 +1,4 @@
-#ifndef _BINOMIAL_CROSSOVER_H_
-#define _BINOMIAL_CROSSOVER_H_
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <memory>
@@ -7,7 +6,6 @@
 
 #include "Crossovers/CrossoverBase.h"
 #include "Rng/IRng.h"
-#include "Rng/Rng.h"
 namespace Eacpp {
 
 class BinomialCrossover : public CrossoverBase<double> {
@@ -24,5 +22,3 @@ class BinomialCrossover : public CrossoverBase<double> {
 };
 
 }  // namespace Eacpp
-
-#endif

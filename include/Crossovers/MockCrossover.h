@@ -2,6 +2,9 @@
 
 #include <gmock/gmock.h>
 
+#include <eigen3/Eigen/Core>
+#include <vector>
+
 #include "Crossovers/ICrossover.h"
 
 namespace Eacpp {

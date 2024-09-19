@@ -1,10 +1,6 @@
-#ifndef IMutation_h
-#define IMutation_h
+#pragma once
 
 #include <eigen3/Eigen/Core>
-
-#include "Rng/IRng.h"
-#include "Rng/Rng.h"
 
 namespace Eacpp {
 
@@ -16,5 +12,3 @@ struct IMutation {
 };
 
 }  // namespace Eacpp
-
-#endif

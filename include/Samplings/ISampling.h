@@ -1,5 +1,4 @@
-#ifndef ISampling_h
-#define ISampling_h
+#pragma once
 
 #include <eigen3/Eigen/Core>
 #include <vector>
@@ -14,5 +13,3 @@ struct ISampling {
 };
 
 }  // namespace Eacpp
-
-#endif

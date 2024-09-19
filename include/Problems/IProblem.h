@@ -1,5 +1,4 @@
-#ifndef IProblem_h
-#define IProblem_h
+#pragma
 
 #include <eigen3/Eigen/Core>
 #include <vector>
@@ -16,5 +15,3 @@ struct IProblem {
 };
 
 }  // namespace Eacpp
-
-#endif

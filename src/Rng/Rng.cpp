@@ -73,27 +73,27 @@ Eigen::ArrayXd Rng::Uniform(double min, double max, const int size) {
     return result;
 }
 
-std::vector<Eigen::ArrayXd> Rng::Uniform(double min, double max, const std::tuple<int, int> size) {
+std::vector<Eigen::ArrayXd> Rng::Uniform(double min, double max, const std::pair<int, int> size) {
     swapIfMaxLessThanMin(min, max);
     std::uniform_real_distribution<double> dist(min, max);
     std::vector<Eigen::ArrayXd> result;
-    result.reserve(std::get<0>(size));
-    for (int i = 0; i < std::get<0>(size); ++i) {
-        result.push_back(Eigen::ArrayXd::Zero(std::get<1>(size)).unaryExpr([&](double) { return dist(_mt); }));
+    result.reserve(size.first);
+    for (int i = 0; i < size.first; ++i) {
+        result.push_back(Eigen::ArrayXd::Zero(size.second).unaryExpr([&](double) { return dist(_mt); }));
     }
     return result;
 }
 
 double Rng::Random() { return Uniform(0.0, 1.0); }
 Eigen::ArrayXd Rng::Random(const int size) { return Uniform(0.0, 1.0, size); }
-std::vector<Eigen::ArrayXd> Rng::Random(const std::tuple<int, int> size) { return Uniform(0.0, 1.0, size); }
+std::vector<Eigen::ArrayXd> Rng::Random(const std::pair<int, int> size) { return Uniform(0.0, 1.0, size); }
 
 std::vector<int> Rng::Choice(const std::vector<int>& vector, const int size, const bool replace) {
-    auto choicedIndex = Integers(0, vector.size() - 1, size, replace);
+    auto chosenIndex = Integers(0, vector.size() - 1, size, replace);
     std::vector<int> choice;
     choice.reserve(size);
     for (int i = 0; i < size; ++i) {
-        choice.push_back(vector[choicedIndex[i]]);
+        choice.push_back(vector[chosenIndex[i]]);
     }
     return choice;
 }

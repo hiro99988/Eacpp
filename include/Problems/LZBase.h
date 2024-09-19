@@ -1,5 +1,4 @@
-#ifndef LZBase_h
-#define LZBase_h
+#pragma once
 
 #include <array>
 #include <eigen3/Eigen/Core>
@@ -42,5 +41,3 @@ class LZBase : public IProblem<double> {
 };
 
 }  // namespace Eacpp
-
-#endif

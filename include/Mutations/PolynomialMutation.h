@@ -1,5 +1,4 @@
-#ifndef _POLYNOMIAL_MUTATION_H_
-#define _POLYNOMIAL_MUTATION_H_
+#pragma once
 
 #include <array>
 #include <eigen3/Eigen/Core>
@@ -35,12 +34,10 @@ class PolynomialMutation : public MutationBase<double> {
     void PerformMutation(int index, Eigen::ArrayXd& individual, double sigma) const;
     double Sigma() const;
 
-   public:
 #ifdef _TEST_
+   public:
     friend class PolynomialMutationTest;
 #endif
 };
 
 }  // namespace Eacpp
-
-#endif

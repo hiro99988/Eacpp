@@ -1,5 +1,6 @@
-#ifndef Tchebycheff_h
-#define Tchebycheff_h
+#pragma once
+
+#include <eigen3/Eigen/Core>
 
 #include "Decompositions/IDecomposition.h"
 
@@ -12,5 +13,3 @@ class Tchebycheff : public IDecomposition {
 };
 
 }  // namespace Eacpp
-
-#endif
