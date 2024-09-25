@@ -10,6 +10,7 @@
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
 #include "Problems/ZDT1.h"
+#include "Repairs/SamplingRepair.h"
 #include "Samplings/UniformRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
@@ -38,21 +39,22 @@ int main(int argc, char* argv[]) {
 
     int decisionVariableNum = problem->decisionVariablesNum;
     int objectiveNum = problem->objectivesNum;
-    std::vector<std::array<double, 2>> variableBounds = {problem->variableBound};
+    std::vector<std::pair<double, double>> variableBound{problem->variableBound};
 
     auto crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
-    auto decomposition = std::make_shared<Tchebycheff>();
-    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBounds);
-    auto sampling = std::make_shared<UniformRandomSampling>(problem->variableBound[0], problem->variableBound[1]);
+    auto decomposition = std::make_shared<Tchebycheff>(objectiveNum);
+    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBound);
+    auto sampling = std::make_shared<UniformRandomSampling>(problem->variableBound.first, problem->variableBound.second);
+    auto repair = std::make_shared<SamplingRepair<double>>(sampling);
     auto selection = std::make_shared<RandomSelection>();
 
     Moead<double> moead(generationNum, decisionVariableNum, objectiveNum, neighborNum, H, crossover, decomposition, mutation,
-                        problem, sampling, selection);
+                        problem, repair, sampling, selection);
     moead.Run();
 
     std::ofstream ofs("out/data/result.txt");
-    for (const auto& set : moead.objectiveSets) {
-        for (const auto& value : set) {
+    for (const auto& objectives : moead.GetAllObjectives()) {
+        for (const auto& value : objectives) {
             ofs << value << " ";
         }
         ofs << std::endl;
