@@ -62,8 +62,8 @@ struct Individual {
 
     bool IsWeightVectorEqual(const Individual& other) const { return (weightVector == other.weightVector).all(); }
 
-    double CalculateSquaredEuclideanDistance(const Individual& other) const {
-        return (objectives - other.objectives).matrix().squaredNorm();
+    double CalculateSquaredEuclideanDistanceOfWeightVector(const Individual& other) const {
+        return (weightVector - other.weightVector).matrix().squaredNorm();
     }
 };
 
