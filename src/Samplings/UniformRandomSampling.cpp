@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+#include "Individual/Individual.h"
+
 namespace Eacpp {
 
 std::vector<Individuald> UniformRandomSampling::Sample(const int sampleNum, const int variableNum) const {
