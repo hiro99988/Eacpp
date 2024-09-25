@@ -2,14 +2,15 @@
 
 #include <eigen3/Eigen/Core>
 
-#include "Decompositions/IDecomposition.h"
+#include "Decompositions/DecompositionBase.h"
 
 namespace Eacpp {
 
-class Tchebycheff : public IDecomposition {
+class Tchebycheff : public DecompositionBase {
    public:
-    double ComputeObjective(const Eigen::ArrayXd& weight, const Eigen::ArrayXd& objectiveSet,
-                            const Eigen::ArrayXd& referencePoint) const override;
+    Tchebycheff(int objectivesNum) : DecompositionBase(objectivesNum) {}
+
+    double ComputeObjective(const Eigen::ArrayXd& weight, const Eigen::ArrayXd& objectiveSet) const override;
 };
 
 }  // namespace Eacpp
