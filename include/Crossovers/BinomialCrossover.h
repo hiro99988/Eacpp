@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Crossovers/CrossoverBase.h"
+#include "Individual/Individual.h"
 #include "Rng/IRng.h"
 namespace Eacpp {
 
@@ -18,7 +19,7 @@ class BinomialCrossover : public CrossoverBase<double> {
         : CrossoverBase(3, crossoverRate, rng), scalingFactor(scalingFactor) {}
 
    private:
-    Eigen::ArrayXd performCrossover(const std::vector<Eigen::ArrayXd>& parents) const override;
+    Individuald performCrossover(const std::vector<Individuald>& parents) const override;
 };
 
 }  // namespace Eacpp

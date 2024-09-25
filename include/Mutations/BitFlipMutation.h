@@ -3,6 +3,7 @@
 #include <eigen3/Eigen/Core>
 #include <memory>
 
+#include "Individual/Individual.h"
 #include "Mutations/MutationBase.h"
 #include "Rng/IRng.h"
 
@@ -12,7 +13,7 @@ class BitFlipMutation : public MutationBase<int> {
     explicit BitFlipMutation(double mutationRate) : MutationBase(mutationRate) {}
     BitFlipMutation(double mutationRate, std::shared_ptr<IRng> rng) : MutationBase(mutationRate, rng) {}
 
-    void Mutate(Eigen::ArrayXi& individual) const override;
+    void Mutate(Individuali& individual) const override;
 };
 
 }  // namespace Eacpp
