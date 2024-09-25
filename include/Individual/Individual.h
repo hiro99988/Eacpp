@@ -11,7 +11,7 @@ struct Individual {
     Eigen::ArrayX<T> solution;
     Eigen::ArrayXd objectives;
     Eigen::ArrayXd weightVector;
-    std::vector<std::reference_wrapper<Individual<T>>> neighborhood;
+    std::vector<int> neighborhood;
 
     Individual() {}
 
@@ -28,7 +28,7 @@ struct Individual {
         : solution(solution), objectives(objectives), weightVector(weightVector) {}
 
     Individual(const Eigen::ArrayX<T>& solution, const Eigen::ArrayXd& objectives, const Eigen::ArrayXd& weightVector,
-               const std::vector<std::reference_wrapper<Individual<T>>>& neighborhood)
+               const std::vector<int>& neighborhood)
         : solution(solution), objectives(objectives), weightVector(weightVector), neighborhood(neighborhood) {}
 
     Individual(const Individual& other)
@@ -50,10 +50,7 @@ struct Individual {
     bool operator==(const Individual& other) const {
         return (solution == other.solution).all() && (objectives == other.objectives).all() &&
                (weightVector == other.weightVector).all() && neighborhood.size() == other.neighborhood.size() &&
-               std::equal(neighborhood.begin(), neighborhood.end(), other.neighborhood.begin(),
-                          [](const std::reference_wrapper<Individual<T>>& a, const std::reference_wrapper<Individual<T>>& b) {
-                              return &a.get() == &b.get();
-                          });
+               std::equal(neighborhood.begin(), neighborhood.end(), other.neighborhood.begin());
     }
 
     bool operator!=(const Individual& other) const { return !(*this == other); }
@@ -62,6 +59,8 @@ struct Individual {
         solution = other.solution;
         objectives = other.objectives;
     }
+
+    bool IsWeightVectorEqual(const Individual& other) const { return (weightVector == other.weightVector).all(); }
 
     double CalculateSquaredEuclideanDistance(const Individual& other) const {
         return (objectives - other.objectives).matrix().squaredNorm();
