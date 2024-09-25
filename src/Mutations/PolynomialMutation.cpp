@@ -3,10 +3,12 @@
 #include <cmath>
 #include <eigen3/Eigen/Core>
 
+#include "Individual/Individual.h"
+
 namespace Eacpp {
 
-void PolynomialMutation::Mutate(Eigen::ArrayXd& individual) const {
-    for (int i = 0; i < individual.size(); ++i) {
+void PolynomialMutation::Mutate(Individuald& individual) const {
+    for (int i = 0; i < individual.solution.size(); ++i) {
         if (_rng->Random() > mutationRate) {
             continue;
         }
@@ -15,13 +17,13 @@ void PolynomialMutation::Mutate(Eigen::ArrayXd& individual) const {
     }
 }
 
-void PolynomialMutation::PerformMutation(int index, Eigen::ArrayXd& individual, double sigma) const {
+void PolynomialMutation::PerformMutation(int index, Individuald& individual, double sigma) const {
     if (variableBounds.size() == 1) {
-        individual(index) += sigma * (variableBounds[0][1] - variableBounds[0][0]);
+        individual.solution(index) += sigma * (variableBounds[0].second - variableBounds[0].first);
     } else if (index < _lastBoundIndex) {
-        individual(index) += sigma * (variableBounds[index][1] - variableBounds[index][0]);
+        individual.solution(index) += sigma * (variableBounds[index].second - variableBounds[index].first);
     } else {
-        individual(index) += sigma * (variableBounds[_lastBoundIndex][1] - variableBounds[_lastBoundIndex][0]);
+        individual.solution(index) += sigma * (variableBounds[_lastBoundIndex].second - variableBounds[_lastBoundIndex].first);
     }
 }
 

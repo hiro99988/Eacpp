@@ -2,13 +2,15 @@
 
 #include <eigen3/Eigen/Core>
 
+#include "Individual/Individual.h"
+
 namespace Eacpp {
 
 template <typename T>
 struct IMutation {
     virtual ~IMutation() {}
 
-    virtual void Mutate(Eigen::ArrayX<T>& individual) const = 0;
+    virtual void Mutate(Individual<T>& individual) const = 0;
 };
 
 }  // namespace Eacpp

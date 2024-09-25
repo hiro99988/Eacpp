@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "Individual/Individual.h"
 #include "Mutations/IMutation.h"
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
