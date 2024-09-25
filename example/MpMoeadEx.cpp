@@ -34,8 +34,8 @@ int main(int argc, char** argv) {
 
     auto problem = std::make_shared<ZDT1>();
 
-    int decisionVariableNum = problem->decisionNum;
-    int objectiveNum = problem->objectiveNum;
+    int decisionVariableNum = problem->decisionVariablesNum;
+    int objectiveNum = problem->objectivesNum;
     std::vector<std::array<double, 2>> variableBounds = {problem->variableBound};
 
     auto crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
