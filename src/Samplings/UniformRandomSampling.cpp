@@ -6,8 +6,14 @@
 
 namespace Eacpp {
 
-std::vector<Eigen::ArrayXd> UniformRandomSampling::Sample(const int sampleNum, const int variableNum) const {
-    return _rng->Uniform(min, max, {sampleNum, variableNum});
+std::vector<Individuald> UniformRandomSampling::Sample(const int sampleNum, const int variableNum) const {
+    std::vector<Eigen::ArrayXd> solutions = _rng->Uniform(min, max, {sampleNum, variableNum});
+    std::vector<Individuald> individuals;
+    individuals.reserve(sampleNum);
+    for (const auto& solution : solutions) {
+        individuals.emplace_back(solution);
+    }
+    return individuals;
 }
 
 }  // namespace Eacpp

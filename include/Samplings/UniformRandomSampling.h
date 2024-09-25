@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "Individual/Individual.h"
 #include "Rng/IRng.h"
 #include "Samplings/RandomSamplingBase.h"
 
@@ -20,7 +21,7 @@ class UniformRandomSampling : public RandomSamplingBase<double> {
         CheckMinMax(min, max);
     }
 
-    std::vector<Eigen::ArrayXd> Sample(const int sampleNum, const int variableNum) const override;
+    std::vector<Individuald> Sample(const int sampleNum, const int variableNum) const override;
 
    private:
     void CheckMinMax(const int min, const int max) const {

@@ -5,6 +5,7 @@
 #include <eigen3/Eigen/Core>
 #include <vector>
 
+#include "Individual/Individual.h"
 #include "Samplings/ISampling.h"
 
 namespace Eacpp {
@@ -12,7 +13,7 @@ namespace Eacpp {
 template <typename T>
 class MockSampling : public ISampling<T> {
    public:
-    MOCK_CONST_METHOD2_T(Sample, std::vector<Eigen::ArrayX<T>>(const int, const int));
+    MOCK_CONST_METHOD2_T(Sample, std::vector<Individual<T>>(const int, const int));
 };
 
 }  // namespace Eacpp
