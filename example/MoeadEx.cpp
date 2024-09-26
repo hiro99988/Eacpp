@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -19,7 +20,7 @@ using namespace Eacpp;
 int main(int argc, char* argv[]) {
     int generationNum = 500;
     int H = 299;
-    int neighborNum = 20;
+    int neighborNum = 5;
 
     if (argc == 2) {
         generationNum = std::stoi(argv[1]);
@@ -29,7 +30,7 @@ int main(int argc, char* argv[]) {
     } else if (argc == 4) {
         generationNum = std::stoi(argv[1]);
         H = std::stoi(argv[2]);
-        neighborNum = std::stoi(argv[4]);
+        neighborNum = std::stoi(argv[3]);
     } else if (argc >= 5) {
         std::cerr << "Usage: " << argv[0] << " [generationNum] [H] [neighborNum]" << std::endl;
         return 1;
@@ -52,7 +53,9 @@ int main(int argc, char* argv[]) {
                         problem, repair, sampling, selection);
     moead.Run();
 
-    std::ofstream ofs("out/data/result.txt");
+    std::filesystem::create_directories("out/data/");
+    std::filesystem::create_directories("out/data/moead");
+    std::ofstream ofs("out/data/moead/result.txt");
     for (const auto& objectives : moead.GetAllObjectives()) {
         for (const auto& value : objectives) {
             ofs << value << " ";
