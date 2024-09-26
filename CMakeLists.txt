@@ -5,12 +5,14 @@ project(Eacpp CXX)
 include(FetchContent)
 FetchContent_Declare(
     googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip    
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
 )
+
 # 親プロジェクトのコンパイラ・リンカ設定を上書きするのを防ぐ（Windowsのみ）
 if(WIN32)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 endif()
+
 # googletestをターゲットとして使えるようにする
 FetchContent_MakeAvailable(googletest)
 
@@ -27,8 +29,6 @@ set(SRC_FILES
     "${SRC_DIRECTORY}/Mutations/BitFlipMutation.cpp"
     "${SRC_DIRECTORY}/Mutations/PolynomialMutation.cpp"
 
-    "${SRC_DIRECTORY}/Problems/LZ1.cpp"
-    "${SRC_DIRECTORY}/Problems/LZBase.cpp"
     "${SRC_DIRECTORY}/Problems/ZDTBase.cpp"
     "${SRC_DIRECTORY}/Problems/ZDT1.cpp"
 
