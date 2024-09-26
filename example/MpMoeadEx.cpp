@@ -64,19 +64,7 @@ int main(int argc, char** argv) {
         std::cout << "Maximum execution time across all processes: " << maxTime << " seconds" << std::endl;
     }
 
-    auto allObjectives = moead.GetAllObjectives();
-
-    if (rank == 0) {
-        std::filesystem::create_directories("out/data/");
-        std::filesystem::create_directories("out/data/mp_moead");
-        std::ofstream ofs("out/data/mp_moead/result.txt");
-        for (const auto& set : allObjectives) {
-            for (const auto& value : set) {
-                ofs << value << " ";
-            }
-            ofs << std::endl;
-        }
-    }
+    moead.GetAllObjectives();
 
     moead.WriteTransitionOfIdealPoint();
 

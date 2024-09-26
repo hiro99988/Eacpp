@@ -82,7 +82,7 @@ class MpMoead {
     void InitializeMpi();
     void InitializeIsland();
     void Update();
-    std::vector<Eigen::ArrayXd> GetAllObjectives();
+    void GetAllObjectives();
     void WriteTransitionOfIdealPoint();
 
    private:
@@ -566,9 +566,32 @@ std::vector<double> MpMoead<DecisionVariableType>::GatherAllObjectives() {
 }
 
 template <typename DecisionVariableType>
-std::vector<Eigen::ArrayXd> MpMoead<DecisionVariableType>::GetAllObjectives() {
-    std::vector<double> receiveObjectives = GatherAllObjectives();
-    return TransformToEigenArrayX2d(receiveObjectives, objectivesNum);
+void MpMoead<DecisionVariableType>::GetAllObjectives() {
+    // std::vector<double> receiveObjectives = GatherAllObjectives();
+    // return TransformToEigenArrayX2d(receiveObjectives, objectivesNum);
+
+    if (rank == 0) {
+        std::filesystem::create_directories("out/data");
+        std::filesystem::create_directories("out/data/mp_moead/");
+        std::filesystem::create_directories("out/data/mp_moead/objective");
+
+        for (const auto& entry : std::filesystem::directory_iterator("out/data/mp_moead/objective")) {
+            std::filesystem::remove(entry.path());
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    std::string filename = "out/data/mp_moead/objective/objective_" + std::to_string(rank) + ".txt";
+    std::ofstream ofs(filename);
+    for (auto&& individual : individuals) {
+        for (int i = 0; i < individual.second.objectives.size(); i++) {
+            ofs << individual.second.objectives(i);
+            if (i != individual.second.objectives.size() - 1) {
+                ofs << " ";
+            }
+        }
+        ofs << std::endl;
+    }
 }
 
 template <typename DecisionVariableType>
