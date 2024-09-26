@@ -188,9 +188,9 @@ TEST_F(MpMoeadTest, GenerateSolutionIndexes) {
 }
 
 TEST_F(MpMoeadTest, GenerateWeightVectors) {
-    int objectiveNum = 2;
+    int objectivesNum = 2;
     int H = 2;
-    MpMoead<int> moead = MpMoead<int>(0, 0, 0, objectiveNum, 0, 0, 0);
+    MpMoead<int> moead = MpMoead<int>(0, 0, 0, objectivesNum, 0, 0, 0);
     auto actual = GenerateWeightVectors(moead, H);
 
     int expectedSize = 3;
@@ -199,7 +199,7 @@ TEST_F(MpMoeadTest, GenerateWeightVectors) {
     std::vector<std::vector<double>> expected = {{0.0, 1.0}, {0.5, 0.5}, {1.0, 0.0}};
     for (int i = 0; i < actual.size(); i++) {
         for (int j = 0; j < actual[i].size(); j++) {
-            EXPECT_EQ(actual[i].size(), objectiveNum);
+            EXPECT_EQ(actual[i].size(), objectivesNum);
             EXPECT_EQ(actual[i][j], expected[i][j]);
         }
     }
@@ -207,8 +207,8 @@ TEST_F(MpMoeadTest, GenerateWeightVectors) {
 
 TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
     int totalPopulationSize = 3;
-    int objectiveNum = 2;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, 0, 0, 0);
+    int objectivesNum = 2;
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectivesNum, 0, 0, 0);
     std::vector<double> weightVectors = {
         10.0, 5.0,   //
         1.0,  20.0,  //
@@ -229,8 +229,8 @@ TEST_F(MpMoeadTest, CalculateEuclideanDistanceBetweenEachWeightVector) {
 
 TEST_F(MpMoeadTest, CalculateNeighborhoodIndexes) {
     int totalPopulationSize = 3;
-    int neighborNum = 2;
-    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, neighborNum, 0, 0);
+    int neighborhoodSize = 2;
+    auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, neighborhoodSize, 0, 0);
     std::vector<std::vector<std::pair<double, int>>> euclideanDistances = {{{0.0, 0}, {306.0, 1}, {50.0, 2}},   //
                                                                            {{306.0, 0}, {0.0, 1}, {296.0, 2}},  //
                                                                            {{50.0, 0}, {296.0, 1}, {0.0, 2}}};
@@ -241,9 +241,9 @@ TEST_F(MpMoeadTest, CalculateNeighborhoodIndexes) {
 
 TEST_F(MpMoeadTest, GenerateNeighborhoods) {
     int totalPopulationSize = 3;
-    int objectiveNum = 2;
-    int neighborNum = 2;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectiveNum, neighborNum, 0, 0);
+    int objectivesNum = 2;
+    int neighborhoodSize = 2;
+    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, objectivesNum, neighborhoodSize, 0, 0);
     std::vector<double> allWeightVectors = {
         10.0, 5.0,   //
         1.0,  20.0,  //
@@ -256,7 +256,7 @@ TEST_F(MpMoeadTest, GenerateNeighborhoods) {
 
 TEST_F(MpMoeadTest, GenerateExternalNeighborhood) {
     int totalPopulationSize = 4;
-    int neighborNum = 2;
+    int neighborhoodSize = 2;
     auto moead = MpMoead<int>(totalPopulationSize, 0, 0, 0, 2, 0, 0);
     std::vector<int> neighborhoodIndexes = {0, 1, 1, 0, 2, 3, 3, 2};
     std::vector<int> populationSizes = {2, 1, 1};
@@ -268,8 +268,8 @@ TEST_F(MpMoeadTest, GenerateExternalNeighborhood) {
 }
 
 TEST_F(MpMoeadTest, GetWeightVectorsMatchingIndexes) {
-    int objectiveNum = 2;
-    auto moead = MpMoead<int>(0, 0, 0, objectiveNum, 0, 0, 0);
+    int objectivesNum = 2;
+    auto moead = MpMoead<int>(0, 0, 0, objectivesNum, 0, 0, 0);
     std::vector<double> weightVectors = {
         1.0, 2.0,  //
         3.0, 4.0,  //
