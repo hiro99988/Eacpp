@@ -30,7 +30,6 @@ class MpMoeadTestM : public ::testing::Test {
     std::vector<int> GetExternalSolutionIndexes(MpMoead<T>& moead) {
         return moead.externalSolutionIndexes;
     }
-    // TODO: Individualもテストする
     template <typename T>
     std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {
         return moead.individuals;
