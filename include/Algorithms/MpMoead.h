@@ -29,32 +29,6 @@ namespace Eacpp {
 
 template <typename DecisionVariableType>
 class MpMoead {
-   private:
-    // struct Individual {
-    //     Eigen::ArrayX<DecisionVariableType> solution;
-    //     Eigen::ArrayXd objectives;
-    //     std::vector<int> neighborhood;
-
-    //     Individual() {}
-
-    //     Individual(std::vector<int> neighborhood) : neighborhood(neighborhood) {}
-
-    //     Individual(Eigen::ArrayX<DecisionVariableType> solution, Eigen::ArrayXd objectives, std::vector<int> neighborhood)
-    //         : solution(solution), objectives(objectives), neighborhood(neighborhood) {}
-
-    //     Individual(const Individual& individual)
-    //         : solution(individual.solution), objectives(individual.objectives), neighborhood(individual.neighborhood) {}
-
-    //     Individual& operator=(const Individual& individual) {
-    //         solution = individual.solution;
-    //         objectives = individual.objectives;
-    //         neighborhood = individual.neighborhood;
-    //         return *this;
-    //     }
-
-    //     bool IsInternal() const { return !neighborhood.empty(); }
-    // };
-
    public:
     MpMoead(int totalPopulationSize, int generationNum, int decisionVariablesNum, int objectivesNum, int neighborhoodSize,
             int migrationInterval, int divisionsNumOfWeightVector, std::shared_ptr<ICrossover<DecisionVariableType>> crossover,
