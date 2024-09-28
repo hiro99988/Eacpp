@@ -555,7 +555,7 @@ void MpMoead<DecisionVariableType>::GetAllObjectives() {
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    std::string filename = "out/data/mp_moead/objective/objective_" + std::to_string(rank) + ".txt";
+    std::string filename = "out/data/mp_moead/objective/objective-" + std::to_string(rank) + ".txt";
     std::ofstream ofs(filename);
     for (auto&& individual : individuals) {
         for (int i = 0; i < individual.second.objectives.size(); i++) {
@@ -581,7 +581,7 @@ void MpMoead<DecisionVariableType>::WriteTransitionOfIdealPoint() {
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    std::string filename = "out/data/mp_moead/ideal_point/ideal_point_" + std::to_string(rank) + ".txt";
+    std::string filename = "out/data/mp_moead/ideal_point/ideal_point-" + std::to_string(rank) + ".txt";
     std::ofstream ofs(filename);
     for (auto&& idealPoint : transitionOfIdealPoint) {
         for (int i = 0; i < idealPoint.size(); i++) {
