@@ -1,25 +1,34 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 
 
 def main():
-    # ディレクトリ内の全ファイルを取得
-    files = os.listdir("out/data/mp_moead/ideal_point")
+    data_dir = "out/data/mp_moead/ideal_point"
+    files = sorted(
+        [
+            f
+            for f in os.listdir(data_dir)
+            if f.startswith("ideal_point-") and f.endswith(".txt")
+        ],
+        key=lambda x: int(x.split("-")[1].split(".")[0]),
+    )
 
-    # 色のリスト
-    colors = ["green", "red"]
+    for file in files:
+        file_path = os.path.join(data_dir, file)
+        data = []
+        with open(file_path, "r") as f:
+            for line in f:
+                x, y = map(float, line.strip().split())
+                data.append((x, y))
 
-    # 各ファイルのデータをプロット
-    for i, file in enumerate(files):
-        file_path = os.path.join("out/data/mp_moead/ideal_point", file)
-        data = np.loadtxt(file_path)
-        plt.scatter(data[:, 0], data[:, 1], s=10, color=cm.hsv(i / len(files)), label=i)
+        x_vals, y_vals = zip(*data)
+        label = file.split("-")[1].split(".")[0]
+        plt.scatter(x_vals, y_vals, label=label, s=15)
 
+    plt.xlabel("X-axis")
+    plt.ylabel("Y-axis")
     plt.legend()
-
-    # プロットの表示
+    plt.title("Ideal Point Data Points")
     plt.show()
 
 
