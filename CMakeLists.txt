@@ -31,5 +31,5 @@ target_link_libraries(Eacpp MPI::MPI_CXX gtest_main gmock_main)
 
 target_include_directories(Eacpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/example")
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/examples")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
