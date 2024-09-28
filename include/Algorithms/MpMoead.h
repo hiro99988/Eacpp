@@ -541,9 +541,6 @@ std::vector<double> MpMoead<DecisionVariableType>::GatherAllObjectives() {
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::GetAllObjectives() {
-    // std::vector<double> receiveObjectives = GatherAllObjectives();
-    // return TransformToEigenArrayX2d(receiveObjectives, objectivesNum);
-
     if (rank == 0) {
         std::filesystem::create_directories("out/data");
         std::filesystem::create_directories("out/data/mp_moead/");
