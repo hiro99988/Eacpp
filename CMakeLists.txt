@@ -20,22 +20,7 @@ enable_testing()
 
 set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-# List of source files
-set(SRC_FILES
-    "${SRC_DIRECTORY}/Crossovers/BinomialCrossover.cpp"
-
-    "${SRC_DIRECTORY}/Decompositions/Tchebycheff.cpp"
-
-    "${SRC_DIRECTORY}/Mutations/BitFlipMutation.cpp"
-    "${SRC_DIRECTORY}/Mutations/PolynomialMutation.cpp"
-
-    "${SRC_DIRECTORY}/Problems/ZDTBase.cpp"
-    "${SRC_DIRECTORY}/Problems/ZDT1.cpp"
-
-    "${SRC_DIRECTORY}/Rng/Rng.cpp"
-
-    "${SRC_DIRECTORY}/Samplings/UniformRandomSampling.cpp"
-)
+file(GLOB_RECURSE SRC_FILES "${SRC_DIRECTORY}/*.cpp")
 
 add_library(Eacpp STATIC "${SRC_FILES}")
 
