@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <eigen3/Eigen/Core>
+#include <iostream>
 #include <vector>
 
 namespace Eacpp {
-
 template <typename T>
 struct Individual {
     Eigen::ArrayX<T> solution;
@@ -53,14 +53,32 @@ struct Individual {
                std::equal(neighborhood.begin(), neighborhood.end(), other.neighborhood.begin());
     }
 
-    bool operator!=(const Individual& other) const { return !(*this == other); }
+    bool operator!=(const Individual& other) const {
+        return !(*this == other);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Individual& individual) {
+        os << "Individual: { ";
+        os << "solution: { " << individual.solution.transpose() << " }, ";
+        os << "objectives: { " << individual.objectives.transpose() << " }, ";
+        os << "weightVector: { " << individual.weightVector.transpose() << " }, ";
+        os << "neighborhood: { ";
+        for (const auto& neighbor : individual.neighborhood) {
+            os << neighbor << " ";
+        }
+        os << "} ";
+        os << "}\n";
+        return os;
+    }
 
     void UpdateFrom(const Individual& other) {
         solution = other.solution;
         objectives = other.objectives;
     }
 
-    bool IsWeightVectorEqual(const Individual& other) const { return (weightVector == other.weightVector).all(); }
+    bool IsWeightVectorEqual(const Individual& other) const {
+        return (weightVector == other.weightVector).all();
+    }
 
     double CalculateSquaredEuclideanDistanceOfWeightVector(const Individual& other) const {
         return (weightVector - other.weightVector).matrix().squaredNorm();
