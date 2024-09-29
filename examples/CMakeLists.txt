@@ -13,3 +13,6 @@ target_link_libraries(MoeadEx.out Eacpp)
 
 add_executable(MpMoeadEx.out MpMoeadEx.cpp)
 target_link_libraries(MpMoeadEx.out Eacpp MPI::MPI_CXX)
+
+add_executable(Test.out Test.cpp)
+target_link_libraries(Test.out Eacpp)
