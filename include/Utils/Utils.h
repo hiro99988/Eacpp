@@ -4,6 +4,7 @@
 #include <eigen3/Eigen/Core>
 #include <iostream>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 namespace Eacpp {
@@ -112,6 +113,23 @@ std::vector<Eigen::ArrayX<T>> TransformToEigenArrayX2d(std::vector<T> &vec1d, in
         transformed[i] = Eigen::Map<Eigen::ArrayX<T>>(vec1d.data() + i * separation, separation);
     }
     return transformed;
+}
+
+inline void CalculateMeanAndVariance(const std::vector<Eigen::ArrayXd> &data, double &mean, double &variance) {
+    double sum = 0.0;
+    double sumSquared = 0.0;
+    int totalElements = 0;
+
+    for (const auto &array : data) {
+        for (int i = 0; i < array.size(); ++i) {
+            sum += array(i);
+            sumSquared += array(i) * array(i);
+        }
+        totalElements += array.size();
+    }
+
+    mean = sum / totalElements;
+    variance = (sumSquared / totalElements) - (mean * mean);
 }
 
 }  // namespace Eacpp

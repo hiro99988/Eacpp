@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "Rng/Rng.h"
+#include "Utils/Utils.h"
+
 namespace Eacpp::Test {
 
 TEST(RngTest, IntegerMax0) {
@@ -146,15 +148,22 @@ TEST(RngTest, UniformSize10) {
 }
 
 TEST(RngTest, UniformSize10x10) {
+    constexpr double min = 0.0;
+    constexpr double max = 1.0;
+    constexpr std::pair<int, int> size = {1000, 10};
+    constexpr double expectedMean = (min + max) / 2;
+    constexpr double expectedVariance = (max - min) * (max - min) / 12;
+
     Rng rng;
-    double expectedMin = 0.0;
-    double expectedMax = 1.0;
-    std::pair<int, int> size(10, 10);
-    std::vector<Eigen::ArrayXd> actual = rng.Uniform(expectedMin, expectedMax, size);
+    std::vector<Eigen::ArrayXd> actual = rng.Uniform(min, max, size);
+
+    double mean, variance;
+    CalculateMeanAndVariance(actual, mean, variance);
+
     ASSERT_EQ(std::get<0>(size), actual.size());
     ASSERT_EQ(std::get<1>(size), actual[0].size());
-    ASSERT_TRUE(std::all_of(actual.begin(), actual.end(), [&](Eigen::ArrayXd a) { return (a >= expectedMin).all(); }));
-    ASSERT_TRUE(std::all_of(actual.begin(), actual.end(), [&](Eigen::ArrayXd a) { return (a <= expectedMax).all(); }));
+    ASSERT_NEAR(expectedMean, mean, 0.01);
+    ASSERT_NEAR(expectedVariance, variance, 0.01);
 }
 
 TEST(RngTest, ChoiceInt) {
