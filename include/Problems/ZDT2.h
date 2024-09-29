@@ -2,6 +2,7 @@
 
 #include <eigen3/Eigen/Core>
 
+#include "Problems/BenchmarkFactory.h"
 #include "Problems/ZDTBase.h"
 
 namespace Eacpp {
@@ -20,5 +21,7 @@ class ZDT2 : public ZDTBase {
     friend class ZDT2Test;
 #endif
 };
+
+REGISTER_BENCHMARK_REFLECTION(ZDT2)
 
 }  // namespace Eacpp
