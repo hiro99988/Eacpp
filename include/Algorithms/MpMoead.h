@@ -106,8 +106,8 @@ class MpMoead {
     void InitializeIdealPoint();
     void MakeLocalCopyOfExternalIndividuals();
     std::vector<Individual<DecisionVariableType>> SelectParents(int index);
-    Individual<DecisionVariableType> GenerateNewSolution(int index);
-    void UpdateNeighboringSolutions(int index, Individual<DecisionVariableType>& newIndividual);
+    Individual<DecisionVariableType> GenerateNewIndividual(int index);
+    void UpdateNeighboringIndividuals(int index, Individual<DecisionVariableType>& newIndividual);
 
     void SendMessage();
     void ReceiveMessage();
@@ -210,13 +210,13 @@ void MpMoead<DecisionVariableType>::Update() {
 
     for (int interval = 0; interval < migrationInterval; interval++) {
         for (auto&& i : solutionIndexes) {
-            Individual<DecisionVariableType> newIndividual = GenerateNewSolution(i);
+            Individual<DecisionVariableType> newIndividual = GenerateNewIndividual(i);
             if (!problem->IsFeasible(newIndividual)) {
                 repair->Repair(newIndividual);
             }
             problem->ComputeObjectiveSet(newIndividual);
             decomposition->UpdateIdealPoint(newIndividual.objectives);
-            UpdateNeighboringSolutions(i, newIndividual);
+            UpdateNeighboringIndividuals(i, newIndividual);
         }
     }
 
@@ -392,7 +392,7 @@ std::vector<Individual<DecisionVariableType>> MpMoead<DecisionVariableType>::Sel
 }
 
 template <typename DecisionVariableType>
-Individual<DecisionVariableType> MpMoead<DecisionVariableType>::GenerateNewSolution(int index) {
+Individual<DecisionVariableType> MpMoead<DecisionVariableType>::GenerateNewIndividual(int index) {
     std::vector<Individual<DecisionVariableType>> parents = SelectParents(index);
     Individual<DecisionVariableType> newIndividual = crossover->Cross(parents);
     mutation->Mutate(newIndividual);
@@ -400,7 +400,7 @@ Individual<DecisionVariableType> MpMoead<DecisionVariableType>::GenerateNewSolut
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::UpdateNeighboringSolutions(int index, Individual<DecisionVariableType>& newIndividual) {
+void MpMoead<DecisionVariableType>::UpdateNeighboringIndividuals(int index, Individual<DecisionVariableType>& newIndividual) {
     for (auto&& i : individuals[index].neighborhood) {
         double newSubObjective = decomposition->ComputeObjective(individuals[i].weightVector, newIndividual.objectives);
         double oldSubObjective = decomposition->ComputeObjective(individuals[i].weightVector, individuals[i].objectives);

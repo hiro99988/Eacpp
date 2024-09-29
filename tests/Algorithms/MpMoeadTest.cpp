@@ -143,8 +143,8 @@ class MpMoeadTest : public ::testing::Test {
         return moead.SelectParents(index);
     }
     template <typename T>
-    Eigen::ArrayX<T> GenerateNewSolution(MpMoead<T>& moead, int index) {
-        return moead.GenerateNewSolution(index);
+    Eigen::ArrayX<T> GenerateNewIndividual(MpMoead<T>& moead, int index) {
+        return moead.GenerateNewIndividual(index);
     }
     template <typename T>
     void RepairSolution(MpMoead<T>& moead, Eigen::ArrayX<T>& solution) {
@@ -159,9 +159,9 @@ class MpMoeadTest : public ::testing::Test {
         moead.UpdateSolution(index, solution, objectiveSet);
     }
     template <typename T>
-    void UpdateNeighboringSolutions(MpMoead<T>& moead, int index, Eigen::ArrayX<T>& solution, Eigen::ArrayXd& objectiveSet,
-                                    std::unordered_map<int, typename MpMoead<T>::Individual> externalIndividualCopies) {
-        moead.UpdateNeighboringSolutions(index, solution, objectiveSet, externalIndividualCopies);
+    void UpdateNeighboringIndividuals(MpMoead<T>& moead, int index, Eigen::ArrayX<T>& solution, Eigen::ArrayXd& objectiveSet,
+                                      std::unordered_map<int, typename MpMoead<T>::Individual> externalIndividualCopies) {
+        moead.UpdateNeighboringIndividuals(index, solution, objectiveSet, externalIndividualCopies);
     }
 };
 
@@ -385,7 +385,7 @@ TEST_F(MpMoeadTest, SelectParents) {
     }
 }
 
-TEST_F(MpMoeadTest, GenerateNewSolution) {
+TEST_F(MpMoeadTest, GenerateNewIndividual) {
     EXPECT_CALL(*mockSelection, Select(_, _)).WillRepeatedly(Return(std::vector<int>{1}));
 
     Eigen::ArrayXi expected = Eigen::ArrayXi::LinSpaced(2, 10, 11);
@@ -400,7 +400,7 @@ TEST_F(MpMoeadTest, GenerateNewSolution) {
     AddIndividual(moead, 0, solution0, Eigen::ArrayXd(), {1});
     AddIndividual(moead, 1, solution1, Eigen::ArrayXd(), {0});
 
-    auto actual = GenerateNewSolution(moead, 0);
+    auto actual = GenerateNewIndividual(moead, 0);
 
     EXPECT_TRUE((actual == expected).all());
 }
@@ -470,6 +470,6 @@ TEST_F(MpMoeadTest, UpdateSolution) {
     EXPECT_EQ(updatedSolutionIndexes[0], index);
 }
 
-TEST_F(MpMoeadTest, UpdateNeighboringSolutions) {}
+TEST_F(MpMoeadTest, UpdateNeighboringIndividuals) {}
 
 }  // namespace Eacpp::Test
