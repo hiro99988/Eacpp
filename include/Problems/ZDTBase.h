@@ -13,11 +13,15 @@ namespace Eacpp {
 
 class ZDTBase : public IProblem<double>, public IBenchmark {
    public:
+    const double gOfParetoFront;
+
     int decisionVariablesNum;
     int objectivesNum = 2;
     std::pair<double, double> variableBound = {0.0, 1.0};
 
-    ZDTBase(int decisionVariablesNum) : decisionVariablesNum(decisionVariablesNum) {}
+    ZDTBase(int decisionVariablesNum) : decisionVariablesNum(decisionVariablesNum), gOfParetoFront(1.0) {}
+    ZDTBase(int decisionVariablesNum, double gOfParetoFront)
+        : decisionVariablesNum(decisionVariablesNum), gOfParetoFront(gOfParetoFront) {}
 
     void ComputeObjectiveSet(Individuald& individual) const override;
     bool IsFeasible(const Individuald& individual) const override;
@@ -26,7 +30,6 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     std::vector<Eigen::ArrayXd> GenerateParetoFront(int pointsNum) const override;
 
    protected:
-    virtual double GetGOfParetoFront() const = 0;
     virtual double F1(double x1) const = 0;
     virtual double G(const Eigen::ArrayXd& X) const = 0;
     virtual double F2(double f1, double g) const = 0;

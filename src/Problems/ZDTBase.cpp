@@ -33,12 +33,11 @@ std::vector<bool> ZDTBase::EvaluateConstraints(const Individuald& individual) co
 }
 
 std::vector<Eigen::ArrayXd> ZDTBase::GenerateParetoFront(int pointsNum) const {
-    constexpr double g = 1.0;
     std::vector<double> x = Ranged(variableBound.first, variableBound.second, 1.0 / (pointsNum - 1));
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(objectivesNum));
     for (int i = 0; i < pointsNum; i++) {
         double f1 = F1(x[i]);
-        result[i] << f1, F2(f1, g);
+        result[i] << f1, F2(f1, gOfParetoFront);
     }
     return result;
 }
