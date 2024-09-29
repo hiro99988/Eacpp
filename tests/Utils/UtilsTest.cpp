@@ -45,6 +45,19 @@ TEST(UtilsTest, Rangeea) {
     }
 }
 
+TEST(UtilsTest, Ranged) {
+    double start = 1.1;
+    double end = 10.1;
+    for (double step = 1.1; step <= end; step += 1.1) {
+        std::vector<double> actual = Ranged(start, end, step);
+
+        double expected = start;
+        for (int i = 0; i < actual.size(); ++i, expected += step) {
+            ASSERT_DOUBLE_EQ(expected, actual[i]);
+        }
+    }
+}
+
 TEST(UtilsTest, Product) {
     std::vector<int> choices = {1, 2, 3};
     int repeat = 2;
