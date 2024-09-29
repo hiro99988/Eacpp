@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const std::filesystem::path outDir = "ground_truth/pareto_fronts/";
+    const std::filesystem::path outDir = "data/ground_truth/pareto_fronts/";
     const std::filesystem::path targetFile = "data/inputs/benchmarks/TargetProblems.txt";
 
     std::ifstream infile(targetFile);
