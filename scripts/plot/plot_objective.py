@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def main():
@@ -13,6 +14,18 @@ def main():
         key=lambda x: int(x.split("-")[1].split(".")[0]),
     )
 
+    pareto_front = np.loadtxt(
+        "data/ground_truth/pareto_fronts/ZDT1_300.csv", delimiter=","
+    )
+    plt.plot(
+        pareto_front[:, 0],
+        pareto_front[:, 1],
+        color="lightgray",
+        linestyle="-",
+        label="Pareto Front",
+        zorder=1,
+    )
+
     for file in files:
         file_path = os.path.join(data_dir, file)
         data = []
@@ -23,7 +36,7 @@ def main():
 
         x_vals, y_vals = zip(*data)
         label = file.split("-")[1].split(".")[0]
-        plt.scatter(x_vals, y_vals, label=label, s=15)
+        plt.scatter(x_vals, y_vals, label=label, s=15, zorder=2)
 
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
