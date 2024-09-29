@@ -7,10 +7,11 @@
 #include <vector>
 
 #include "Individual/Individual.h"
+#include "Problems/IBenchmark.h"
 
 namespace Eacpp {
 
-class ZDTBase : public IProblem<double> {
+class ZDTBase : public IProblem<double>, public IBenchmark {
    public:
     int decisionVariablesNum;
     int objectivesNum = 2;
@@ -22,7 +23,10 @@ class ZDTBase : public IProblem<double> {
     bool IsFeasible(const Individuald& individual) const override;
     std::vector<bool> EvaluateConstraints(const Individuald& individual) const override;
 
+    std::vector<Eigen::ArrayXd> GenerateParetoFront(int pointsNum) const override;
+
    protected:
+    virtual double GetGOfParetoFront() const = 0;
     virtual double F1(double x1) const = 0;
     virtual double G(const Eigen::ArrayXd& X) const = 0;
     virtual double F2(double f1, double g) const = 0;
