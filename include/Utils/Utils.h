@@ -29,6 +29,14 @@ inline Eigen::ArrayXi Rangeea(const int start, const int end, const int step) {
     return tmp;
 }
 
+inline std::vector<double> Ranged(const double start, const double end, const double step) {
+    std::vector<double> tmp;
+    for (double i = start; i <= end; i += step) {
+        tmp.push_back(i);
+    }
+    return tmp;
+}
+
 namespace Utils {
 
 template <typename T>
