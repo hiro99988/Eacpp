@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 
         for (const auto& point : paretoFront) {
             for (int i = 0; i < point.size(); ++i) {
-                outfile << point[i];
+                outfile << point(i);
                 if (i < point.size() - 1) {
                     outfile << ",";
                 }
