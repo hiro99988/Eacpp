@@ -22,26 +22,22 @@ def main():
     )
     args = parser.parse_args()
 
+    # ファイルの拡張子をチェック
+    _, file_extension = os.path.splitext(args.path)
     # データの読み込み
-    data = np.loadtxt(args.path)
+    if file_extension == ".csv":
+        data = np.loadtxt(args.path, delimiter=",")
+    elif file_extension == ".txt":
+        data = np.loadtxt(args.path)
+    else:
+        print("Invalid file extension")
+        return
 
     # プロット
     plt.scatter(data[:, 0], data[:, 1], s=1)
     plt.title(args.title)
     plt.xlabel(args.xlabel)
     plt.ylabel(args.ylabel)
-
-    # ディレクトリ内の全ファイルを取得
-    # files = os.listdir("out/data/ideal_point")
-
-    # # 色のリスト
-    # colors = ["green", "red"]
-
-    # # 各ファイルのデータをプロット
-    # for i, file in enumerate(files):
-    #     file_path = os.path.join("out/data/ideal_point", file)
-    #     data = np.loadtxt(file_path)
-    #     plt.scatter(data[:, 0], data[:, 1], s=3, color=cm.hsv(i / len(files)))
 
     # プロットの保存
     if args.save == "y":
