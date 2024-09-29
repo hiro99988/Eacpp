@@ -2,7 +2,7 @@
 
 #include <eigen3/Eigen/Core>
 
-#include "Problems/BenchmarkFactory.h"
+#include "Problems/BenchmarkReflection.h"
 #include "Problems/ZDTBase.h"
 
 namespace Eacpp {
