@@ -20,7 +20,7 @@ using namespace Eacpp;
 int main(int argc, char* argv[]) {
     int generationNum = 500;
     int H = 299;
-    int neighborNum = 5;
+    int neighborNum = 21;
 
     if (argc == 2) {
         generationNum = std::stoi(argv[1]);
