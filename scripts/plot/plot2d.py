@@ -33,8 +33,20 @@ def main():
         print("Invalid file extension")
         return
 
+    pareto_front = np.loadtxt(
+        "data/ground_truth/pareto_fronts/ZDT1_300.csv", delimiter=","
+    )
+    plt.plot(
+        pareto_front[:, 0],
+        pareto_front[:, 1],
+        color="lightgray",
+        linestyle="-",
+        label="Pareto Front",
+        zorder=1,
+    )
+
     # プロット
-    plt.scatter(data[:, 0], data[:, 1], s=1)
+    plt.scatter(data[:, 0], data[:, 1], s=1, zorder=2)
     plt.title(args.title)
     plt.xlabel(args.xlabel)
     plt.ylabel(args.ylabel)

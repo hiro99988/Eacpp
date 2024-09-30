@@ -42,7 +42,12 @@ def main():
     plt.ylabel("Y-axis")
     plt.legend()
     plt.title("Objective Data Points")
-    plt.show()
+    # plt.show()
+
+    save_dir = "out/data/mp_moead/plots/objective"
+    os.makedirs(save_dir, exist_ok=True)
+    output_path = os.path.join(save_dir, "1_500_17_5_299.png")
+    plt.savefig(output_path)
 
 
 if __name__ == "__main__":

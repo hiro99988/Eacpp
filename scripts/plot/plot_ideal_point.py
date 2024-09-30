@@ -23,13 +23,23 @@ def main():
 
         x_vals, y_vals = zip(*data)
         label = file.split("-")[1].split(".")[0]
-        plt.scatter(x_vals, y_vals, label=label, s=15)
+        plt.plot(
+            x_vals,
+            y_vals,
+            label=label,
+            linestyle="-",
+        )
 
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
     plt.legend()
     plt.title("Ideal Point Data Points")
-    plt.show()
+    # plt.show()
+
+    save_dir = "out/data/mp_moead/plots/ideal_point"
+    os.makedirs(save_dir, exist_ok=True)
+    output_path = os.path.join(save_dir, "1_500_17_5_299.png")
+    plt.savefig(output_path)
 
 
 if __name__ == "__main__":
