@@ -1,4 +1,5 @@
 #include <array>
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -51,7 +52,14 @@ int main(int argc, char* argv[]) {
 
     Moead<double> moead(generationNum, decisionVariableNum, objectiveNum, neighborNum, H, crossover, decomposition, mutation,
                         problem, repair, sampling, selection);
+
+    auto start = std::chrono::system_clock::now();
+
     moead.Run();
+
+    auto end = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "Execution time: " << duration << "ms" << std::endl;
 
     std::filesystem::create_directories("out/data/");
     std::filesystem::create_directories("out/data/moead");
