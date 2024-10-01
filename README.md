@@ -13,7 +13,7 @@
   - Mutations
   - Problems
   - Repairs
-  - Rng
+  - Rng - 乱数クラス
   - Samplings
   - Selections
   - Utils - 便利関数
