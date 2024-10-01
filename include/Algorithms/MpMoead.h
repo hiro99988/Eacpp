@@ -28,6 +28,10 @@
 
 namespace Eacpp {
 
+constexpr int maxBufferSize = 1000;
+constexpr int dataSizeTag = 0;
+constexpr int messageTag = 1;
+
 template <typename DecisionVariableType>
 class MpMoead {
    public:
@@ -117,7 +121,8 @@ class MpMoead {
 
     std::unordered_map<int, std::vector<double>> CreateMessages();
     std::vector<int> GetRanksToReceiveMessages();
-    std::vector<std::vector<double>> Migration();
+    void SendMessages();
+    std::vector<std::vector<double>> ReceiveMessages();
     void UpdateWithMessage(std::vector<double>& message);
     std::vector<double> GatherAllObjectives();
 
@@ -230,7 +235,8 @@ void MpMoead<DecisionVariableType>::Update() {
         }
     }
 
-    auto messages = Migration();
+    SendMessages();
+    auto messages = ReceiveMessages();
     updatedSolutionIndexes.clear();
     for (auto&& message : messages) {
         UpdateWithMessage(message);
@@ -497,9 +503,9 @@ std::vector<int> MpMoead<DecisionVariableType>::GetRanksToReceiveMessages() {
 }
 
 template <typename DecisionVariableType>
-std::vector<std::vector<double>> MpMoead<DecisionVariableType>::Migration() {
-    static std::array<std::vector<int>, 1000> sendDataSizesBuffers;
-    static std::array<std::unordered_map<int, std::vector<double>>, 1000> sendMessageBuffers;
+void MpMoead<DecisionVariableType>::SendMessages() {
+    static std::array<std::vector<int>, maxBufferSize> sendDataSizesBuffers;
+    static std::array<std::unordered_map<int, std::vector<double>>, maxBufferSize> sendMessageBuffers;
     static int sendDataSizesBufferIndex = 0;
     static int sendMessageBufferIndex = 0;
     sendDataSizesBufferIndex = (sendDataSizesBufferIndex + 1) % sendDataSizesBuffers.size();
@@ -516,20 +522,24 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::Migration() {
     for (auto&& [dest, message] : sendMessages) {
         sendDataSizes.push_back(message.size());
         sendDataSizeRequests.push_back(MPI_Request());
-        MPI_Isend(&sendDataSizes.back(), 1, MPI_INT, dest, 0, MPI_COMM_WORLD, &sendDataSizeRequests.back());
+        MPI_Isend(&sendDataSizes.back(), 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &sendDataSizeRequests.back());
 
         sendMessageRequests.push_back(MPI_Request());
-        MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, 1, MPI_COMM_WORLD, &sendMessageRequests.back());
+        MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD,
+                  &sendMessageRequests.back());
     }
+}
 
+template <typename DecisionVariableType>
+std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages() {
     auto ranksToReceiveMessages = GetRanksToReceiveMessages();
 
     std::vector<std::vector<double>> receiveMessages;
     for (auto&& i : ranksToReceiveMessages) {
         int receiveDataSize;
-        MPI_Recv(&receiveDataSize, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&receiveDataSize, 1, MPI_INT, i, dataSizeTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         receiveMessages.push_back(std::vector<double>(receiveDataSize));
-        MPI_Recv(receiveMessages.back().data(), receiveDataSize, MPI_DOUBLE, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(receiveMessages.back().data(), receiveDataSize, MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
     return receiveMessages;
