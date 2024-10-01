@@ -516,11 +516,11 @@ void MpMoead<DecisionVariableType>::SendMessages() {
     sendMessages = CreateMessages();
 
     // メッセージを送信する
+    MPI_Request request;
     for (auto&& [dest, message] : sendMessages) {
         sendDataSizes.push_back(message.size());
-        MPI_Isend(&sendDataSizes.back(), 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &sendDataSizeRequests.back());
-        MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD,
-                  &sendMessageRequests.back());
+        MPI_Isend(&sendDataSizes.back(), 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &request);
+        MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
     }
 }
 
