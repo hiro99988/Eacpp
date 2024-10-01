@@ -1,5 +1,5 @@
-─ benchmarks　- ベンチマーク関連のcppファイル
-─ data - 事前に用意したデータ
+- benchmarks　- ベンチマーク関連のcppファイル
+- data - 事前に用意したデータ
   ├── ground_truth
   │   └── pareto_fronts
   └── inputs - 実行ファイルの入力用
