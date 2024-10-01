@@ -507,8 +507,8 @@ void MpMoead<DecisionVariableType>::SendMessages() {
     static std::array<std::unordered_map<int, std::vector<double>>, maxBufferSize> sendMessageBuffers;
     static int sendDataSizesBufferIndex = 0;
     static int sendMessageBufferIndex = 0;
-    sendDataSizesBufferIndex = (sendDataSizesBufferIndex + 1) % sendDataSizesBuffers.size();
-    sendMessageBufferIndex = (sendMessageBufferIndex + 1) % sendMessageBuffers.size();
+    sendDataSizesBufferIndex = (sendDataSizesBufferIndex + 1) % maxBufferSize;
+    sendMessageBufferIndex = (sendMessageBufferIndex + 1) % maxBufferSize;
 
     std::vector<int>& sendDataSizes = sendDataSizesBuffers[sendDataSizesBufferIndex];
     sendDataSizes.clear();
