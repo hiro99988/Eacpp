@@ -61,7 +61,7 @@ class MpMoead {
     void InitializeMpi();
     void InitializeIsland();
     void Update();
-    void GetAllObjectives();
+    void WriteAllObjectives();
     void WriteTransitionOfIdealPoint();
 
    private:
@@ -124,7 +124,6 @@ class MpMoead {
     void SendMessages();
     std::vector<std::vector<double>> ReceiveMessages();
     void UpdateWithMessage(std::vector<double>& message);
-    std::vector<double> GatherAllObjectives();
 
 #ifdef _TEST_
    public:
@@ -570,40 +569,7 @@ void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& messa
 }
 
 template <typename DecisionVariableType>
-std::vector<double> MpMoead<DecisionVariableType>::GatherAllObjectives() {
-    std::vector<double> sendObjectives;
-    for (auto&& i : solutionIndexes) {
-        sendObjectives.insert(sendObjectives.end(), individuals[i].objectives.begin(), individuals[i].objectives.end());
-    }
-
-    int dataSize = sendObjectives.size();
-    std::vector<int> dataCounts;
-    if (rank == 0) {
-        dataCounts.resize(parallelSize);
-    }
-    MPI_Gather(&dataSize, 1, MPI_INT, dataCounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    int totalDataSize = 0;
-    std::vector<int> displacements;
-    if (rank == 0) {
-        for (int i = 0; i < dataCounts.size(); i++) {
-            displacements.push_back(totalDataSize);
-            totalDataSize += dataCounts[i];
-        }
-    }
-
-    std::vector<double> receiveObjectives;
-    if (rank == 0) {
-        receiveObjectives.resize(totalDataSize);
-    }
-    MPI_Gatherv(sendObjectives.data(), dataSize, MPI_DOUBLE, receiveObjectives.data(), dataCounts.data(), displacements.data(),
-                MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    return receiveObjectives;
-}
-
-template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::GetAllObjectives() {
+void MpMoead<DecisionVariableType>::WriteAllObjectives() {
     if (rank == 0) {
         std::filesystem::create_directories("out/data");
         std::filesystem::create_directories("out/data/mp_moead/");
