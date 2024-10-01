@@ -112,8 +112,8 @@ class MpMoead {
     bool IsInternal(int index);
     bool IsExternal(int index);
 
-    void SendMessage();
-    void ReceiveMessage();
+    void SendMessage(std::vector<MPI_Request>& requests);
+    void ReceiveMessage(std::vector<MPI_Request>& requests);
     void UpdateWithMessage(std::vector<double>& message);
     std::vector<double> GatherAllObjectives();
 
@@ -222,6 +222,8 @@ void MpMoead<DecisionVariableType>::Update() {
         }
     }
 
+    std::vector<MPI_Request> sendRequests;
+    std::vector<MPI_Request> receiveRequests;
     SendMessage();
     updatedSolutionIndexes.clear();
     ReceiveMessage();
@@ -474,8 +476,18 @@ void MpMoead<DecisionVariableType>::SendMessage() {
         requests.push_back(MPI_Request());
         MPI_Isend(data.data(), sendDataSize, MPI_DOUBLE, process, 1, MPI_COMM_WORLD, &requests[requests.size() - 1]);
     }
+
+    std::cout << "rank: " << rank << std::endl;
+    std::cout << "sended messages: " << std::endl;
+    for (auto&& [process, indexes] : dataToSend) {
+        std::cout << "[ " << process << " " << indexes.size() << " ] ";
+    }
+    std::cout << std::endl;
+
     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 }
+
+// TODO: 2つの関数をデータを作る関数と送受信する関数に分ける
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::ReceiveMessage() {
@@ -485,25 +497,44 @@ void MpMoead<DecisionVariableType>::ReceiveMessage() {
         processes.insert(process);
     }
 
+    std::vector<int> processesCanReceive;
     for (auto&& source : processes) {
         int canReceive0;
         int canReceive1;
         MPI_Iprobe(source, 0, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
         MPI_Iprobe(source, 1, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
-        if (!canReceive0 || !canReceive1) {
-            continue;
+        if (canReceive0 && canReceive1) {
+            processesCanReceive.push_back(source);
         }
+    }
 
+    std::vector<MPI_Request> requests;
+    std::vector<std::vector<double>> messages;
+    for (auto&& source : processesCanReceive) {
         int receiveDataSize;
-        std::array<MPI_Request, 2> requests;
-        MPI_Irecv(&receiveDataSize, 1, MPI_INT, source, 0, MPI_COMM_WORLD, &requests[0]);
+        requests.push_back(MPI_Request());
+        MPI_Irecv(&receiveDataSize, 1, MPI_INT, source, 0, MPI_COMM_WORLD, &requests[requests.size() - 1]);
 
-        std::vector<double> receiveData(receiveDataSize);
-        MPI_Irecv(receiveData.data(), receiveDataSize, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &requests[1]);
+        requests.push_back(MPI_Request());
+        messages.push_back(std::vector<double>(receiveDataSize));
+        MPI_Irecv(messages[messages.size() - 1].data(), receiveDataSize, MPI_DOUBLE, source, 1, MPI_COMM_WORLD,
+                  &requests[requests.size() - 1]);
+    }
 
-        MPI_Waitall(2, requests.data(), MPI_STATUSES_IGNORE);
+    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-        UpdateWithMessage(receiveData);
+    std::cout << "rank: " << rank << std::endl;
+    std::cout << "messages: " << messages.size() << std::endl;
+    for (auto&& message : messages) {
+        std::cout << "message: " << message.size() << std::endl;
+        for (int i = 0; i < message.size(); i += decisionVariablesNum + 1) {
+            std::cout << message[i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    for (auto&& message : messages) {
+        UpdateWithMessage(message);
     }
 }
 
