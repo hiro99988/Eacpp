@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
         std::cout << "Maximum execution time across all processes: " << maxTime << " seconds" << std::endl;
     }
 
-    moead.GetAllObjectives();
+    moead.WriteAllObjectives();
 
     moead.WriteTransitionOfIdealPoint();
 
