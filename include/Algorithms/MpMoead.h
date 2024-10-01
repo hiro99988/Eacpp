@@ -467,6 +467,7 @@ std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::Crea
         }
 
         for (auto&& j : updatedSolutionIndexes) {
+            // FIXME: 0の近傍に50があるからとて，50の近傍に0があるわけではない
             bool notContains = std::find(individuals[j].neighborhood.begin(), individuals[j].neighborhood.end(), index) ==
                                individuals[j].neighborhood.end();
             if (notContains) {
@@ -523,6 +524,26 @@ void MpMoead<DecisionVariableType>::SendMessages() {
         MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
     }
 }
+
+// bufferが無限バージョン
+// template <typename DecisionVariableType>
+// void MpMoead<DecisionVariableType>::SendMessages() {
+//     static std::vector<int> sendDataSizesBuffers;
+//     static std::vector<std::vector<double>> sendMessageBuffers;
+
+//     auto sendMessages = CreateMessages();
+
+//     // メッセージを送信する
+//     MPI_Request request;
+//     for (auto&& [dest, message] : sendMessages) {
+//         sendDataSizesBuffers.push_back(message.size());
+//         MPI_Isend(&sendDataSizesBuffers.back(), 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &request);
+//         sendMessageBuffers.push_back(message);
+//         MPI_Isend(sendMessageBuffers.back().data(), sendDataSizesBuffers.back(), MPI_DOUBLE, dest, messageTag,
+//         MPI_COMM_WORLD,
+//                   &request);
+//     }
+// }
 
 template <typename DecisionVariableType>
 std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages() {
