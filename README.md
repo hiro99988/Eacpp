@@ -6,17 +6,17 @@
     - benchmarks
 - examples - 今はMOEA/DとMP-MOEA/Dを動かすcppファイル
 - include - ヘッダーファイル
-　- Algorithms - MOEA/Dなどのアルゴリズム
-　- Crossovers
-　- Decompositions - 集約関数
-　- Individual
-　- Mutations
-　- Problems
-　- Repairs
-　- Rng
-　- Samplings
-　- Selections
-　- Utils - 便利関数
+  - Algorithms - MOEA/Dなどのアルゴリズム
+  - Crossovers
+  - Decompositions - 集約関数
+  - Individual
+  - Mutations
+  - Problems
+  - Repairs
+  - Rng
+  - Samplings
+  - Selections
+  - Utils - 便利関数
 - out - 出力
   - data - 実験結果
     - moead
