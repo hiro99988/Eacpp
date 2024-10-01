@@ -1,10 +1,15 @@
 ├── benchmarks　- ベンチマーク関連のcppファイル
 
 ├── data - 事前に用意したデータ
+
     ├── ground_truth
+    
     │   └── pareto_fronts
+    
     └─ inputs - 実行ファイルの入力用
+    
         └── benchmarks
+        
 ├── examples - 今はMOEA/DとMP-MOEA/Dを動かすcppファイル
 ├── include - ヘッダーファイル
 │   ├── Algorithms - MOEA/Dなどのアルゴリズム
@@ -40,14 +45,11 @@
 │   ├── Selections
 │   └── Utils
 └── tests - テスト用cppファイル
+
     ├── Algorithms - 今はテストできない
-    ├── Crossovers
-    ├── Decompositions
+    
+    ├── ...
+    
     ├── Individual - 部分的にテストした
-    ├── Mutations
-    ├── Problems
-    ├── Repairs
-    ├── Rng
-    ├── Samplings
-    ├── Selections
-    └── Utils
+    
+    ├── ...
