@@ -83,6 +83,8 @@ class MpMoead {
     std::unordered_map<int, Individual<DecisionVariableType>> individuals;
     std::set<int> updatedSolutionIndexes;
     std::unordered_map<int, Individual<DecisionVariableType>> clonedExternalIndividuals;
+    std::vector<int> ranksForExternalIndividuals;
+    std::set<int> neighboringRanks;
 
     std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
 
@@ -102,6 +104,7 @@ class MpMoead {
     void InitializeIndividualAndWeightVector(std::vector<Eigen::ArrayXd>& weightVectors,
                                              std::vector<std::vector<int>>& neighborhoodIndexes,
                                              std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
+    void CalculateRanksForNeighborhood();
 
     void InitializePopulation();
     void InitializeIdealPoint();
@@ -112,8 +115,9 @@ class MpMoead {
     bool IsInternal(int index);
     bool IsExternal(int index);
 
-    void SendMessage(std::vector<MPI_Request>& requests);
-    void ReceiveMessage(std::vector<MPI_Request>& requests);
+    std::unordered_map<int, std::vector<double>> CreateMessages();
+    std::vector<int> GetRanksToReceiveMessages();
+    std::vector<std::vector<double>> Migration();
     void UpdateWithMessage(std::vector<double>& message);
     std::vector<double> GatherAllObjectives();
 
@@ -137,10 +141,13 @@ class MpMoead {
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Run() {
     Initialize();
+
+    transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+
     int repeat = generationNum / migrationInterval;
     for (int i = 0; i < repeat; i++) {
-        transitionOfIdealPoint.push_back(decomposition->IdealPoint());
         Update();
+        transitionOfIdealPoint.push_back(decomposition->IdealPoint());
     }
 }
 
@@ -200,6 +207,7 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
         TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors, objectivesNum);
 
     solutionIndexes = GenerateSolutionIndexes();
+    CalculateRanksForNeighborhood();
 
     InitializePopulation();
 
@@ -222,11 +230,11 @@ void MpMoead<DecisionVariableType>::Update() {
         }
     }
 
-    std::vector<MPI_Request> sendRequests;
-    std::vector<MPI_Request> receiveRequests;
-    SendMessage();
+    auto messages = Migration();
     updatedSolutionIndexes.clear();
-    ReceiveMessage();
+    for (auto&& message : messages) {
+        UpdateWithMessage(message);
+    }
 }
 
 template <typename DecisionVariableType>
@@ -369,6 +377,15 @@ void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
 }
 
 template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::CalculateRanksForNeighborhood() {
+    for (auto&& i : externalSolutionIndexes) {
+        int rank = GetRankFromIndex(totalPopulationSize, i, parallelSize);
+        ranksForExternalIndividuals.push_back(rank);
+        neighboringRanks.insert(rank);
+    }
+}
+
+template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIdealPoint() {
     for (auto&& individual : individuals) {
         decomposition->UpdateIdealPoint(individual.second.objectives);
@@ -429,25 +446,19 @@ bool MpMoead<DecisionVariableType>::IsExternal(int index) {
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::SendMessage() {
-    std::vector<int> processesForSolutions;
-    for (auto&& i : externalSolutionIndexes) {
-        int process = GetRankFromIndex(totalPopulationSize, i, parallelSize);
-        processesForSolutions.push_back(process);
-    }
-
+std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::CreateMessages() {
     std::unordered_map<int, std::set<int>> indexesToSend;
     std::unordered_map<int, std::vector<double>> dataToSend;
     for (int i = 0; i < externalSolutionIndexes.size(); i++) {
         int index = externalSolutionIndexes[i];
-        int process = processesForSolutions[i];
+        int rank = ranksForExternalIndividuals[i];
 
         bool isUpdated = (individuals[index].solution != clonedExternalIndividuals[index].solution).any();
         if (isUpdated) {
-            indexesToSend[process].insert(index);
-            dataToSend[process].push_back(index);
-            dataToSend[process].insert(dataToSend[process].end(), individuals[index].solution.begin(),
-                                       individuals[index].solution.end());
+            indexesToSend[rank].insert(index);
+            dataToSend[rank].push_back(index);
+            dataToSend[rank].insert(dataToSend[rank].end(), individuals[index].solution.begin(),
+                                    individuals[index].solution.end());
         }
 
         for (auto&& j : updatedSolutionIndexes) {
@@ -456,86 +467,72 @@ void MpMoead<DecisionVariableType>::SendMessage() {
             if (notContains) {
                 continue;
             }
-            bool alreadyAdded = indexesToSend[process].find(j) != indexesToSend[process].end();
+            bool alreadyAdded = indexesToSend[rank].find(j) != indexesToSend[rank].end();
             if (alreadyAdded) {
                 continue;
             }
-            indexesToSend[process].insert(j);
-            dataToSend[process].push_back(j);
-            dataToSend[process].insert(dataToSend[process].end(), individuals[j].solution.begin(),
-                                       individuals[j].solution.end());
+            indexesToSend[rank].insert(j);
+            dataToSend[rank].push_back(j);
+            dataToSend[rank].insert(dataToSend[rank].end(), individuals[j].solution.begin(), individuals[j].solution.end());
         }
     }
 
-    std::vector<MPI_Request> requests;
-    for (auto&& [process, data] : dataToSend) {
-        int sendDataSize = data.size();
-        requests.push_back(MPI_Request());
-        MPI_Isend(&sendDataSize, 1, MPI_INT, process, 0, MPI_COMM_WORLD, &requests[requests.size() - 1]);
-
-        requests.push_back(MPI_Request());
-        MPI_Isend(data.data(), sendDataSize, MPI_DOUBLE, process, 1, MPI_COMM_WORLD, &requests[requests.size() - 1]);
-    }
-
-    std::cout << "rank: " << rank << std::endl;
-    std::cout << "sended messages: " << std::endl;
-    for (auto&& [process, indexes] : dataToSend) {
-        std::cout << "[ " << process << " " << indexes.size() << " ] ";
-    }
-    std::cout << std::endl;
-
-    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    return dataToSend;
 }
 
-// TODO: 2つの関数をデータを作る関数と送受信する関数に分ける
-
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::ReceiveMessage() {
-    std::set<int> processes;
-    for (auto&& i : externalSolutionIndexes) {
-        int process = GetRankFromIndex(totalPopulationSize, i, parallelSize);
-        processes.insert(process);
-    }
-
-    std::vector<int> processesCanReceive;
-    for (auto&& source : processes) {
+std::vector<int> MpMoead<DecisionVariableType>::GetRanksToReceiveMessages() {
+    std::vector<int> ranksToReceiveMessages;
+    for (auto&& source : neighboringRanks) {
         int canReceive0;
         int canReceive1;
         MPI_Iprobe(source, 0, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
         MPI_Iprobe(source, 1, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
         if (canReceive0 && canReceive1) {
-            processesCanReceive.push_back(source);
+            ranksToReceiveMessages.push_back(source);
         }
     }
 
-    std::vector<MPI_Request> requests;
-    std::vector<std::vector<double>> messages;
-    for (auto&& source : processesCanReceive) {
+    return ranksToReceiveMessages;
+}
+
+template <typename DecisionVariableType>
+std::vector<std::vector<double>> MpMoead<DecisionVariableType>::Migration() {
+    static std::array<std::vector<int>, 1000> sendDataSizesBuffers;
+    static std::array<std::unordered_map<int, std::vector<double>>, 1000> sendMessageBuffers;
+    static int sendDataSizesBufferIndex = 0;
+    static int sendMessageBufferIndex = 0;
+    sendDataSizesBufferIndex = (sendDataSizesBufferIndex + 1) % sendDataSizesBuffers.size();
+    sendMessageBufferIndex = (sendMessageBufferIndex + 1) % sendMessageBuffers.size();
+
+    std::vector<int>& sendDataSizes = sendDataSizesBuffers[sendDataSizesBufferIndex];
+    sendDataSizes.clear();
+    std::unordered_map<int, std::vector<double>>& sendMessages = sendMessageBuffers[sendMessageBufferIndex];
+    sendMessages = CreateMessages();
+
+    // メッセージを送信する
+    std::vector<MPI_Request> sendDataSizeRequests;
+    std::vector<MPI_Request> sendMessageRequests;
+    for (auto&& [dest, message] : sendMessages) {
+        sendDataSizes.push_back(message.size());
+        sendDataSizeRequests.push_back(MPI_Request());
+        MPI_Isend(&sendDataSizes.back(), 1, MPI_INT, dest, 0, MPI_COMM_WORLD, &sendDataSizeRequests.back());
+
+        sendMessageRequests.push_back(MPI_Request());
+        MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, 1, MPI_COMM_WORLD, &sendMessageRequests.back());
+    }
+
+    auto ranksToReceiveMessages = GetRanksToReceiveMessages();
+
+    std::vector<std::vector<double>> receiveMessages;
+    for (auto&& i : ranksToReceiveMessages) {
         int receiveDataSize;
-        requests.push_back(MPI_Request());
-        MPI_Irecv(&receiveDataSize, 1, MPI_INT, source, 0, MPI_COMM_WORLD, &requests[requests.size() - 1]);
-
-        requests.push_back(MPI_Request());
-        messages.push_back(std::vector<double>(receiveDataSize));
-        MPI_Irecv(messages[messages.size() - 1].data(), receiveDataSize, MPI_DOUBLE, source, 1, MPI_COMM_WORLD,
-                  &requests[requests.size() - 1]);
+        MPI_Recv(&receiveDataSize, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        receiveMessages.push_back(std::vector<double>(receiveDataSize));
+        MPI_Recv(receiveMessages.back().data(), receiveDataSize, MPI_DOUBLE, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-
-    std::cout << "rank: " << rank << std::endl;
-    std::cout << "messages: " << messages.size() << std::endl;
-    for (auto&& message : messages) {
-        std::cout << "message: " << message.size() << std::endl;
-        for (int i = 0; i < message.size(); i += decisionVariablesNum + 1) {
-            std::cout << message[i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    for (auto&& message : messages) {
-        UpdateWithMessage(message);
-    }
+    return receiveMessages;
 }
 
 template <typename DecisionVariableType>
