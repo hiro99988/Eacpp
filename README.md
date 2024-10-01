@@ -29,15 +29,7 @@
 - scripts
   - plot - プロット用pythonファイル
 - src - cppファイル
-  - Algorithms
-  - Crossovers
-  - Decompositions
-  - Mutations
-  - Problems
-  - Rng
-  - Samplings
-  - Selections
-  - Utils
+  - ...
 - tests - テスト用cppファイル
   - Algorithms - 今はテストできない
   - ...
