@@ -102,6 +102,7 @@ class MpMoead {
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                std::vector<int>& populationSizes);
     std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors, std::vector<int>& indexes);
+    std::vector<int> GetNeighborhoodMatchingIndexes(std::vector<int>& neighborhoodIndexes, std::vector<int>& indexes);
     std::pair<std::vector<int>, std::vector<double>> ScatterExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                  std::vector<int>& neighborhoodSizes,
                                                                                  std::vector<double>& weightVectors);
@@ -109,6 +110,9 @@ class MpMoead {
                                              std::vector<std::vector<int>>& neighborhoodIndexes,
                                              std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
     void CalculateRanksForNeighborhood();
+
+    // TODO: 新しいメンバ変数に格納する
+    void GetIndexesToBeSentByRank(const std::vector<std::vector<int>>& ExternalNeighboringNeighborhoodIndexes);
 
     void InitializePopulation();
     void InitializeIdealPoint();
@@ -196,23 +200,34 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<int> noduplicateNeighborhoodIndexes;
     std::vector<int> neighborhoodSizes;
     std::vector<double> sendExternalNeighboringWeightVectors;
+    std::vector<int> sendExternalNeighboringNeighborhoodIndexes;
     if (rank == 0) {
         std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
             GenerateExternalNeighborhood(neighborhoodIndexes1d, populationSizes);
         sendExternalNeighboringWeightVectors = GetWeightVectorsMatchingIndexes(weightVectors1d, noduplicateNeighborhoodIndexes);
+        sendExternalNeighboringNeighborhoodIndexes =
+            GetNeighborhoodMatchingIndexes(neighborhoodIndexes1d, noduplicateNeighborhoodIndexes);
     }
+
+    externalSolutionIndexes = Scatterv(noduplicateNeighborhoodIndexes, neighborhoodSizes, 1, rank, parallelSize);
     std::vector<double> receivedExternalNeighboringWeightVectors;
-    std::tie(externalSolutionIndexes, receivedExternalNeighboringWeightVectors) =
-        ScatterExternalNeighborhood(noduplicateNeighborhoodIndexes, neighborhoodSizes, sendExternalNeighboringWeightVectors);
+    receivedExternalNeighboringWeightVectors =
+        Scatterv(sendExternalNeighboringWeightVectors, neighborhoodSizes, objectivesNum, rank, parallelSize);
+    std::vector<int> receivedExternalNeighboringNeighborhoodIndexes;
+    receivedExternalNeighboringNeighborhoodIndexes =
+        Scatterv(sendExternalNeighboringNeighborhoodIndexes, neighborhoodSizes, neighborhoodSize, rank, parallelSize);
 
     std::vector<Eigen::ArrayXd> weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectivesNum);
     std::vector<std::vector<int>> neighborhoodIndexes = TransformTo2d(receivedNeighborhoodIndexes, neighborhoodSize);
     std::vector<Eigen::ArrayXd> externalNeighboringWeightVectors =
         TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors, objectivesNum);
+    std::vector<std::vector<int>> externalNeighboringNeighborhoodIndexes =
+        TransformTo2d(receivedExternalNeighboringNeighborhoodIndexes, neighborhoodSize);
 
     solutionIndexes = GenerateSolutionIndexes();
     CalculateRanksForNeighborhood();
 
+    // TODO: 近傍の解の近傍からランクごとのインデックスを計算する，初期集団を送信する
     InitializePopulation();
 
     InitializeIndividualAndWeightVector(weightVectors, neighborhoodIndexes, externalNeighboringWeightVectors);
@@ -341,6 +356,18 @@ std::vector<double> MpMoead<DecisionVariableType>::GetWeightVectorsMatchingIndex
 }
 
 template <typename DecisionVariableType>
+std::vector<int> MpMoead<DecisionVariableType>::GetNeighborhoodMatchingIndexes(std::vector<int>& neighborhoodIndexes,
+                                                                               std::vector<int>& indexes) {
+    std::vector<int> matchingNeighborhoodIndexes;
+    for (int i = 0; i < indexes.size(); i++) {
+        matchingNeighborhoodIndexes.insert(matchingNeighborhoodIndexes.end(),
+                                           neighborhoodIndexes.begin() + indexes[i] * neighborhoodSize,
+                                           neighborhoodIndexes.begin() + (indexes[i] + 1) * neighborhoodSize);
+    }
+    return matchingNeighborhoodIndexes;
+}
+
+template <typename DecisionVariableType>
 std::pair<std::vector<int>, std::vector<double>> MpMoead<DecisionVariableType>::ScatterExternalNeighborhood(
     std::vector<int>& neighborhoodIndexes, std::vector<int>& neighborhoodSizes, std::vector<double>& weightVectors) {
     std::vector<int> receivedNeighborhoodIndexes;
@@ -387,6 +414,17 @@ void MpMoead<DecisionVariableType>::CalculateRanksForNeighborhood() {
         int rank = GetRankFromIndex(totalPopulationSize, i, parallelSize);
         ranksForExternalIndividuals.push_back(rank);
         neighboringRanks.insert(rank);
+    }
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::GetIndexesToBeSentByRank(
+    const std::vector<std::vector<int>>& ExternalNeighboringNeighborhoodIndexes) {
+    std::unordered_map<int, std::set<int>> neighborhood;
+    for (int i = 0; i < externalSolutionIndexes; i++) {
+        int rank = GetRankFromIndex(totalPopulationSize, externalSolutionIndexes, parallelSize);
+        neighborhood[rank].insert(ExternalNeighboringNeighborhoodIndexes[i].begin(),
+                                  ExternalNeighboringNeighborhoodIndexes[i].end());
     }
 }
 
