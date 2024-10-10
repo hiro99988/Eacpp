@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <eigen3/Eigen/Core>
 #include <memory>
 #include <vector>
@@ -13,8 +12,28 @@ namespace Eacpp {
 
 class SimulatedBinaryCrossover : public CrossoverBase<double> {
    public:
-    explicit SimulatedBinaryCrossover(double crossoverRate) : CrossoverBase<double>(2, crossoverRate) {}
-    SimulatedBinaryCrossover(double crossoverRate, std::shared_ptr<IRng> rng) : CrossoverBase<double>(2, crossoverRate, rng) {}
+    static constexpr int ParentNum = 2;
+    static constexpr double DefaultDistributionIndex = 20.0;
+
+    double distributionIndex;
+
+    explicit SimulatedBinaryCrossover(double crossoverRate)
+        : CrossoverBase<double>(ParentNum, crossoverRate), distributionIndex(DefaultDistributionIndex) {}
+    SimulatedBinaryCrossover(double crossoverRate, double distributionIndex)
+        : CrossoverBase<double>(ParentNum, crossoverRate), distributionIndex(distributionIndex) {}
+    SimulatedBinaryCrossover(double crossoverRate, std::shared_ptr<IRng> rng)
+        : CrossoverBase<double>(ParentNum, crossoverRate, rng), distributionIndex(DefaultDistributionIndex) {}
+    SimulatedBinaryCrossover(double crossoverRate, double distributionIndex, std::shared_ptr<IRng> rng)
+        : CrossoverBase<double>(ParentNum, crossoverRate, rng), distributionIndex(distributionIndex) {}
+
+   private:
+    Individuald performCrossover(const std::vector<Individuald>& parents) const override;
+    double Beta() const;
+
+#ifdef _TEST_
+   public:
+    friend class SimulatedBinaryCrossoverTest;
+#endif
 };
 
 }  // namespace Eacpp
