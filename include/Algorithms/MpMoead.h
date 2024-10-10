@@ -175,6 +175,10 @@ void MpMoead<DecisionVariableType>::Initialize() {
     InitializeIdealPoint();
 }
 
+/* FIXME:
+ 近傍3，ノード数5の場合，C2からC0に解を送信する必要があるが，C2は自分の近傍の解の近傍に自分の解が含まれている場合にC1・C3に送信するため，できていない．
+ 加えて，ノード数と母集団サイズが近い場合，初期化処理が停止してしまう．
+ */
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<double> weightVectors1d;
