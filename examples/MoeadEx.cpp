@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::create_directories("out/data/");
     std::filesystem::create_directories("out/data/moead");
     std::ofstream ofs("out/data/moead/result.txt");
-    for (const auto& objectives : moead.GetAllObjectives()) {
+    for (const auto& objectives : moead.GetObjectivesList()) {
         for (const auto& value : objectives) {
             ofs << value << " ";
         }

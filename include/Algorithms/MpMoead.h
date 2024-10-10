@@ -61,8 +61,9 @@ class MpMoead {
     void InitializeMpi();
     void InitializeIsland();
     void Update();
-    void WriteAllObjectives();
-    void WriteTransitionOfIdealPoint();
+    std::vector<Eigen::ArrayXd> GetObjectivesList();
+    // void WriteAllObjectives();
+    // void WriteTransitionOfIdealPoint();
 
    private:
     int totalPopulationSize;
@@ -91,7 +92,7 @@ class MpMoead {
     std::set<int> neighboringRanks;
     std::unordered_map<int, std::set<int>> indexesToBeSentByRank;
 
-    std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
+    // std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
 
     std::vector<int> GenerateSolutionIndexes();
     std::vector<std::vector<double>> GenerateWeightVectors(int H);
@@ -148,12 +149,12 @@ template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Run() {
     Initialize();
 
-    transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+    // transitionOfIdealPoint.push_back(decomposition->IdealPoint());
 
     int repeat = generationNum / migrationInterval;
     for (int i = 0; i < repeat; i++) {
         Update();
-        transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+        // transitionOfIdealPoint.push_back(decomposition->IdealPoint());
     }
 }
 
@@ -665,56 +666,65 @@ void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& messa
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::WriteAllObjectives() {
-    if (rank == 0) {
-        std::filesystem::create_directories("out/data");
-        std::filesystem::create_directories("out/data/mp_moead/");
-        std::filesystem::create_directories("out/data/mp_moead/objective");
-
-        for (const auto& entry : std::filesystem::directory_iterator("out/data/mp_moead/objective")) {
-            std::filesystem::remove(entry.path());
-        }
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    std::string filename = "out/data/mp_moead/objective/objective-" + std::to_string(rank) + ".txt";
-    std::ofstream ofs(filename);
-
+std::vector<Eigen::ArrayXd> MpMoead<DecisionVariableType>::GetObjectivesList() {
+    std::vector<Eigen::ArrayXd> objectivesList;
     for (auto&& i : solutionIndexes) {
-        for (int j = 0; j < individuals[i].objectives.size(); j++) {
-            ofs << individuals[i].objectives(j);
-            if (j != individuals[i].objectives.size() - 1) {
-                ofs << " ";
-            }
-        }
-        ofs << std::endl;
+        objectivesList.push_back(individuals[i].objectives);
     }
+    return objectivesList;
 }
 
-template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::WriteTransitionOfIdealPoint() {
-    if (rank == 0) {
-        std::filesystem::create_directories("out/data");
-        std::filesystem::create_directories("out/data/mp_moead/");
-        std::filesystem::create_directories("out/data/mp_moead/ideal_point");
+// template <typename DecisionVariableType>
+// void MpMoead<DecisionVariableType>::WriteAllObjectives() {
+//     if (rank == 0) {
+//         std::filesystem::create_directories("out/data");
+//         std::filesystem::create_directories("out/data/mp_moead/");
+//         std::filesystem::create_directories("out/data/mp_moead/objective");
 
-        for (const auto& entry : std::filesystem::directory_iterator("out/data/mp_moead/ideal_point")) {
-            std::filesystem::remove(entry.path());
-        }
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+//         for (const auto& entry : std::filesystem::directory_iterator("out/data/mp_moead/objective")) {
+//             std::filesystem::remove(entry.path());
+//         }
+//     }
+//     MPI_Barrier(MPI_COMM_WORLD);
 
-    std::string filename = "out/data/mp_moead/ideal_point/ideal_point-" + std::to_string(rank) + ".txt";
-    std::ofstream ofs(filename);
-    for (auto&& idealPoint : transitionOfIdealPoint) {
-        for (int i = 0; i < idealPoint.size(); i++) {
-            ofs << idealPoint[i];
-            if (i != idealPoint.size() - 1) {
-                ofs << " ";
-            }
-        }
-        ofs << std::endl;
-    }
-}
+//     std::string filename = "out/data/mp_moead/objective/objective-" + std::to_string(rank) + ".txt";
+//     std::ofstream ofs(filename);
+
+//     for (auto&& i : solutionIndexes) {
+//         for (int j = 0; j < individuals[i].objectives.size(); j++) {
+//             ofs << individuals[i].objectives(j);
+//             if (j != individuals[i].objectives.size() - 1) {
+//                 ofs << " ";
+//             }
+//         }
+//         ofs << std::endl;
+//     }
+// }
+
+// template <typename DecisionVariableType>
+// void MpMoead<DecisionVariableType>::WriteTransitionOfIdealPoint() {
+//     if (rank == 0) {
+//         std::filesystem::create_directories("out/data");
+//         std::filesystem::create_directories("out/data/mp_moead/");
+//         std::filesystem::create_directories("out/data/mp_moead/ideal_point");
+
+//         for (const auto& entry : std::filesystem::directory_iterator("out/data/mp_moead/ideal_point")) {
+//             std::filesystem::remove(entry.path());
+//         }
+//     }
+//     MPI_Barrier(MPI_COMM_WORLD);
+
+//     std::string filename = "out/data/mp_moead/ideal_point/ideal_point-" + std::to_string(rank) + ".txt";
+//     std::ofstream ofs(filename);
+//     for (auto&& idealPoint : transitionOfIdealPoint) {
+//         for (int i = 0; i < idealPoint.size(); i++) {
+//             ofs << idealPoint[i];
+//             if (i != idealPoint.size() - 1) {
+//                 ofs << " ";
+//             }
+//         }
+//         ofs << std::endl;
+//     }
+// }
 
 }  // namespace Eacpp

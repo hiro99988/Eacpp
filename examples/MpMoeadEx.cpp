@@ -64,9 +64,9 @@ int main(int argc, char** argv) {
         std::cout << "Maximum execution time across all processes: " << maxTime << " seconds" << std::endl;
     }
 
-    moead.WriteAllObjectives();
+    // moead.WriteAllObjectives();
 
-    moead.WriteTransitionOfIdealPoint();
+    // moead.WriteTransitionOfIdealPoint();
 
     MPI_Finalize();
 

@@ -59,7 +59,7 @@ class Moead {
     void Initialize();
     void Update();
     void Run();
-    std::vector<Eigen::ArrayXd> GetAllObjectives() const;
+    std::vector<Eigen::ArrayXd> GetObjectivesList() const;
 
    private:
     std::vector<Individual<DecisionVariableType>> individuals;
@@ -104,7 +104,7 @@ void Moead<DecisionVariableType>::Run() {
 }
 
 template <typename DecisionVariableType>
-std::vector<Eigen::ArrayXd> Moead<DecisionVariableType>::GetAllObjectives() const {
+std::vector<Eigen::ArrayXd> Moead<DecisionVariableType>::GetObjectivesList() const {
     std::vector<Eigen::ArrayXd> objectives;
     for (const auto& individual : individuals) {
         objectives.push_back(individual.objectives);

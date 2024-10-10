@@ -12,7 +12,6 @@ struct IMoead {
     virtual double GetExecutionTime() = 0;
     virtual std::vector<Eigen::ArrayXd> GetObjectivesList() = 0;
     virtual std::vector<Eigen::ArrayX<DecisionVariableType>> GetSolutionList() = 0;
-    virtual std::vector<Eigen::ArrayXd> GetTransitionOfIdealPoint() = 0;
 };
 
 }  // namespace Eacpp
