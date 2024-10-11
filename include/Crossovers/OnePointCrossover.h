@@ -14,8 +14,10 @@ namespace Eacpp {
 template <typename T>
 class OnePointCrossover : public CrossoverBase<T> {
    public:
-    explicit OnePointCrossover(double crossoverRate) : CrossoverBase<T>(2, crossoverRate) {}
-    OnePointCrossover(double crossoverRate, std::shared_ptr<IRng> rng) : CrossoverBase<T>(2, crossoverRate, rng) {}
+    static constexpr int ParentNum = 2;
+
+    explicit OnePointCrossover(double crossoverRate) : CrossoverBase<T>(ParentNum, crossoverRate) {}
+    OnePointCrossover(double crossoverRate, std::shared_ptr<IRng> rng) : CrossoverBase<T>(ParentNum, crossoverRate, rng) {}
 
    private:
     Individual<T> performCrossover(const std::vector<Individual<T>>& parents) const override {
