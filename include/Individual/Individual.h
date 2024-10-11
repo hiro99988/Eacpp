@@ -5,7 +5,10 @@
 #include <iostream>
 #include <vector>
 
+#include "Utils/EigenUtils.h"
+
 namespace Eacpp {
+
 template <typename T>
 struct Individual {
     Eigen::ArrayX<T> solution;
@@ -48,9 +51,8 @@ struct Individual {
     }
 
     bool operator==(const Individual& other) const {
-        return (solution == other.solution).all() && (objectives == other.objectives).all() &&
-               (weightVector == other.weightVector).all() && neighborhood.size() == other.neighborhood.size() &&
-               std::equal(neighborhood.begin(), neighborhood.end(), other.neighborhood.begin());
+        return AreEqual(solution, other.solution) && AreEqual(objectives, other.objectives) &&
+               AreEqual(weightVector, other.weightVector) && neighborhood == other.neighborhood;
     }
 
     bool operator!=(const Individual& other) const {
@@ -77,7 +79,7 @@ struct Individual {
     }
 
     bool IsWeightVectorEqual(const Individual& other) const {
-        return (weightVector == other.weightVector).all();
+        return AreEqual(weightVector, other.weightVector);
     }
 
     double CalculateSquaredEuclideanDistanceOfWeightVector(const Individual& other) const {
