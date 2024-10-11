@@ -12,15 +12,26 @@ namespace Eacpp {
 
 class PolynomialMutation : public MutationBase<double> {
    public:
+    constexpr static double DefaultDistributionIndex = 20.0;
+
     double distributionIndex;
     std::vector<std::pair<double, double>> variableBounds;
 
+    PolynomialMutation(double mutationRate, std::vector<std::pair<double, double>> variableBounds)
+        : MutationBase(mutationRate),
+          distributionIndex(DefaultDistributionIndex),
+          variableBounds(variableBounds),
+          _lastBoundIndex(variableBounds.size() - 1) {}
     PolynomialMutation(double mutationRate, double distributionIndex, std::vector<std::pair<double, double>> variableBounds)
         : MutationBase(mutationRate),
           distributionIndex(distributionIndex),
           variableBounds(variableBounds),
           _lastBoundIndex(variableBounds.size() - 1) {}
-
+    PolynomialMutation(double mutationRate, std::vector<std::pair<double, double>> variableBounds, std::shared_ptr<IRng> rng)
+        : MutationBase(mutationRate, rng),
+          distributionIndex(DefaultDistributionIndex),
+          variableBounds(variableBounds),
+          _lastBoundIndex(variableBounds.size() - 1) {}
     PolynomialMutation(double mutationRate, double distributionIndex, std::vector<std::pair<double, double>> variableBounds,
                        std::shared_ptr<IRng> rng)
         : MutationBase(mutationRate, rng),
