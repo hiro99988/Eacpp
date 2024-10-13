@@ -9,7 +9,7 @@ namespace Eacpp {
 
 class ZDT2 : public ZDTBase {
    public:
-    ZDT2() : ZDTBase(30) {}
+    ZDT2() : ZDTBase() {}
 
    private:
     double F1(double x1) const override;
