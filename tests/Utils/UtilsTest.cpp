@@ -114,7 +114,7 @@ TEST(UtilsTest, CalculateMeanAndVariance) {
     double mean = 0.0;
     double variance = 0.0;
     CalculateMeanAndVariance(data, mean, variance);
-    ASSERT_DOUBLE_EQ(3.5, mean);
+    ASSERT_EQ(3.5, mean);
     ASSERT_DOUBLE_EQ(91.0 / 6.0 - 3.5 * 3.5, variance);
 }
 
