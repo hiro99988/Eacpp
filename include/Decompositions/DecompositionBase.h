@@ -9,14 +9,19 @@ namespace Eacpp {
 
 class DecompositionBase : public IDecomposition {
    public:
-    DecompositionBase(int objectivesNum) {
-        _idealPoint = Eigen::ArrayXd::Constant(objectivesNum, std::numeric_limits<double>::max());
-    }
     virtual ~DecompositionBase() {}
 
-    Eigen::ArrayXd& IdealPoint() override { return _idealPoint; }
+    const Eigen::ArrayXd& IdealPoint() const override {
+        return _idealPoint;
+    }
 
-    void UpdateIdealPoint(const Eigen::ArrayXd& objectiveSet) override { _idealPoint = _idealPoint.min(objectiveSet); }
+    void UpdateIdealPoint(const Eigen::ArrayXd& objectiveSet) override {
+        if (_idealPoint.size() == 0) {
+            _idealPoint = objectiveSet;
+        } else {
+            _idealPoint = _idealPoint.min(objectiveSet);
+        }
+    }
 
    protected:
     Eigen::ArrayXd _idealPoint;
