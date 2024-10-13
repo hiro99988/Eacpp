@@ -9,9 +9,8 @@ struct IMoead {
     virtual void Initialize() = 0;
     virtual void Update() = 0;
     virtual void Run() = 0;
-    virtual double GetExecutionTime() = 0;
-    virtual std::vector<Eigen::ArrayXd> GetObjectivesList() = 0;
-    virtual std::vector<Eigen::ArrayX<DecisionVariableType>> GetSolutionList() = 0;
+    virtual std::vector<Eigen::ArrayXd> GetObjectivesList() const = 0;
+    virtual std::vector<Eigen::ArrayX<DecisionVariableType>> GetSolutionList() const = 0;
 };
 
 }  // namespace Eacpp
