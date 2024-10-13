@@ -25,4 +25,14 @@ inline bool AreClose(const Eigen::ArrayXf& lhs, const Eigen::ArrayXf& rhs, float
     return lhs.size() == rhs.size() && (lhs - rhs).isZero(epsilon);
 }
 
+template <typename T>
+T CalculateSquaredEuclideanDistance(const Eigen::ArrayX<T>& lhs, const Eigen::ArrayX<T>& rhs) {
+    return (lhs - rhs).matrix().squaredNorm();
+}
+
+template <typename T>
+T CalculateEuclideanDistance(const Eigen::ArrayX<T>& lhs, const Eigen::ArrayX<T>& rhs) {
+    return (lhs - rhs).matrix().norm();
+}
+
 }  // namespace Eacpp

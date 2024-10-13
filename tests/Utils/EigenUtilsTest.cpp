@@ -84,4 +84,18 @@ TEST(EigenUtilsTest, AreCloseF) {
     EXPECT_TRUE(AreClose(lhs, rhs, epsilon));
 }
 
+TEST(EigenUtilsTest, CalculateSquaredEuclideanDistance) {
+    Eigen::ArrayXd lhs = Eigen::ArrayXd::LinSpaced(3, 0.0, 2.0);
+    Eigen::ArrayXd rhs = Eigen::ArrayXd::LinSpaced(3, 1.0, 3.0);
+
+    EXPECT_EQ(CalculateSquaredEuclideanDistance(lhs, rhs), 3.0);
+}
+
+TEST(EigenUtilsTest, CalculateEuclideanDistance) {
+    Eigen::ArrayXd lhs = Eigen::ArrayXd::LinSpaced(3, 0.0, 2.0);
+    Eigen::ArrayXd rhs = Eigen::ArrayXd::LinSpaced(3, 1.0, 3.0);
+
+    EXPECT_DOUBLE_EQ(CalculateEuclideanDistance(lhs, rhs), std::sqrt(3.0));
+}
+
 }  // namespace Eacpp
