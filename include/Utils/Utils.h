@@ -1,8 +1,12 @@
 #ifndef Utils_h
 #define Utils_h
 
+#include <algorithm>
 #include <eigen3/Eigen/Core>
 #include <iostream>
+#include <iterator>
+#include <numeric>
+#include <ranges>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
@@ -121,15 +125,29 @@ inline void CalculateMeanAndVariance(const std::vector<Eigen::ArrayXd> &data, do
     int totalElements = 0;
 
     for (const auto &array : data) {
-        for (int i = 0; i < array.size(); ++i) {
-            sum += array(i);
-            sumSquared += array(i) * array(i);
+        for (auto &&i : array) {
+            sum += i;
+            sumSquared += i * i;
         }
+
         totalElements += array.size();
     }
 
     mean = sum / totalElements;
     variance = (sumSquared / totalElements) - (mean * mean);
+}
+
+template <std::ranges::range Range>
+std::vector<size_t> ArgSort(const Range &range) {
+    int size = std::ranges::distance(range);
+    std::vector<size_t> indexes(size);
+    std::iota(indexes.begin(), indexes.end(), 0);
+
+    std::sort(indexes.begin(), indexes.end(), [&](size_t i, size_t j) {
+        return *std::ranges::next(std::ranges::begin(range), i) < *std::ranges::next(std::ranges::begin(range), j);
+    });
+
+    return indexes;
 }
 
 }  // namespace Eacpp

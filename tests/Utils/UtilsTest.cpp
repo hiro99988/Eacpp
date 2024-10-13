@@ -109,4 +109,20 @@ TEST(UtilsTest, TransformToEigenArrayX2d) {
     ASSERT_THROW(TransformToEigenArrayX2d(v1d, 4), std::invalid_argument);
 }
 
+TEST(UtilsTest, CalculateMeanAndVariance) {
+    std::vector<Eigen::ArrayXd> data = {Eigen::ArrayXd::LinSpaced(3, 1, 3), Eigen::ArrayXd::LinSpaced(3, 4, 6)};
+    double mean = 0.0;
+    double variance = 0.0;
+    CalculateMeanAndVariance(data, mean, variance);
+    ASSERT_DOUBLE_EQ(3.5, mean);
+    ASSERT_DOUBLE_EQ(91.0 / 6.0 - 3.5 * 3.5, variance);
+}
+
+TEST(UtilsTest, ArgSort) {
+    std::vector<int> array = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3};
+    auto actual = ArgSort(array);
+    std::vector<size_t> expected = {1, 3, 6, 0, 9, 2, 4, 8, 7, 5};
+    ASSERT_TRUE(actual == expected);
+}
+
 }  // namespace Eacpp::Test
