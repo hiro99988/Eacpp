@@ -8,7 +8,7 @@ namespace Eacpp {
 
 class Tchebycheff : public DecompositionBase {
    public:
-    Tchebycheff(int objectivesNum) : DecompositionBase(objectivesNum) {}
+    Tchebycheff() {}
 
     double ComputeObjective(const Eigen::ArrayXd& weight, const Eigen::ArrayXd& objectiveSet) const override;
 };
