@@ -4,6 +4,8 @@
 #include <eigen3/Eigen/Core>
 #include <numbers>
 
+#include "Utils/Utils.h"
+
 namespace Eacpp {
 
 double ZDT6::F1(double x1) const {
@@ -17,6 +19,18 @@ double ZDT6::G(const Eigen::ArrayXd& X) const {
 
 double ZDT6::F2(double f1, double g) const {
     return 1.0 - std::pow(f1 / g, 2.0);
+}
+
+std::vector<Eigen::ArrayXd> ZDT6::GenerateParetoFront(int pointsNum) const {
+    constexpr std::pair<double, double> region = {0.2807753191, 1.0};
+
+    std::vector<double> x = Ranged(region.first, region.second, (region.second - region.first) / (pointsNum - 1));
+
+    std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(ObjectivesNum()));
+    for (int i = 0; i < pointsNum; i++) {
+        result[i] << x[i], F2(x[i], GOfParetoFront());
+    }
+    return result;
 }
 
 }  // namespace Eacpp

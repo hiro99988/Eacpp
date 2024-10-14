@@ -1,6 +1,7 @@
 #pragma once
 
 #include <eigen3/Eigen/Core>
+#include <vector>
 
 #include "Problems/ZDTBase.h"
 #include "Reflections/Reflection.h"
@@ -15,6 +16,7 @@ class ZDT6 : public ZDTBase {
     double F1(double x1) const override;
     double G(const Eigen::ArrayXd& x) const override;
     double F2(double f1, double g) const override;
+    std::vector<Eigen::ArrayXd> GenerateParetoFront(int pointsNum) const override;
 
 #ifdef _TEST_
    public:
