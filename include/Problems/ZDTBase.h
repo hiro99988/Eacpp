@@ -24,15 +24,14 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     int ObjectivesNum() const override {
         return objectivesNum;
     }
+    const std::pair<double, double>& VariableBound() const override {
+        return variableBound;
+    }
     void ComputeObjectiveSet(Individuald& individual) const override;
     bool IsFeasible(const Individuald& individual) const override;
     std::vector<bool> EvaluateConstraints(const Individuald& individual) const override;
 
     std::vector<Eigen::ArrayXd> GenerateParetoFront(int pointsNum) const override;
-
-    constexpr std::pair<double, double> VariableBound() const {
-        return variableBound;
-    }
 
    protected:
     virtual double F1(double x1) const = 0;

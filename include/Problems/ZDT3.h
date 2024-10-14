@@ -23,5 +23,6 @@ class ZDT3 : public ZDTBase {
 };
 
 REGISTER_REFLECTION(IBenchmark, ZDT3)
+REGISTER_TEMPLATE_REFLECTION(IProblem, double, ZDT3)
 
 }  // namespace Eacpp
