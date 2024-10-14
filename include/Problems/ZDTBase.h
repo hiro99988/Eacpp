@@ -1,13 +1,12 @@
 #pragma once
 
-#include <Problems/IProblem.h>
-
 #include <eigen3/Eigen/Core>
 #include <tuple>
 #include <vector>
 
 #include "Individual/Individual.h"
 #include "Problems/IBenchmark.h"
+#include "Problems/IProblem.h"
 
 namespace Eacpp {
 
@@ -17,6 +16,11 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     ZDTBase(int decisionVariablesNum) : decisionVariablesNum(decisionVariablesNum) {}
     ZDTBase(int decisionVariablesNum, double gOfParetoFront)
         : decisionVariablesNum(decisionVariablesNum), gOfParetoFront(gOfParetoFront) {}
+    ZDTBase(int decisionVariablesNum, const std::vector<std::pair<double, double>>& variableBounds)
+        : decisionVariablesNum(decisionVariablesNum), variableBounds(variableBounds) {}
+    ZDTBase(int decisionVariablesNum, double gOfParetoFront, const std::vector<std::pair<double, double>>& variableBounds)
+        : decisionVariablesNum(decisionVariablesNum), gOfParetoFront(gOfParetoFront), variableBounds(variableBounds) {}
+    virtual ~ZDTBase() {}
 
     int DecisionVariablesNum() const override {
         return decisionVariablesNum;
@@ -24,8 +28,8 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     int ObjectivesNum() const override {
         return objectivesNum;
     }
-    const std::pair<double, double>& VariableBound() const override {
-        return variableBound;
+    const std::vector<std::pair<double, double>>& VariableBounds() const override {
+        return variableBounds;
     }
     void ComputeObjectiveSet(Individuald& individual) const override;
     bool IsFeasible(const Individuald& individual) const override;
@@ -40,7 +44,7 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
 
    private:
     constexpr static int objectivesNum = 2;
-    constexpr static std::pair<double, double> variableBound = {0.0, 1.0};
+    const std::vector<std::pair<double, double>> variableBounds = {{0.0, 1.0}};
     const int decisionVariablesNum = 30;
     const double gOfParetoFront = 1.0;
 };

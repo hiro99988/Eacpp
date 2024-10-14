@@ -14,7 +14,7 @@ struct IProblem {
 
     virtual int DecisionVariablesNum() const = 0;
     virtual int ObjectivesNum() const = 0;
-    virtual const std::pair<T, T>& VariableBound() const = 0;
+    virtual const std::vector<std::pair<T, T>>& VariableBounds() const = 0;
     virtual void ComputeObjectiveSet(Individual<T>& individual) const = 0;
     virtual bool IsFeasible(const Individual<T>& individual) const = 0;
     virtual std::vector<bool> EvaluateConstraints(const Individual<T>& individual) const = 0;

@@ -18,7 +18,7 @@
 #include "Problems/Problems.h"
 #include "Reflections/Reflection.h"
 #include "Repairs/SamplingRepair.h"
-#include "Samplings/UniformRandomSampling.h"
+#include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
 using namespace Eacpp;
@@ -89,12 +89,10 @@ int main(int argc, char** argv) {
         std::ofstream executionTimesFile = OpenOutputFile(executionTimesFilePath);
 
         std::shared_ptr<IProblem<double>> problem = std::move(Reflection<IProblem<double>>::Create(problemName));
-        std::pair<double, double> variableBound{problem->VariableBound()};
-        std::vector<std::pair<double, double>> variableBounds{variableBound};
         auto crossover = std::make_shared<SimulatedBinaryCrossover>(crossoverRate);
         auto decomposition = std::make_shared<Tchebycheff>();
-        auto mutation = std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), variableBounds);
-        auto sampling = std::make_shared<UniformRandomSampling>(variableBound.first, variableBound.second);
+        auto mutation = std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), problem->VariableBounds());
+        auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
         auto repair = std::make_shared<SamplingRepair<double>>(sampling);
         auto selection = std::make_shared<RandomSelection>();
 

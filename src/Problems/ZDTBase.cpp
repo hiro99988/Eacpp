@@ -27,13 +27,13 @@ bool ZDTBase::IsFeasible(const Individuald& individual) const {
 std::vector<bool> ZDTBase::EvaluateConstraints(const Individuald& individual) const {
     std::vector<bool> evaluation(individual.solution.size());
     for (int i = 0; i < individual.solution.size(); i++) {
-        evaluation[i] = individual.solution(i) >= variableBound.first && individual.solution(i) <= variableBound.second;
+        evaluation[i] = individual.solution(i) >= variableBounds[0].first && individual.solution(i) <= variableBounds[0].second;
     }
     return evaluation;
 }
 
 std::vector<Eigen::ArrayXd> ZDTBase::GenerateParetoFront(int pointsNum) const {
-    std::vector<double> x = Ranged(variableBound.first, variableBound.second, 1.0 / (pointsNum - 1));
+    std::vector<double> x = Ranged(variableBounds[0].first, variableBounds[0].second, 1.0 / (pointsNum - 1));
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(objectivesNum));
     for (int i = 0; i < pointsNum; i++) {
         double f1 = F1(x[i]);

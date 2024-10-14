@@ -13,7 +13,7 @@
 #include "Mutations/PolynomialMutation.h"
 #include "Problems/ZDT6.h"
 #include "Repairs/SamplingRepair.h"
-#include "Samplings/UniformRandomSampling.h"
+#include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
 using namespace Eacpp;
@@ -39,13 +39,11 @@ int main(int argc, char* argv[]) {
 
     auto problem = std::make_shared<ZDT6>();
 
-    std::pair<double, double> variableBound{problem->VariableBound()};
-    std::vector<std::pair<double, double>> variableBounds{variableBound};
-
     auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9);
     auto decomposition = std::make_shared<Tchebycheff>();
-    auto mutation = std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, variableBounds);
-    auto sampling = std::make_shared<UniformRandomSampling>(variableBound.first, variableBound.second);
+    auto mutation =
+        std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, problem->VariableBounds());
+    auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
     auto repair = std::make_shared<SamplingRepair<double>>(sampling);
     auto selection = std::make_shared<RandomSelection>();
 
