@@ -11,7 +11,7 @@
 #include "Crossovers/SimulatedBinaryCrossover.h"
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
-#include "Problems/ZDT6.h"
+#include "Problems/ZDT4.h"
 #include "Repairs/SamplingRepair.h"
 #include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto problem = std::make_shared<ZDT6>();
+    auto problem = std::make_shared<ZDT4>();
 
     auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9);
     auto decomposition = std::make_shared<Tchebycheff>();
@@ -57,6 +57,19 @@ int main(int argc, char* argv[]) {
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "Execution time: " << duration << "ms" << std::endl;
+
+    std::filesystem::path objectiveFilePath = "out/data/tmp/ZDT4.csv";
+    std::ofstream objectiveFile(objectiveFilePath);
+    for (const auto& objectives : moead.GetObjectivesList()) {
+        for (size_t j = 0; j < objectives.size(); j++) {
+            if (j == objectives.size() - 1) {
+                objectiveFile << objectives[j];
+            } else {
+                objectiveFile << objectives[j] << ",";
+            }
+        }
+        objectiveFile << std::endl;
+    }
 
     return 0;
 }
