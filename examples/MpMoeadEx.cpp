@@ -38,14 +38,15 @@ int main(int argc, char** argv) {
 
     auto problem = std::make_shared<ZDT1>();
 
-    int decisionVariableNum = problem->decisionVariablesNum;
-    int objectivesNum = problem->objectivesNum;
-    std::vector<std::pair<double, double>> variableBound{problem->variableBound};
+    int decisionVariableNum = problem->DecisionVariablesNum();
+    int objectivesNum = problem->ObjectivesNum();
+    std::pair<double, double> variableBound{problem->VariableBound()};
+    std::vector<std::pair<double, double>> variableBounds{variableBound};
 
     auto crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
     auto decomposition = std::make_shared<Tchebycheff>(objectivesNum);
-    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBound);
-    auto sampling = std::make_shared<UniformRandomSampling>(problem->variableBound.first, problem->variableBound.second);
+    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBounds);
+    auto sampling = std::make_shared<UniformRandomSampling>(variableBound.first, variableBound.second);
     auto repair = std::make_shared<SamplingRepair<double>>(sampling);
     auto selection = std::make_shared<RandomSelection>();
 
