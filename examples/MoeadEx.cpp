@@ -8,10 +8,10 @@
 #include <vector>
 
 #include "Algorithms/Moead.h"
-#include "Crossovers/BinomialCrossover.h"
+#include "Crossovers/SimulatedBinaryCrossover.h"
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
-#include "Problems/ZDT1.h"
+#include "Problems/ZDT6.h"
 #include "Repairs/SamplingRepair.h"
 #include "Samplings/UniformRandomSampling.h"
 #include "Selections/RandomSelection.h"
@@ -37,21 +37,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto problem = std::make_shared<ZDT1>();
+    auto problem = std::make_shared<ZDT6>();
 
-    int decisionVariableNum = problem->decisionVariablesNum;
-    int objectiveNum = problem->objectivesNum;
-    std::vector<std::pair<double, double>> variableBound{problem->variableBound};
+    std::pair<double, double> variableBound{problem->VariableBound()};
+    std::vector<std::pair<double, double>> variableBounds{variableBound};
 
-    auto crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
-    auto decomposition = std::make_shared<Tchebycheff>(objectiveNum);
-    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBound);
-    auto sampling = std::make_shared<UniformRandomSampling>(problem->variableBound.first, problem->variableBound.second);
+    auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9);
+    auto decomposition = std::make_shared<Tchebycheff>();
+    auto mutation = std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, variableBounds);
+    auto sampling = std::make_shared<UniformRandomSampling>(variableBound.first, variableBound.second);
     auto repair = std::make_shared<SamplingRepair<double>>(sampling);
     auto selection = std::make_shared<RandomSelection>();
 
-    Moead<double> moead(generationNum, decisionVariableNum, objectiveNum, neighborNum, H, crossover, decomposition, mutation,
-                        problem, repair, sampling, selection);
+    Moead<double> moead(generationNum, neighborNum, H, crossover, decomposition, mutation, problem, repair, sampling,
+                        selection);
 
     auto start = std::chrono::system_clock::now();
 
@@ -60,16 +59,6 @@ int main(int argc, char* argv[]) {
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "Execution time: " << duration << "ms" << std::endl;
-
-    std::filesystem::create_directories("out/data/");
-    std::filesystem::create_directories("out/data/moead");
-    std::ofstream ofs("out/data/moead/result.txt");
-    for (const auto& objectives : moead.GetObjectivesList()) {
-        for (const auto& value : objectives) {
-            ofs << value << " ";
-        }
-        ofs << std::endl;
-    }
 
     return 0;
 }

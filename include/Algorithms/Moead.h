@@ -3,11 +3,14 @@
 #include <algorithm>
 #include <eigen3/Eigen/Core>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <numeric>
 #include <ranges>
 #include <tuple>
 #include <vector>
 
+#include "Algorithms/IMoead.h"
+#include "Algorithms/MoeadInitializer.h"
 #include "Crossovers/ICrossover.h"
 #include "Decompositions/IDecomposition.h"
 #include "Individual/Individual.h"
@@ -21,9 +24,46 @@
 namespace Eacpp {
 
 template <typename DecisionVariableType>
-class Moead {
+class Moead : public IMoead<DecisionVariableType> {
    public:
+    Moead(int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector,
+          const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
+          const std::shared_ptr<IDecomposition>& decomposition,
+          const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
+          const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
+          const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
+          const std::shared_ptr<ISampling<DecisionVariableType>>& sampling, const std::shared_ptr<ISelection>& selection)
+        : generationNum(generationNum),
+          neighborhoodSize(neighborhoodSize),
+          divisionsNumOfWeightVector(divisionsNumOfWeightVector) {
+        if (!crossover || !decomposition || !mutation || !problem || !repair || !sampling || !selection) {
+            throw std::invalid_argument("Null pointer is passed");
+        }
+
+        this->crossover = crossover;
+        this->decomposition = decomposition;
+        this->mutation = mutation;
+        this->problem = problem;
+        this->repair = repair;
+        this->sampling = sampling;
+        this->selection = selection;
+        decisionVariablesNum = problem->DecisionVariablesNum();
+        objectivesNum = problem->ObjectivesNum();
+        currentGeneration = 0;
+    }
+
+    virtual ~Moead() {}
+
+    void Initialize() override;
+    void Update() override;
+    void Run() override;
+    bool IsEnd() const override;
+    std::vector<Eigen::ArrayXd> GetObjectivesList() const override;
+    std::vector<Eigen::ArrayX<DecisionVariableType>> GetSolutionList() const override;
+
+   private:
     int generationNum;
+    int currentGeneration;
     int populationSize;
     int decisionVariablesNum;
     int objectivesNum;
@@ -36,50 +76,30 @@ class Moead {
     std::shared_ptr<IRepair<DecisionVariableType>> repair;
     std::shared_ptr<ISampling<DecisionVariableType>> sampling;
     std::shared_ptr<ISelection> selection;
-
-    Moead(int generationNum, int decisionVariablesNum, int objectivesNum, int neighborhoodSize, int divisionsNumOfWeightVector,
-          std::shared_ptr<ICrossover<DecisionVariableType>> crossover, std::shared_ptr<IDecomposition> decomposition,
-          std::shared_ptr<IMutation<DecisionVariableType>> mutation, std::shared_ptr<IProblem<DecisionVariableType>> problem,
-          std::shared_ptr<IRepair<DecisionVariableType>> repair, std::shared_ptr<ISampling<DecisionVariableType>> sampling,
-          std::shared_ptr<ISelection> selection)
-        : generationNum(generationNum),
-          decisionVariablesNum(decisionVariablesNum),
-          objectivesNum(objectivesNum),
-          neighborhoodSize(neighborhoodSize),
-          divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-          crossover(crossover),
-          decomposition(decomposition),
-          mutation(mutation),
-          problem(problem),
-          repair(repair),
-          sampling(sampling),
-          selection(selection) {}
-    virtual ~Moead() {}
-
-    void Initialize();
-    void Update();
-    void Run();
-    std::vector<Eigen::ArrayXd> GetObjectivesList() const;
-
-   private:
     std::vector<Individual<DecisionVariableType>> individuals;
+    MoeadInitializer initializer;
 
-    void CalculatePopulationNum();
-    void InitializeWeightVectors();
-    void InitializeNeighborhoods();
-    void InitializeIndividuals();
+    void InitializeIndividuals(const std::vector<Eigen::ArrayXd>& weightVectors,
+                               const std::vector<std::vector<int>>& neighborhoods);
     void InitializeIdealPoint();
-    Individual<DecisionVariableType> GenerateNewIndividual(Individual<DecisionVariableType>& individual);
-    void UpdateNeighborhood(Individual<DecisionVariableType>& individual, Individual<DecisionVariableType>& newIndividual);
+    Individual<DecisionVariableType> GenerateNewIndividual(const Individual<DecisionVariableType>& individual);
+    void UpdateNeighborhood(const Individual<DecisionVariableType>& individual,
+                            const Individual<DecisionVariableType>& newIndividual);
 };
 
 template <typename DecisionVariableType>
 void Moead<DecisionVariableType>::Initialize() {
-    CalculatePopulationNum();
-    InitializeIndividuals();
+    populationSize = initializer.CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
+
+    std::vector<Eigen::ArrayXd> weightVectors;
+    std::vector<std::vector<int>> neighborhoods;
+    initializer.GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector, objectivesNum, neighborhoodSize,
+                                                      weightVectors, neighborhoods);
+
+    InitializeIndividuals(weightVectors, neighborhoods);
     InitializeIdealPoint();
-    InitializeWeightVectors();
-    InitializeNeighborhoods();
+
+    currentGeneration = 0;
 }
 
 template <typename DecisionVariableType>
@@ -93,14 +113,21 @@ void Moead<DecisionVariableType>::Update() {
         decomposition->UpdateIdealPoint(newIndividual.objectives);
         UpdateNeighborhood(individual, newIndividual);
     }
+
+    currentGeneration++;
 }
 
 template <typename DecisionVariableType>
 void Moead<DecisionVariableType>::Run() {
     Initialize();
-    for (int i = 0; i < generationNum; i++) {
+    while (!IsEnd()) {
         Update();
     }
+}
+
+template <typename DecisionVariableType>
+bool Moead<DecisionVariableType>::IsEnd() const {
+    return currentGeneration >= generationNum;
 }
 
 template <typename DecisionVariableType>
@@ -113,59 +140,28 @@ std::vector<Eigen::ArrayXd> Moead<DecisionVariableType>::GetObjectivesList() con
 }
 
 template <typename DecisionVariableType>
-void Moead<DecisionVariableType>::CalculatePopulationNum() {
-    int n = divisionsNumOfWeightVector + objectivesNum - 1;
-    int r = objectivesNum - 1;
-    populationSize = Combination(n, r);
+std::vector<Eigen::ArrayX<DecisionVariableType>> Moead<DecisionVariableType>::GetSolutionList() const {
+    std::vector<Eigen::ArrayX<DecisionVariableType>> solutions;
+    for (const auto& individual : individuals) {
+        solutions.push_back(individual.solution);
+    }
+    return solutions;
 }
 
 template <typename DecisionVariableType>
-void Moead<DecisionVariableType>::InitializeWeightVectors() {
-    std::vector<double> numeratorOfWeightVector(divisionsNumOfWeightVector + 1);
-    std::iota(numeratorOfWeightVector.begin(), numeratorOfWeightVector.end(), 0);
-    std::vector<std::vector<double>> product = Product(numeratorOfWeightVector, objectivesNum);
-    product.erase(std::remove_if(product.begin(), product.end(),
-                                 [&](auto v) { return std::reduce(v.begin(), v.end()) != divisionsNumOfWeightVector; }),
-                  product.end());
-
-    if (product.size() != individuals.size()) {
-        throw std::invalid_argument("The number of weight vectors is not equal to the number of individuals");
-    }
-
-    for (int i = 0; i < product.size(); i++) {
-        individuals[i].weightVector = Eigen::Map<Eigen::ArrayXd>(product[i].data(), product[i].size());
-        individuals[i].weightVector /= divisionsNumOfWeightVector;
-    }
-}
-
-template <typename DecisionVariableType>
-void Moead<DecisionVariableType>::InitializeNeighborhoods() {
-    std::vector<std::vector<std::pair<double, int>>> euclideanDistances(populationSize,
-                                                                        std::vector<std::pair<double, int>>(populationSize));
-    for (int i = 0; i < populationSize; i++) {
-        for (int j = 0; j < populationSize; j++) {
-            euclideanDistances[i][j] =
-                std::make_pair(individuals[i].CalculateSquaredEuclideanDistanceOfWeightVector(individuals[j]), j);
-        }
-    }
-    for (int i = 0; i < populationSize; i++) {
-        std::sort(euclideanDistances[i].begin(), euclideanDistances[i].end());
-        for (int j = 0; j < neighborhoodSize; j++) {
-            individuals[i].neighborhood.push_back(euclideanDistances[i][j].second);
-        }
-    }
-}
-
-template <typename DecisionVariableType>
-void Moead<DecisionVariableType>::InitializeIndividuals() {
+void Moead<DecisionVariableType>::InitializeIndividuals(const std::vector<Eigen::ArrayXd>& weightVectors,
+                                                        const std::vector<std::vector<int>>& neighborhoods) {
     individuals = sampling->Sample(populationSize, decisionVariablesNum);
-    for (auto&& individual : individuals) {
-        problem->ComputeObjectiveSet(individual);
+    for (int i = 0; i < populationSize; i++) {
+        individuals[i].weightVector = std::move(weightVectors[i]);
+        individuals[i].neighborhood = std::move(neighborhoods[i]);
+        problem->ComputeObjectiveSet(individuals[i]);
     }
 }
 
 template <typename DecisionVariableType>
 void Moead<DecisionVariableType>::InitializeIdealPoint() {
+    decomposition->InitializeIdealPoint(objectivesNum);
     for (auto&& individual : individuals) {
         decomposition->UpdateIdealPoint(individual.objectives);
     }
@@ -173,11 +169,12 @@ void Moead<DecisionVariableType>::InitializeIdealPoint() {
 
 template <typename DecisionVariableType>
 Individual<DecisionVariableType> Moead<DecisionVariableType>::GenerateNewIndividual(
-    Individual<DecisionVariableType>& individual) {
+    const Individual<DecisionVariableType>& individual) {
     std::vector<int> childrenIndex = selection->Select(crossover->GetParentNum(), individual.neighborhood);
     std::vector<Individual<DecisionVariableType>> parents;
+    parents.reserve(childrenIndex.size());
     for (const auto& i : childrenIndex) {
-        parents.push_back(individuals[i]);
+        parents.push_back(std::move(individuals[i]));
     }
     Individual<DecisionVariableType> newIndividual = crossover->Cross(parents);
     mutation->Mutate(newIndividual);
@@ -185,8 +182,8 @@ Individual<DecisionVariableType> Moead<DecisionVariableType>::GenerateNewIndivid
 }
 
 template <typename DecisionVariableType>
-void Moead<DecisionVariableType>::UpdateNeighborhood(Individual<DecisionVariableType>& individual,
-                                                     Individual<DecisionVariableType>& newIndividual) {
+void Moead<DecisionVariableType>::UpdateNeighborhood(const Individual<DecisionVariableType>& individual,
+                                                     const Individual<DecisionVariableType>& newIndividual) {
     for (auto&& i : individual.neighborhood) {
         double newSubObjective = decomposition->ComputeObjective(individuals[i].weightVector, newIndividual.objectives);
         double oldSubObjective = decomposition->ComputeObjective(individuals[i].weightVector, individuals[i].objectives);
