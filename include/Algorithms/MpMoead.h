@@ -15,6 +15,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Algorithms/IMoead.h"
+#include "Algorithms/MoeadInitializer.h"
 #include "Crossovers/ICrossover.h"
 #include "Decompositions/IDecomposition.h"
 #include "Individual/Individual.h"
@@ -33,41 +35,47 @@ constexpr int dataSizeTag = 0;
 constexpr int messageTag = 1;
 
 template <typename DecisionVariableType>
-class MpMoead {
+class MpMoead : public IMoead<DecisionVariableType> {
    public:
-    MpMoead(int totalPopulationSize, int generationNum, int decisionVariablesNum, int objectivesNum, int neighborhoodSize,
-            int migrationInterval, int divisionsNumOfWeightVector, std::shared_ptr<ICrossover<DecisionVariableType>> crossover,
-            std::shared_ptr<IDecomposition> decomposition, std::shared_ptr<IMutation<DecisionVariableType>> mutation,
-            std::shared_ptr<IProblem<DecisionVariableType>> problem, std::shared_ptr<IRepair<DecisionVariableType>> repair,
-            std::shared_ptr<ISampling<DecisionVariableType>> sampling, std::shared_ptr<ISelection> selection)
-        : totalPopulationSize(totalPopulationSize),
-          generationNum(generationNum),
-          decisionVariablesNum(decisionVariablesNum),
-          objectivesNum(objectivesNum),
+    MpMoead(int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector, int migrationInterval,
+            std::shared_ptr<ICrossover<DecisionVariableType>> crossover, std::shared_ptr<IDecomposition> decomposition,
+            std::shared_ptr<IMutation<DecisionVariableType>> mutation, std::shared_ptr<IProblem<DecisionVariableType>> problem,
+            std::shared_ptr<IRepair<DecisionVariableType>> repair, std::shared_ptr<ISampling<DecisionVariableType>> sampling,
+            std::shared_ptr<ISelection> selection)
+        : generationNum(generationNum),
           neighborhoodSize(neighborhoodSize),
           migrationInterval(migrationInterval),
-          divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-          crossover(crossover),
-          decomposition(decomposition),
-          mutation(mutation),
-          problem(problem),
-          repair(repair),
-          sampling(sampling),
-          selection(selection) {}
+          divisionsNumOfWeightVector(divisionsNumOfWeightVector) {
+        if (!crossover || !decomposition || !mutation || !problem || !repair || !sampling || !selection) {
+            throw std::invalid_argument("Null pointer is passed");
+        }
+
+        this->crossover = crossover;
+        this->decomposition = decomposition;
+        this->mutation = mutation;
+        this->problem = problem;
+        this->repair = repair;
+        this->sampling = sampling;
+        this->selection = selection;
+        decisionVariablesNum = problem->DecisionVariablesNum();
+        objectivesNum = problem->ObjectivesNum();
+    }
     virtual ~MpMoead() {}
 
-    void Run();
-    void Initialize();
+    void Run() override;
+    void Initialize() override;
+    void Update() override;
+    bool IsEnd() const override;
+    std::vector<Eigen::ArrayXd> GetObjectivesList() const override;
+    std::vector<Eigen::ArrayX<DecisionVariableType>> GetSolutionList() const override;
+
     void InitializeMpi();
     void InitializeIsland();
-    void Update();
-    std::vector<Eigen::ArrayXd> GetObjectivesList();
-    // void WriteAllObjectives();
-    // void WriteTransitionOfIdealPoint();
 
    private:
     int totalPopulationSize;
     int generationNum;
+    int currentGeneration;
     int decisionVariablesNum;
     int objectivesNum;
     int neighborhoodSize;
@@ -82,24 +90,17 @@ class MpMoead {
     std::shared_ptr<ISelection> selection;
     int rank;
     int parallelSize;
-
-    std::vector<int> solutionIndexes;
-    std::vector<int> externalSolutionIndexes;
-    std::unordered_map<int, Individual<DecisionVariableType>> individuals;
+    MoeadInitializer initializer;
+    std::vector<int> internalIndexes;
+    std::vector<int> externalIndexes;
     std::set<int> updatedSolutionIndexes;
+    std::unordered_map<int, Individual<DecisionVariableType>> individuals;
     std::unordered_map<int, Individual<DecisionVariableType>> clonedExternalIndividuals;
     std::vector<int> ranksForExternalIndividuals;
     std::set<int> neighboringRanks;
     std::unordered_map<int, std::set<int>> indexesToBeSentByRank;
 
-    // std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
-
-    std::vector<int> GenerateSolutionIndexes();
-    std::vector<std::vector<double>> GenerateWeightVectors(int H);
-    std::vector<int> GenerateNeighborhoods(std::vector<double>& allWeightVectors);
-    std::vector<std::vector<std::pair<double, int>>> CalculateEuclideanDistanceBetweenEachWeightVector(
-        std::vector<double>& weightVectors);
-    std::vector<int> CalculateNeighborhoodIndexes(std::vector<std::vector<std::pair<double, int>>>& euclideanDistances);
+    std::vector<int> GenerateInternalIndexes();
 
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                std::vector<int>& populationSizes);
@@ -149,13 +150,69 @@ template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Run() {
     Initialize();
 
-    // transitionOfIdealPoint.push_back(decomposition->IdealPoint());
-
-    int repeat = generationNum / migrationInterval;
-    for (int i = 0; i < repeat; i++) {
+    while (!IsEnd()) {
         Update();
-        // transitionOfIdealPoint.push_back(decomposition->IdealPoint());
     }
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::Initialize() {
+    InitializeMpi();
+    InitializeIsland();
+    InitializeIdealPoint();
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::Update() {
+    MakeLocalCopyOfExternalIndividuals();
+
+    for (auto&& i : internalIndexes) {
+        Individual<DecisionVariableType> newIndividual = GenerateNewIndividual(i);
+        if (!problem->IsFeasible(newIndividual)) {
+            repair->Repair(newIndividual);
+        }
+        problem->ComputeObjectiveSet(newIndividual);
+        decomposition->UpdateIdealPoint(newIndividual.objectives);
+        UpdateNeighboringIndividuals(i, newIndividual);
+    }
+
+    currentGeneration++;
+
+    if (currentGeneration % migrationInterval == 0) {
+        std::vector<std::vector<double>> messages;
+        SendMessages();
+        messages = ReceiveMessages();
+
+        updatedSolutionIndexes.clear();
+        for (auto&& message : messages) {
+            UpdateWithMessage(message);
+        }
+    }
+}
+
+template <typename DecisionVariableType>
+bool MpMoead<DecisionVariableType>::IsEnd() const {
+    return currentGeneration >= generationNum;
+}
+
+template <typename DecisionVariableType>
+std::vector<Eigen::ArrayXd> MpMoead<DecisionVariableType>::GetObjectivesList() const {
+    std::vector<Eigen::ArrayXd> objectives;
+    for (auto&& i : internalIndexes) {
+        objectives.push_back(individuals[i].objectives);
+    }
+
+    return objectives;
+}
+
+template <typename DecisionVariableType>
+std::vector<Eigen::ArrayX<DecisionVariableType>> MpMoead<DecisionVariableType>::GetSolutionList() const {
+    std::vector<Eigen::ArrayX<DecisionVariableType>> solutions;
+    for (auto&& i : internalIndexes) {
+        solutions.push_back(individuals[i].solution);
+    }
+
+    return solutions;
 }
 
 template <typename DecisionVariableType>
@@ -169,13 +226,6 @@ void MpMoead<DecisionVariableType>::InitializeMpi() {
     MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
 }
 
-template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::Initialize() {
-    InitializeMpi();
-    InitializeIsland();
-    InitializeIdealPoint();
-}
-
 /* FIXME:
  近傍3，ノード数5の場合，C2からC0に解を送信する必要があるが，C2は自分の近傍の解の近傍に自分の解が含まれている場合にC1・C3に送信するため，できていない．
  加えて，ノード数と母集団サイズが近い場合，初期化処理が停止してしまう．
@@ -185,9 +235,10 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<double> weightVectors1d;
     std::vector<int> neighborhoodIndexes1d;
     if (rank == 0) {
-        std::vector<std::vector<double>> weightVectors2d = GenerateWeightVectors(divisionsNumOfWeightVector);
+        std::vector<std::vector<double>> weightVectors2d;
+        initializer.GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector, objectivesNum, neighborhoodSize,
+                                                          weightVectors2d, neighborhoodIndexes1d);
         weightVectors1d = TransformTo1d(weightVectors2d);
-        neighborhoodIndexes1d = GenerateNeighborhoods(weightVectors1d);
     }
 
     std::vector<int> populationSizes;
@@ -212,7 +263,7 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
             GetNeighborhoodMatchingIndexes(neighborhoodIndexes1d, noduplicateNeighborhoodIndexes);
     }
 
-    externalSolutionIndexes = Scatterv(noduplicateNeighborhoodIndexes, neighborhoodSizes, 1, rank, parallelSize);
+    externalIndexes = Scatterv(noduplicateNeighborhoodIndexes, neighborhoodSizes, 1, rank, parallelSize);
     std::vector<double> receivedExternalNeighboringWeightVectors;
     receivedExternalNeighboringWeightVectors =
         Scatterv(sendExternalNeighboringWeightVectors, neighborhoodSizes, objectivesNum, rank, parallelSize);
@@ -225,7 +276,7 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<Eigen::ArrayXd> externalNeighboringWeightVectors =
         TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors, objectivesNum);
 
-    solutionIndexes = GenerateSolutionIndexes();
+    internalIndexes = GenerateInternalIndexes();
     CalculateNeighborhoodByRanks(receivedExternalNeighboringNeighborhoodIndexes);
 
     InitializePopulation();
@@ -238,89 +289,11 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
 }
 
 template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::Update() {
-    MakeLocalCopyOfExternalIndividuals();
-
-    for (int interval = 0; interval < migrationInterval; interval++) {
-        for (auto&& i : solutionIndexes) {
-            Individual<DecisionVariableType> newIndividual = GenerateNewIndividual(i);
-            if (!problem->IsFeasible(newIndividual)) {
-                repair->Repair(newIndividual);
-            }
-            problem->ComputeObjectiveSet(newIndividual);
-            decomposition->UpdateIdealPoint(newIndividual.objectives);
-            UpdateNeighboringIndividuals(i, newIndividual);
-        }
-    }
-
-    SendMessages();
-    auto messages = ReceiveMessages();
-    updatedSolutionIndexes.clear();
-    for (auto&& message : messages) {
-        UpdateWithMessage(message);
-    }
-}
-
-template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::GenerateSolutionIndexes() {
+std::vector<int> MpMoead<DecisionVariableType>::GenerateInternalIndexes() {
     int start = CalculateNodeStartIndex(totalPopulationSize, rank, parallelSize);
     int populationSize = CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
     std::vector<int> solutionIndexes = Rangei(start, start + populationSize - 1, 1);
     return solutionIndexes;
-}
-
-template <typename DecisionVariableType>
-std::vector<std::vector<double>> MpMoead<DecisionVariableType>::GenerateWeightVectors(int H) {
-    std::vector<double> numeratorOfWeightVector(H + 1);
-    std::iota(numeratorOfWeightVector.begin(), numeratorOfWeightVector.end(), 0);
-    std::vector<std::vector<double>> product = Product(numeratorOfWeightVector, objectivesNum);
-    product.erase(std::remove_if(product.begin(), product.end(), [&](auto v) { return std::reduce(v.begin(), v.end()) != H; }),
-                  product.end());
-    for (auto&& p : product) {
-        for (auto& elem : p) {
-            elem /= H;
-        }
-    }
-    return product;
-}
-
-template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::GenerateNeighborhoods(std::vector<double>& allWeightVectors) {
-    std::vector<std::vector<std::pair<double, int>>> euclideanDistances =
-        CalculateEuclideanDistanceBetweenEachWeightVector(allWeightVectors);
-    std::vector<int> neighborhoodIndexes = CalculateNeighborhoodIndexes(euclideanDistances);
-    return neighborhoodIndexes;
-}
-
-template <typename DecisionVariableType>
-std::vector<std::vector<std::pair<double, int>>>
-MpMoead<DecisionVariableType>::CalculateEuclideanDistanceBetweenEachWeightVector(std::vector<double>& weightVectors) {
-    std::vector<std::vector<std::pair<double, int>>> euclideanDistances(
-        totalPopulationSize, std::vector<std::pair<double, int>>(totalPopulationSize));
-    for (int i = 0; i < totalPopulationSize; i++) {
-        for (int j = 0; j < totalPopulationSize; j++) {
-            std::vector<double> diff(objectivesNum);
-            for (int k = 0; k < objectivesNum; k++) {
-                diff[k] = weightVectors[i * objectivesNum + k] - weightVectors[j * objectivesNum + k];
-            }
-            double squaredNorm = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
-            euclideanDistances[i][j] = std::make_pair(squaredNorm, j);
-        }
-    }
-    return euclideanDistances;
-}
-
-template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::CalculateNeighborhoodIndexes(
-    std::vector<std::vector<std::pair<double, int>>>& euclideanDistances) {
-    std::vector<int> neighborhoodIndexes(totalPopulationSize * neighborhoodSize);
-    for (std::size_t i = 0; i < totalPopulationSize; i++) {
-        std::sort(euclideanDistances[i].begin(), euclideanDistances[i].end());
-        for (std::size_t j = 0; j < neighborhoodSize; j++) {
-            neighborhoodIndexes[i * neighborhoodSize + j] = euclideanDistances[i][j].second;
-        }
-    }
-    return neighborhoodIndexes;
 }
 
 template <typename DecisionVariableType>
@@ -373,10 +346,10 @@ std::vector<int> MpMoead<DecisionVariableType>::GetNeighborhoodMatchingIndexes(s
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializePopulation() {
-    int sampleNum = solutionIndexes.size();
+    int sampleNum = internalIndexes.size();
     std::vector<Individual<DecisionVariableType>> sampledIndividuals = sampling->Sample(sampleNum, decisionVariablesNum);
-    for (int i = 0; i < solutionIndexes.size(); i++) {
-        individuals[solutionIndexes[i]] = sampledIndividuals[i];
+    for (int i = 0; i < internalIndexes.size(); i++) {
+        individuals[internalIndexes[i]] = sampledIndividuals[i];
     }
 }
 
@@ -393,11 +366,11 @@ void MpMoead<DecisionVariableType>::InitializeExternalPopulation(std::vector<std
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeObjectives() {
-    for (int i = 0; i < solutionIndexes.size(); i++) {
-        problem->ComputeObjectiveSet(individuals[solutionIndexes[i]]);
+    for (int i = 0; i < internalIndexes.size(); i++) {
+        problem->ComputeObjectiveSet(individuals[internalIndexes[i]]);
     }
-    for (int i = 0; i < externalSolutionIndexes.size(); i++) {
-        problem->ComputeObjectiveSet(clonedExternalIndividuals[externalSolutionIndexes[i]]);
+    for (int i = 0; i < externalIndexes.size(); i++) {
+        problem->ComputeObjectiveSet(clonedExternalIndividuals[externalIndexes[i]]);
     }
 }
 
@@ -410,7 +383,7 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ScatterPopulatio
     for (auto&& [rank, indexes] : indexesToBeSentByRank) {
         for (auto&& index : indexes) {
             // 自分の担当する解だけを送信データに入れる
-            if (std::find(solutionIndexes.begin(), solutionIndexes.end(), index) == solutionIndexes.end()) {
+            if (std::find(internalIndexes.begin(), internalIndexes.end(), index) == internalIndexes.end()) {
                 continue;
             }
 
@@ -446,20 +419,20 @@ template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
     std::vector<Eigen::ArrayXd>& weightVectors, std::vector<std::vector<int>>& neighborhoodIndexes,
     std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
-    for (int i = 0; i < solutionIndexes.size(); i++) {
-        individuals[solutionIndexes[i]].weightVector = weightVectors[i];
-        individuals[solutionIndexes[i]].neighborhood = neighborhoodIndexes[i];
+    for (int i = 0; i < internalIndexes.size(); i++) {
+        individuals[internalIndexes[i]].weightVector = std::move(weightVectors[i]);
+        individuals[internalIndexes[i]].neighborhood = std::move(neighborhoodIndexes[i]);
     }
-    for (int i = 0; i < externalSolutionIndexes.size(); i++) {
-        clonedExternalIndividuals[externalSolutionIndexes[i]].weightVector = externalNeighboringWeightVectors[i];
+    for (int i = 0; i < externalIndexes.size(); i++) {
+        clonedExternalIndividuals[externalIndexes[i]].weightVector = std::move(externalNeighboringWeightVectors[i]);
     }
 }
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::CalculateNeighborhoodByRanks(
     const std::vector<int>& externalNeighboringNeighborhoodIndexes) {
-    for (int i = 0; i < externalSolutionIndexes.size(); i++) {
-        int rank = GetRankFromIndex(totalPopulationSize, externalSolutionIndexes[i], parallelSize);
+    for (int i = 0; i < externalIndexes.size(); i++) {
+        int rank = GetRankFromIndex(totalPopulationSize, externalIndexes[i], parallelSize);
         ranksForExternalIndividuals.push_back(rank);
         neighboringRanks.insert(rank);
         indexesToBeSentByRank[rank].insert(externalNeighboringNeighborhoodIndexes.begin() + i * neighborhoodSize,
@@ -468,9 +441,8 @@ void MpMoead<DecisionVariableType>::CalculateNeighborhoodByRanks(
     for (auto&& [rank, indexes] : indexesToBeSentByRank) {
         std::vector<int> removedIndexes;
         for (auto&& i : indexes) {
-            bool notContainsInInternal = std::find(solutionIndexes.begin(), solutionIndexes.end(), i) == solutionIndexes.end();
-            bool notContainsInExternal =
-                std::find(externalSolutionIndexes.begin(), externalSolutionIndexes.end(), i) == externalSolutionIndexes.end();
+            bool notContainsInInternal = std::find(internalIndexes.begin(), internalIndexes.end(), i) == internalIndexes.end();
+            bool notContainsInExternal = std::find(externalIndexes.begin(), externalIndexes.end(), i) == externalIndexes.end();
             if (notContainsInInternal && notContainsInExternal) {
                 removedIndexes.push_back(i);
             }
@@ -483,17 +455,20 @@ void MpMoead<DecisionVariableType>::CalculateNeighborhoodByRanks(
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIdealPoint() {
-    for (int i = 0; i < solutionIndexes.size(); i++) {
-        decomposition->UpdateIdealPoint(individuals[solutionIndexes[i]].objectives);
+    decomposition->InitializeIdealPoint(objectivesNum);
+
+    for (int i = 0; i < internalIndexes.size(); i++) {
+        decomposition->UpdateIdealPoint(individuals[internalIndexes[i]].objectives);
     }
-    for (int i = 0; i < externalSolutionIndexes.size(); i++) {
-        decomposition->UpdateIdealPoint(clonedExternalIndividuals[externalSolutionIndexes[i]].objectives);
+
+    for (int i = 0; i < externalIndexes.size(); i++) {
+        decomposition->UpdateIdealPoint(clonedExternalIndividuals[externalIndexes[i]].objectives);
     }
 }
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::MakeLocalCopyOfExternalIndividuals() {
-    for (auto&& i : externalSolutionIndexes) {
+    for (auto&& i : externalIndexes) {
         individuals[i] = clonedExternalIndividuals[i];
     }
 }
@@ -536,12 +511,12 @@ void MpMoead<DecisionVariableType>::UpdateNeighboringIndividuals(int index, Indi
 
 template <typename DecisionVariableType>
 bool MpMoead<DecisionVariableType>::IsInternal(int index) {
-    return std::find(solutionIndexes.begin(), solutionIndexes.end(), index) != solutionIndexes.end();
+    return std::find(internalIndexes.begin(), internalIndexes.end(), index) != internalIndexes.end();
 }
 
 template <typename DecisionVariableType>
 bool MpMoead<DecisionVariableType>::IsExternal(int index) {
-    return std::find(externalSolutionIndexes.begin(), externalSolutionIndexes.end(), index) != externalSolutionIndexes.end();
+    return std::find(externalIndexes.begin(), externalIndexes.end(), index) != externalIndexes.end();
 }
 
 template <typename DecisionVariableType>
