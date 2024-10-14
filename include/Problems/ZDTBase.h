@@ -31,6 +31,9 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     const std::vector<std::pair<double, double>>& VariableBounds() const override {
         return variableBounds;
     }
+    double GOfParetoFront() const {
+        return gOfParetoFront;
+    }
     void ComputeObjectiveSet(Individuald& individual) const override;
     bool IsFeasible(const Individuald& individual) const override;
     std::vector<bool> EvaluateConstraints(const Individuald& individual) const override;
