@@ -174,7 +174,7 @@ Individual<DecisionVariableType> Moead<DecisionVariableType>::GenerateNewIndivid
     std::vector<Individual<DecisionVariableType>> parents;
     parents.reserve(childrenIndex.size());
     for (const auto& i : childrenIndex) {
-        parents.push_back(std::move(individuals[i]));
+        parents.push_back(individuals[i]);
     }
     Individual<DecisionVariableType> newIndividual = crossover->Cross(parents);
     mutation->Mutate(newIndividual);
