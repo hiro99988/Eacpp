@@ -25,6 +25,13 @@ TEST_F(DecompositionBaseTest, IdealPoint) {
     ASSERT_TRUE((decompositionBase.IdealPoint() == expected).all());
 }
 
+TEST_F(DecompositionBaseTest, InitializeIdealPoint) {
+    int objectivesNum = 2;
+    decompositionBase.InitializeIdealPoint(objectivesNum);
+    Eigen::ArrayXd expected = Eigen::ArrayXd::Constant(objectivesNum, std::numeric_limits<double>::max());
+    ASSERT_TRUE((decompositionBase.IdealPoint() == expected).all());
+}
+
 TEST_F(DecompositionBaseTest, UpdateIdealPoint) {
     Eigen::ArrayXd objectiveSet(2);
     objectiveSet << 1.0, 2.0;
