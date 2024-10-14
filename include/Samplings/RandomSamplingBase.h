@@ -12,8 +12,10 @@ namespace Eacpp {
 template <typename T>
 class RandomSamplingBase : public ISampling<T> {
    public:
-    RandomSamplingBase() { _rng = std::make_shared<Rng>(); }
-    explicit RandomSamplingBase(std::shared_ptr<IRng> rng) : _rng(rng) {}
+    RandomSamplingBase() {
+        _rng = std::make_shared<Rng>();
+    }
+    explicit RandomSamplingBase(const std::shared_ptr<IRng>& rng) : _rng(rng) {}
     virtual ~RandomSamplingBase() {}
 
    protected:
