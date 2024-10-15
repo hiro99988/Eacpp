@@ -1,7 +1,8 @@
 {
     "trial": 30,
     "generationNum": 500,
-    "neighborhoodSize": 7,
+    "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 299,
+    "migrationInterval": 1,
     "crossoverRate": 0.9
 }

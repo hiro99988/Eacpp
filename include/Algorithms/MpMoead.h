@@ -159,6 +159,7 @@ void MpMoead<DecisionVariableType>::Initialize() {
     InitializeMpi();
     InitializeIsland();
     InitializeIdealPoint();
+    currentGeneration = 0;
 }
 
 template <typename DecisionVariableType>
