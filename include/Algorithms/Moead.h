@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <eigen3/Eigen/Core>
 #include <memory>
-#include <nlohmann/json.hpp>
 #include <numeric>
 #include <ranges>
 #include <tuple>
