@@ -62,11 +62,11 @@ class MpMoeadTest : public ::testing::Test {
     }
     template <typename T>
     void SetSolutionIndexes(MpMoead<T>& moead, std::vector<int> solutionIndexes) {
-        moead.solutionIndexes = solutionIndexes;
+        moead.internalIndexes = solutionIndexes;
     }
     template <typename T>
     void SetExternalSolutionIndexes(MpMoead<T>& moead, std::vector<int> externalSolutionIndexes) {
-        moead.externalSolutionIndexes = externalSolutionIndexes;
+        moead.externalIndexes = externalSolutionIndexes;
     }
     template <typename T>
     void SetIndividuals(MpMoead<T>& moead, int size) {
@@ -92,7 +92,7 @@ class MpMoeadTest : public ::testing::Test {
     std::vector<int> GenerateSolutionIndexes(MpMoead<T>& moead, int rank, int parallelSize) {
         moead.rank = rank;
         moead.parallelSize = parallelSize;
-        return moead.GenerateSolutionIndexes();
+        return moead.GenerateInternalIndexes();
     }
     template <typename T>
     std::vector<std::vector<double>> GenerateWeightVectors(MpMoead<T>& moead, int H) {

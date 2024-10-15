@@ -14,9 +14,13 @@ namespace Eacpp {
 
 class MpMoeadTestM : public ::testing::Test {
    protected:
-    static void SetUpTestSuite() { MPI_Init(nullptr, nullptr); }
+    static void SetUpTestSuite() {
+        MPI_Init(nullptr, nullptr);
+    }
 
-    static void TearDownTestSuite() { MPI_Finalize(); }
+    static void TearDownTestSuite() {
+        MPI_Finalize();
+    }
 
     template <typename T>
     int GetRank(MpMoead<T>& moead) {
@@ -24,11 +28,11 @@ class MpMoeadTestM : public ::testing::Test {
     }
     template <typename T>
     std::vector<int> GetSolutionIndexes(MpMoead<T>& moead) {
-        return moead.solutionIndexes;
+        return moead.internalIndexes;
     }
     template <typename T>
     std::vector<int> GetExternalSolutionIndexes(MpMoead<T>& moead) {
-        return moead.externalSolutionIndexes;
+        return moead.externalIndexes;
     }
     template <typename T>
     std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {

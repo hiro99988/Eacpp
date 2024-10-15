@@ -1,5 +1,6 @@
 #include <mpi.h>
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -7,12 +8,12 @@
 #include <vector>
 
 #include "Algorithms/MpMoead.h"
-#include "Crossovers/BinomialCrossover.h"
+#include "Crossovers/SimulatedBinaryCrossover.h"
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
 #include "Problems/ZDT1.h"
 #include "Repairs/SamplingRepair.h"
-#include "Samplings/UniformRandomSampling.h"
+#include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
 using namespace Eacpp;
@@ -22,10 +23,10 @@ int main(int argc, char** argv) {
     MPI_Init(nullptr, nullptr);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int generationNum = 100;
-    int neighborhoodSize = 5;
+    int generationNum = 500;
+    int neighborhoodSize = 7;
     int migrationInterval = 1;
-    int H = 99;
+    int H = 299;
 
     if (argc == 5) {
         generationNum = std::stoi(argv[1]);
@@ -38,20 +39,16 @@ int main(int argc, char** argv) {
 
     auto problem = std::make_shared<ZDT1>();
 
-    int decisionVariableNum = problem->DecisionVariablesNum();
-    int objectivesNum = problem->ObjectivesNum();
-    std::pair<double, double> variableBound{problem->VariableBound()};
-    std::vector<std::pair<double, double>> variableBounds{variableBound};
-
-    auto crossover = std::make_shared<BinomialCrossover>(1.0, 0.5);
-    auto decomposition = std::make_shared<Tchebycheff>(objectivesNum);
-    auto mutation = std::make_shared<PolynomialMutation>(1.0 / decisionVariableNum, 20.0, variableBounds);
-    auto sampling = std::make_shared<UniformRandomSampling>(variableBound.first, variableBound.second);
+    auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9);
+    auto decomposition = std::make_shared<Tchebycheff>();
+    auto mutation =
+        std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, problem->VariableBounds());
+    auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
     auto repair = std::make_shared<SamplingRepair<double>>(sampling);
     auto selection = std::make_shared<RandomSelection>();
 
-    MpMoead<double> moead(totalPopulationSize, generationNum, decisionVariableNum, objectivesNum, neighborhoodSize,
-                          migrationInterval, H, crossover, decomposition, mutation, problem, repair, sampling, selection);
+    MpMoead<double> moead(generationNum, neighborhoodSize, H, migrationInterval, crossover, decomposition, mutation, problem,
+                          repair, sampling, selection);
 
     double start = MPI_Wtime();
 
@@ -65,9 +62,14 @@ int main(int argc, char** argv) {
         std::cout << "Maximum execution time across all processes: " << maxTime << " seconds" << std::endl;
     }
 
-    // moead.WriteAllObjectives();
-
-    // moead.WriteTransitionOfIdealPoint();
+    std::filesystem::path objectiveFilePath = "out/data/mp_moead/objective/objective-" + std::to_string(rank) + ".txt";
+    std::ofstream objectiveFile(objectiveFilePath);
+    for (const auto& objectives : moead.GetObjectivesList()) {
+        for (size_t j = 0; j < objectives.size(); j++) {
+            objectiveFile << objectives[j] << " ";
+        }
+        objectiveFile << std::endl;
+    }
 
     MPI_Finalize();
 
