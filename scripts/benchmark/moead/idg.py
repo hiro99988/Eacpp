@@ -13,11 +13,9 @@ def load_csv(file_path):
 def calculate_igd(pareto_front, solutions):
     igd = 0
     for pf_point in pareto_front:
-        min_dist = np.square(
-            np.min([distance.euclidean(pf_point, sol) for sol in solutions])
-        )
+        min_dist = np.min([distance.euclidean(pf_point, sol) for sol in solutions])
         igd += min_dist
-    return np.sqrt(igd) / len(pareto_front)
+    return igd / len(pareto_front)
 
 
 def is_dominated(sol, solutions):
