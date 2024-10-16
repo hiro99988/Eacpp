@@ -82,6 +82,17 @@ void ReleaseIsend(int parallelSize) {
     }
 }
 
+void AddIdealPoint(int gen, const Eigen::ArrayXd& add, std::vector<std::pair<int, Eigen::ArrayXd>>& vec) {
+    if (vec.size() == 0) {
+        vec.push_back(std::make_pair(gen, add));
+        return;
+    }
+
+    if ((add != vec.back().second).any()) {
+        vec.push_back(std::make_pair(gen, add));
+    }
+}
+
 int main(int argc, char** argv) {
     constexpr const char* ParameterFilePath = "data/inputs/benchmarks/MpMoead.json";
     constexpr const char* ProblemsFilePath = "data/inputs/benchmarks/Problems.json";
@@ -142,8 +153,9 @@ int main(int argc, char** argv) {
         for (int i = 0; i < trial; i++) {
             ReleaseIsend(parallelSize);
 
+            int generation = 0;
             double totalExecutionTime = 0.0;
-            std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
+            std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
 
             MPI_Barrier(MPI_COMM_WORLD);
             double start = MPI_Wtime();
@@ -153,7 +165,7 @@ int main(int argc, char** argv) {
             double end = MPI_Wtime();
             totalExecutionTime += end - start;
 
-            transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+            AddIdealPoint(generation, decomposition->IdealPoint(), transitionOfIdealPoint);
 
             while (!moead.IsEnd()) {
                 start = MPI_Wtime();
@@ -163,7 +175,8 @@ int main(int argc, char** argv) {
                 end = MPI_Wtime();
                 totalExecutionTime += end - start;
 
-                transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+                generation++;
+                AddIdealPoint(generation, decomposition->IdealPoint(), transitionOfIdealPoint);
             }
 
             double maxTime;
@@ -193,11 +206,12 @@ int main(int argc, char** argv) {
             std::filesystem::path idealPointFilePath = currentIdealPointDirectoryPath / (std::to_string(rank) + ".csv");
             std::ofstream idealPointFile = OpenOutputFile(idealPointFilePath);
             for (const auto& idealPoint : transitionOfIdealPoint) {
-                for (size_t j = 0; j < idealPoint.size(); j++) {
-                    if (j == idealPoint.size() - 1) {
-                        idealPointFile << idealPoint[j];
+                idealPointFile << idealPoint.first << ",";
+                for (size_t j = 0; j < idealPoint.second.size(); j++) {
+                    if (j == idealPoint.second.size() - 1) {
+                        idealPointFile << idealPoint.second(j);
                     } else {
-                        idealPointFile << idealPoint[j] << ",";
+                        idealPointFile << idealPoint.second(j) << ",";
                     }
                 }
                 idealPointFile << std::endl;
