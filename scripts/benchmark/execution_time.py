@@ -14,7 +14,6 @@ def calculate_average_execution_time(directory):
             if os.path.exists(csv_file_path):
                 with open(csv_file_path, "r") as csv_file:
                     reader = csv.reader(csv_file)
-                    next(reader)  # Skip header if there is one
                     times = [float(row[1]) for row in reader]
                     if times:
                         average_times[subdir] = sum(times) / len(times)
