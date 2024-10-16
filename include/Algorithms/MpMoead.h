@@ -246,24 +246,26 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
     if (rank == 0) {
         initializer.GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector, objectivesNum, neighborhoodSize,
                                                           weightVectors1d, neighborhoodIndexes1d);
-
         populationSizes = CalculateNodeWorkloads(totalPopulationSize, parallelSize);
-
-        std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
-            GenerateExternalNeighborhood(neighborhoodIndexes1d, populationSizes);
-        sendExternalNeighboringWeightVectors = GetWeightVectorsMatchingIndexes(weightVectors1d, noduplicateNeighborhoodIndexes);
-
-        CalculateRanksToSent(neighborhoodIndexes1d, populationSizes, sendRanksToSentByRank, ranksToSentByRankSizes);
     }
 
     std::vector<double> receivedWeightVectors = Scatterv(weightVectors1d, populationSizes, objectivesNum, rank, parallelSize);
     std::vector<int> receivedNeighborhoodIndexes =
         Scatterv(neighborhoodIndexes1d, populationSizes, neighborhoodSize, rank, parallelSize);
 
+    if (rank == 0) {
+        std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
+            GenerateExternalNeighborhood(neighborhoodIndexes1d, populationSizes);
+        sendExternalNeighboringWeightVectors = GetWeightVectorsMatchingIndexes(weightVectors1d, noduplicateNeighborhoodIndexes);
+    }
+
     externalIndexes = Scatterv(noduplicateNeighborhoodIndexes, neighborhoodSizes, 1, rank, parallelSize);
     std::vector<double> receivedExternalNeighboringWeightVectors =
         Scatterv(sendExternalNeighboringWeightVectors, neighborhoodSizes, objectivesNum, rank, parallelSize);
 
+    if (rank == 0) {
+        CalculateRanksToSent(neighborhoodIndexes1d, populationSizes, sendRanksToSentByRank, ranksToSentByRankSizes);
+    }
     ranksToSend = Scatterv(sendRanksToSentByRank, ranksToSentByRankSizes, 1, rank, parallelSize);
 
     std::vector<Eigen::ArrayXd> weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectivesNum);
@@ -383,7 +385,9 @@ void MpMoead<DecisionVariableType>::CalculateRanksToSent(const std::vector<int>&
 
         for (auto&& i : neighborhood) {
             int source = GetRankFromIndex(totalPopulationSize, i, parallelSize);
-            ranksToSentByRank[source].insert(dest);
+            if (source != dest) {
+                ranksToSentByRank[source].insert(dest);
+            }
         }
     }
 
@@ -546,9 +550,13 @@ std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::Crea
                                         individuals[i].solution.end());
     }
 
-    for (auto&& i : ranksToSend) {
-        dataToSend[i].insert(dataToSend[i].end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
+    for (auto&& [rank, message] : dataToSend) {
+        message.insert(message.end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
     }
+
+    // for (auto&& i : ranksToSend) {
+    //     dataToSend[i].insert(dataToSend[i].end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
+    // }
 
     // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
     // if (rank == special) {
