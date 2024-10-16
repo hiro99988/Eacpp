@@ -4,7 +4,6 @@
     "generationNum": 1000,
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 299,
-    "migrationInterval": 1,
     "crossover": {
         "type": "SBX",
         "crossoverRate": 0.9,
