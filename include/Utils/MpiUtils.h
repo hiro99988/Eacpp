@@ -158,7 +158,7 @@ std::vector<T> Scatterv(const std::vector<T>& send, const std::vector<int>& node
     return received;
 }
 
-int GetRankFromIndex(int totalTasks, int index, int parallelSize) {
+inline int GetRankFromIndex(int totalTasks, int index, int parallelSize) {
     int start = 0;
     int end = 0;
     int tasksPerNode = totalTasks / parallelSize;
