@@ -99,6 +99,7 @@ class MpMoead : public IMoead<DecisionVariableType> {
     std::unordered_map<int, Individual<DecisionVariableType>> clonedExternalIndividuals;
     std::vector<int> ranksForExternalIndividuals;
     std::set<int> neighboringRanks;
+    std::vector<int> ranksToSend;
 
     std::vector<int> GenerateInternalIndexes();
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
@@ -108,6 +109,8 @@ class MpMoead : public IMoead<DecisionVariableType> {
     void InitializeIndividualAndWeightVector(std::vector<Eigen::ArrayXd>& weightVectors,
                                              std::vector<std::vector<int>>& neighborhoodIndexes,
                                              std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors);
+    void CalculateRanksToSent(const std::vector<int>& neighborhoodIndexes, const std::vector<int>& populationSizes,
+                              std::vector<int>& outRanksToSentByRank, std::vector<int>& outSizes);
     std::vector<std::vector<double>> ScatterPopulation();
 
     void InitializePopulation();
@@ -234,32 +237,34 @@ template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<double> weightVectors1d;
     std::vector<int> neighborhoodIndexes1d;
+    std::vector<int> populationSizes;
+    std::vector<int> noduplicateNeighborhoodIndexes;
+    std::vector<int> neighborhoodSizes;
+    std::vector<double> sendExternalNeighboringWeightVectors;
+    std::vector<int> sendRanksToSentByRank;
+    std::vector<int> ranksToSentByRankSizes;
     if (rank == 0) {
         initializer.GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector, objectivesNum, neighborhoodSize,
                                                           weightVectors1d, neighborhoodIndexes1d);
-    }
 
-    std::vector<int> populationSizes;
-    if (rank == 0) {
         populationSizes = CalculateNodeWorkloads(totalPopulationSize, parallelSize);
+
+        std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
+            GenerateExternalNeighborhood(neighborhoodIndexes1d, populationSizes);
+        sendExternalNeighboringWeightVectors = GetWeightVectorsMatchingIndexes(weightVectors1d, noduplicateNeighborhoodIndexes);
+
+        CalculateRanksToSent(neighborhoodIndexes1d, populationSizes, sendRanksToSentByRank, ranksToSentByRankSizes);
     }
 
     std::vector<double> receivedWeightVectors = Scatterv(weightVectors1d, populationSizes, objectivesNum, rank, parallelSize);
     std::vector<int> receivedNeighborhoodIndexes =
         Scatterv(neighborhoodIndexes1d, populationSizes, neighborhoodSize, rank, parallelSize);
 
-    std::vector<int> noduplicateNeighborhoodIndexes;
-    std::vector<int> neighborhoodSizes;
-    std::vector<double> sendExternalNeighboringWeightVectors;
-    if (rank == 0) {
-        std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
-            GenerateExternalNeighborhood(neighborhoodIndexes1d, populationSizes);
-        sendExternalNeighboringWeightVectors = GetWeightVectorsMatchingIndexes(weightVectors1d, noduplicateNeighborhoodIndexes);
-    }
-
     externalIndexes = Scatterv(noduplicateNeighborhoodIndexes, neighborhoodSizes, 1, rank, parallelSize);
     std::vector<double> receivedExternalNeighboringWeightVectors =
         Scatterv(sendExternalNeighboringWeightVectors, neighborhoodSizes, objectivesNum, rank, parallelSize);
+
+    ranksToSend = Scatterv(sendRanksToSentByRank, ranksToSentByRankSizes, 1, rank, parallelSize);
 
     std::vector<Eigen::ArrayXd> weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectivesNum);
     std::vector<std::vector<int>> neighborhoodIndexes = TransformTo2d(receivedNeighborhoodIndexes, neighborhoodSize);
@@ -364,6 +369,37 @@ void MpMoead<DecisionVariableType>::InitializeObjectives() {
 }
 
 template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::CalculateRanksToSent(const std::vector<int>& neighborhoodIndexes,
+                                                         const std::vector<int>& populationSizes,
+                                                         std::vector<int>& outRanksToSentByRank, std::vector<int>& outSizes) {
+    std::vector<std::set<int>> ranksToSentByRank(parallelSize, std::set<int>());
+    for (int dest = 0, count = 0; dest < parallelSize; ++dest, count += populationSizes[dest] * neighborhoodSize) {
+        std::vector<int> neighborhood;
+        std::copy(neighborhoodIndexes.begin() + count,
+                  neighborhoodIndexes.begin() + count + populationSizes[dest] * neighborhoodSize,
+                  std::back_inserter(neighborhood));
+        std::sort(neighborhood.begin(), neighborhood.end());
+        neighborhood.erase(std::unique(neighborhood.begin(), neighborhood.end()), neighborhood.end());
+
+        for (auto&& i : neighborhood) {
+            int source = GetRankFromIndex(totalPopulationSize, i, parallelSize);
+            ranksToSentByRank[source].insert(dest);
+        }
+    }
+
+    for (auto&& i : ranksToSentByRank) {
+        outSizes.push_back(i.size());
+    }
+
+    outRanksToSentByRank.reserve(parallelSize * neighborhoodSize);
+    for (auto&& i : ranksToSentByRank) {
+        for (auto&& j : i) {
+            outRanksToSentByRank.push_back(j);
+        }
+    }
+}
+
+template <typename DecisionVariableType>
 std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ScatterPopulation() {
     std::vector<double> solutionsToSend;
     solutionsToSend.reserve(internalIndexes.size() * (decisionVariablesNum + 1));
@@ -374,27 +410,27 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ScatterPopulatio
     int dataSize = solutionsToSend.size();
 
     std::vector<MPI_Request> requests;
-    for (auto&& i : neighboringRanks) {
+    for (auto&& i : ranksToSend) {
         requests.emplace_back();
         MPI_Isend(&dataSize, 1, MPI_INT, i, dataSizeTag, MPI_COMM_WORLD, &requests.back());
         requests.emplace_back();
         MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD, &requests.back());
     }
 
-    int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    if (rank == special) {
-        constexpr int dest = 0;
-        requests.emplace_back();
-        MPI_Isend(&dataSize, 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &requests.back());
-        requests.emplace_back();
-        MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &requests.back());
-    } else if (rank == parallelSize - special - 1) {
-        int dest = parallelSize - 1;
-        requests.emplace_back();
-        MPI_Isend(&dataSize, 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &requests.back());
-        requests.emplace_back();
-        MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &requests.back());
-    }
+    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
+    // if (rank == special) {
+    //     constexpr int dest = 0;
+    //     requests.emplace_back();
+    //     MPI_Isend(&dataSize, 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &requests.back());
+    //     requests.emplace_back();
+    //     MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &requests.back());
+    // } else if (rank == parallelSize - special - 1) {
+    //     int dest = parallelSize - 1;
+    //     requests.emplace_back();
+    //     MPI_Isend(&dataSize, 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &requests.back());
+    //     requests.emplace_back();
+    //     MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &requests.back());
+    // }
 
     std::vector<std::vector<double>> receivedSolutions;
     for (auto&& rank : neighboringRanks) {
@@ -510,18 +546,18 @@ std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::Crea
                                         individuals[i].solution.end());
     }
 
-    for (auto&& [rank, solutions] : dataToSend) {
-        solutions.insert(solutions.end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
+    for (auto&& i : ranksToSend) {
+        dataToSend[i].insert(dataToSend[i].end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
     }
 
-    int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    if (rank == special) {
-        constexpr int dest = 0;
-        dataToSend[dest] = updatedInternalSolutions;
-    } else if (rank == parallelSize - special - 1) {
-        int dest = parallelSize - 1;
-        dataToSend[dest] = updatedInternalSolutions;
-    }
+    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
+    // if (rank == special) {
+    //     constexpr int dest = 0;
+    //     dataToSend[dest] = updatedInternalSolutions;
+    // } else if (rank == parallelSize - special - 1) {
+    //     int dest = parallelSize - 1;
+    //     dataToSend[dest] = updatedInternalSolutions;
+    // }
 
     return dataToSend;
 }
@@ -539,26 +575,26 @@ std::vector<int> MpMoead<DecisionVariableType>::GetRanksToReceiveMessages() {
         }
     }
 
-    int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    if (rank == 0) {
-        int source = special;
-        int canReceive0;
-        int canReceive1;
-        MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
-        MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
-        if (canReceive0 && canReceive1) {
-            ranksToReceiveMessages.push_back(source);
-        }
-    } else if (rank == parallelSize - 1) {
-        int source = parallelSize - special - 1;
-        int canReceive0;
-        int canReceive1;
-        MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
-        MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
-        if (canReceive0 && canReceive1) {
-            ranksToReceiveMessages.push_back(source);
-        }
-    }
+    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
+    // if (rank == 0) {
+    //     int source = special;
+    //     int canReceive0;
+    //     int canReceive1;
+    //     MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
+    //     MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
+    //     if (canReceive0 && canReceive1) {
+    //         ranksToReceiveMessages.push_back(source);
+    //     }
+    // } else if (rank == parallelSize - 1) {
+    //     int source = parallelSize - special - 1;
+    //     int canReceive0;
+    //     int canReceive1;
+    //     MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
+    //     MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
+    //     if (canReceive0 && canReceive1) {
+    //         ranksToReceiveMessages.push_back(source);
+    //     }
+    // }
 
     return ranksToReceiveMessages;
 }
