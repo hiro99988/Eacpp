@@ -94,7 +94,7 @@ void AddIdealPoint(int gen, const Eigen::ArrayXd& add, std::vector<std::pair<int
 }
 
 int main(int argc, char** argv) {
-    constexpr const char* ParameterFilePath = "data/inputs/benchmarks/MpMoead.json";
+    constexpr const char* ParameterFilePath = "data/inputs/benchmarks/parameter.json";
     constexpr const char* ProblemsFilePath = "data/inputs/benchmarks/Problems.json";
 
     int rank;
