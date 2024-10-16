@@ -59,8 +59,19 @@ std::string GetTimestamp() {
     return ss.str();
 }
 
+void AddIdealPoint(int gen, const Eigen::ArrayXd& add, std::vector<std::pair<int, Eigen::ArrayXd>>& vec) {
+    if (vec.size() == 0) {
+        vec.push_back(std::make_pair(gen, add));
+        return;
+    }
+
+    if ((add != vec.back().second).any()) {
+        vec.push_back(std::make_pair(gen, add));
+    }
+}
+
 int main(int argc, char** argv) {
-    constexpr const char* ParameterFilePath = "data/inputs/benchmarks/Moead.json";
+    constexpr const char* ParameterFilePath = "data/inputs/benchmarks/parameter.json";
     constexpr const char* ProblemsFilePath = "data/inputs/benchmarks/Problems.json";
 
     auto parameterFile = OpenInputFile(ParameterFilePath);
@@ -103,8 +114,9 @@ int main(int argc, char** argv) {
         std::cout << "Problem: " << problemName << std::endl;
 
         for (int i = 0; i < trial; i++) {
+            int generation = 0;
             double totalExecutionTime = 0.0;
-            std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
+            std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
 
             auto start = std::chrono::high_resolution_clock::now();
 
@@ -114,7 +126,7 @@ int main(int argc, char** argv) {
             std::chrono::duration<double> elapsed = end - start;
             totalExecutionTime += elapsed.count();
 
-            transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+            AddIdealPoint(generation, decomposition->IdealPoint(), transitionOfIdealPoint);
 
             while (!moead.IsEnd()) {
                 start = std::chrono::high_resolution_clock::now();
@@ -125,7 +137,8 @@ int main(int argc, char** argv) {
                 elapsed = end - start;
                 totalExecutionTime += elapsed.count();
 
-                transitionOfIdealPoint.push_back(decomposition->IdealPoint());
+                generation++;
+                AddIdealPoint(generation, decomposition->IdealPoint(), transitionOfIdealPoint);
             }
 
             std::cout << "Trial " << i + 1 << " Total execution time: " << totalExecutionTime << " seconds" << std::endl;
@@ -146,11 +159,12 @@ int main(int argc, char** argv) {
             std::filesystem::path idealPointFilePath = idealPointDirectoryPath / (std::to_string(i + 1) + ".csv");
             std::ofstream idealPointFile = OpenOutputFile(idealPointFilePath);
             for (const auto& idealPoint : transitionOfIdealPoint) {
-                for (size_t j = 0; j < idealPoint.size(); j++) {
-                    if (j == idealPoint.size() - 1) {
-                        idealPointFile << idealPoint[j];
+                idealPointFile << idealPoint.first << ",";
+                for (size_t j = 0; j < idealPoint.second.size(); j++) {
+                    if (j == idealPoint.second.size() - 1) {
+                        idealPointFile << idealPoint.second(j);
                     } else {
-                        idealPointFile << idealPoint[j] << ",";
+                        idealPointFile << idealPoint.second(j) << ",";
                     }
                 }
                 idealPointFile << std::endl;
