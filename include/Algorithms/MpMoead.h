@@ -31,17 +31,18 @@
 namespace Eacpp {
 
 constexpr int maxBufferSize = 100;
-constexpr int dataSizeTag = 0;
-constexpr int messageTag = 1;
+constexpr int messageTag = 0;
 
 template <typename DecisionVariableType>
 class MpMoead : public IMoead<DecisionVariableType> {
    public:
     MpMoead(int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector, int migrationInterval,
-            std::shared_ptr<ICrossover<DecisionVariableType>> crossover, std::shared_ptr<IDecomposition> decomposition,
-            std::shared_ptr<IMutation<DecisionVariableType>> mutation, std::shared_ptr<IProblem<DecisionVariableType>> problem,
-            std::shared_ptr<IRepair<DecisionVariableType>> repair, std::shared_ptr<ISampling<DecisionVariableType>> sampling,
-            std::shared_ptr<ISelection> selection)
+            const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
+            const std::shared_ptr<IDecomposition>& decomposition,
+            const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
+            const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
+            const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
+            const std::shared_ptr<ISampling<DecisionVariableType>>& sampling, const std::shared_ptr<ISelection>& selection)
         : generationNum(generationNum),
           neighborhoodSize(neighborhoodSize),
           migrationInterval(migrationInterval),
@@ -101,6 +102,7 @@ class MpMoead : public IMoead<DecisionVariableType> {
     std::set<int> neighboringRanks;
     std::vector<int> ranksToSend;
 
+    void Clear();
     std::vector<int> GenerateInternalIndexes();
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                std::vector<int>& populationSizes);
@@ -125,7 +127,6 @@ class MpMoead : public IMoead<DecisionVariableType> {
     bool IsExternal(int index);
 
     std::unordered_map<int, std::vector<double>> CreateMessages();
-    std::vector<int> GetRanksToReceiveMessages();
     void SendMessages();
     std::vector<std::vector<double>> ReceiveMessages();
     void UpdateWithMessage(std::vector<double>& message);
@@ -158,6 +159,7 @@ void MpMoead<DecisionVariableType>::Run() {
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Initialize() {
+    Clear();
     totalPopulationSize = initializer.CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
     InitializeMpi();
     InitializeIsland();
@@ -216,6 +218,18 @@ std::vector<Eigen::ArrayX<DecisionVariableType>> MpMoead<DecisionVariableType>::
     }
 
     return solutions;
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::Clear() {
+    internalIndexes.clear();
+    externalIndexes.clear();
+    updatedSolutionIndexes.clear();
+    individuals.clear();
+    clonedExternalIndividuals.clear();
+    ranksForExternalIndividuals.clear();
+    neighboringRanks.clear();
+    ranksToSend.clear();
 }
 
 template <typename DecisionVariableType>
@@ -414,32 +428,19 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ScatterPopulatio
     int dataSize = solutionsToSend.size();
 
     std::vector<MPI_Request> requests;
+    requests.reserve(ranksToSend.size());
     for (auto&& i : ranksToSend) {
         requests.emplace_back();
-        MPI_Isend(&dataSize, 1, MPI_INT, i, dataSizeTag, MPI_COMM_WORLD, &requests.back());
-        requests.emplace_back();
-        MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD, &requests.back());
+        MPI_Isend(solutionsToSend.data(), solutionsToSend.size(), MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD, &requests.back());
     }
 
-    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    // if (rank == special) {
-    //     constexpr int dest = 0;
-    //     requests.emplace_back();
-    //     MPI_Isend(&dataSize, 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &requests.back());
-    //     requests.emplace_back();
-    //     MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &requests.back());
-    // } else if (rank == parallelSize - special - 1) {
-    //     int dest = parallelSize - 1;
-    //     requests.emplace_back();
-    //     MPI_Isend(&dataSize, 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &requests.back());
-    //     requests.emplace_back();
-    //     MPI_Isend(solutionsToSend.data(), dataSize, MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &requests.back());
-    // }
-
     std::vector<std::vector<double>> receivedSolutions;
+    receivedSolutions.reserve(neighboringRanks.size());
     for (auto&& rank : neighboringRanks) {
+        MPI_Status status;
+        MPI_Probe(rank, messageTag, MPI_COMM_WORLD, &status);
         int receivedDataSize;
-        MPI_Recv(&receivedDataSize, 1, MPI_INT, rank, dataSizeTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Get_count(&status, MPI_DOUBLE, &receivedDataSize);
         receivedSolutions.emplace_back(receivedDataSize);
         MPI_Recv(receivedSolutions.back().data(), receivedDataSize, MPI_DOUBLE, rank, messageTag, MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
@@ -571,63 +572,19 @@ std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::Crea
 }
 
 template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::GetRanksToReceiveMessages() {
-    std::vector<int> ranksToReceiveMessages;
-    for (auto&& source : neighboringRanks) {
-        int canReceive0;
-        int canReceive1;
-        MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
-        MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
-        if (canReceive0 && canReceive1) {
-            ranksToReceiveMessages.push_back(source);
-        }
-    }
-
-    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    // if (rank == 0) {
-    //     int source = special;
-    //     int canReceive0;
-    //     int canReceive1;
-    //     MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
-    //     MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
-    //     if (canReceive0 && canReceive1) {
-    //         ranksToReceiveMessages.push_back(source);
-    //     }
-    // } else if (rank == parallelSize - 1) {
-    //     int source = parallelSize - special - 1;
-    //     int canReceive0;
-    //     int canReceive1;
-    //     MPI_Iprobe(source, dataSizeTag, MPI_COMM_WORLD, &canReceive0, MPI_STATUS_IGNORE);
-    //     MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive1, MPI_STATUS_IGNORE);
-    //     if (canReceive0 && canReceive1) {
-    //         ranksToReceiveMessages.push_back(source);
-    //     }
-    // }
-
-    return ranksToReceiveMessages;
-}
-
-template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::SendMessages() {
     // MPI_Isendで使うバッファ
-    static std::array<std::vector<int>, maxBufferSize> sendDataSizesBuffers;
     static std::array<std::unordered_map<int, std::vector<double>>, maxBufferSize> sendMessageBuffers;
-    static int sendDataSizesBufferIndex = 0;
     static int sendMessageBufferIndex = 0;
-    sendDataSizesBufferIndex = (sendDataSizesBufferIndex + 1) % maxBufferSize;
     sendMessageBufferIndex = (sendMessageBufferIndex + 1) % maxBufferSize;
 
-    std::vector<int>& sendDataSizes = sendDataSizesBuffers[sendDataSizesBufferIndex];
-    sendDataSizes.clear();
     std::unordered_map<int, std::vector<double>>& sendMessages = sendMessageBuffers[sendMessageBufferIndex];
     sendMessages = CreateMessages();
 
     // メッセージを送信する
     MPI_Request request;
     for (auto&& [dest, message] : sendMessages) {
-        sendDataSizes.push_back(message.size());
-        MPI_Isend(&sendDataSizes.back(), 1, MPI_INT, dest, dataSizeTag, MPI_COMM_WORLD, &request);
-        MPI_Isend(message.data(), sendDataSizes.back(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
+        MPI_Isend(message.data(), message.size(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
     }
 }
 
@@ -653,14 +610,22 @@ void MpMoead<DecisionVariableType>::SendMessages() {
 
 template <typename DecisionVariableType>
 std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages() {
-    auto ranksToReceiveMessages = GetRanksToReceiveMessages();
-
     std::vector<std::vector<double>> receiveMessages;
-    for (auto&& i : ranksToReceiveMessages) {
-        int receiveDataSize;
-        MPI_Recv(&receiveDataSize, 1, MPI_INT, i, dataSizeTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        receiveMessages.push_back(std::vector<double>(receiveDataSize));
-        MPI_Recv(receiveMessages.back().data(), receiveDataSize, MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    for (auto&& source : neighboringRanks) {
+        while (true) {
+            MPI_Status status;
+            int canReceive;
+            MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive, &status);
+            if (!canReceive) {
+                break;
+            }
+
+            int receiveDataSize;
+            MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
+            std::vector<double> receive = std::vector<double>(receiveDataSize);
+            MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            receiveMessages.push_back(std::move(receive));
+        }
     }
 
     return receiveMessages;
