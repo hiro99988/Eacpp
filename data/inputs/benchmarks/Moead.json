@@ -1,6 +1,6 @@
 {
-    "trial": 30,
-    "generationNum": 500,
+    "trial": 31,
+    "generationNum": 1000,
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 299,
     "crossoverRate": 0.9
