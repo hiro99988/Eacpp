@@ -22,6 +22,11 @@
 #include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
+#define RANK0(code)  \
+    if (rank == 0) { \
+        code;        \
+    }
+
 using namespace Eacpp;
 
 std::ifstream OpenInputFile(const std::filesystem::path& filePath) {
@@ -59,13 +64,33 @@ std::string GetTimestamp() {
     return ss.str();
 }
 
+void ReleaseIsend(int parallelSize) {
+    for (int i = 0; i < parallelSize; i++) {
+        while (true) {
+            int flag;
+            MPI_Status status;
+            MPI_Iprobe(i, 0, MPI_COMM_WORLD, &flag, &status);
+            if (!flag) {
+                break;
+            }
+
+            int dataSize;
+            MPI_Get_count(&status, MPI_DOUBLE, &dataSize);
+            std::vector<double> tempData(dataSize);
+            MPI_Recv(tempData.data(), dataSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     constexpr const char* ParameterFilePath = "data/inputs/benchmarks/MpMoead.json";
     constexpr const char* ProblemsFilePath = "data/inputs/benchmarks/Problems.json";
 
     int rank;
+    int parallelSize;
     MPI_Init(nullptr, nullptr);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
 
     auto parameterFile = OpenInputFile(ParameterFilePath);
     auto problemsFile = OpenInputFile(ProblemsFilePath);
@@ -111,11 +136,12 @@ int main(int argc, char** argv) {
 
         MpMoead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, crossover,
                               decomposition, mutation, problem, repair, sampling, selection);
-        if (rank == 0) {
-            std::cout << "Problem: " << problemName << std::endl;
-        }
+
+        RANK0(std::cout << "Problem: " << problemName << std::endl;)
 
         for (int i = 0; i < trial; i++) {
+            ReleaseIsend(parallelSize);
+
             double totalExecutionTime = 0.0;
             std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
 
@@ -142,9 +168,7 @@ int main(int argc, char** argv) {
 
             double maxTime;
             MPI_Reduce(&totalExecutionTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-            if (rank == 0) {
-                std::cout << "Trial " << i + 1 << " Total execution time: " << totalExecutionTime << " seconds" << std::endl;
-            }
+            RANK0(std::cout << "Trial " << i + 1 << " Total execution time: " << totalExecutionTime << " seconds" << std::endl;)
 
             std::filesystem::path currentObjectiveDirectoryPath = objectiveDirectoryPath / (std::to_string(i + 1));
             std::filesystem::path currentIdealPointDirectoryPath = idealPointDirectoryPath / (std::to_string(i + 1));
