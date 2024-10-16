@@ -1,0 +1,30 @@
+{
+    "parallelSize": 50,
+    "trial": 31,
+    "generationNum": 1000,
+    "neighborhoodSize": 21,
+    "divisionsNumOfWeightVector": 299,
+    "migrationInterval": 1,
+    "crossover": {
+        "type": "SBX",
+        "crossoverRate": 0.9,
+        "distributionIndex": 20.0
+    },
+    "decomposition": {
+        "type": "Tchebycheff"
+    },
+    "mutation": {
+        "type": "Polynomial",
+        "mutationRate": "1.0 / decisionVariableNum",
+        "distributionIndex": 20.0
+    },
+    "repair": {
+        "type": "Sampling"
+    },
+    "selection": {
+        "type": "Random"
+    },
+    "problem": [
+        "ZDT1"
+    ]
+}
