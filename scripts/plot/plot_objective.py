@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def main():
-    data_dir = "out/data//MpMoead/241016-135052/ZDT1/objective/1"
+    data_dir = "out/data/MpMoead/241016-201434/ZDT1/objective/10"
     files = sorted(
         [f for f in os.listdir(data_dir) if f.endswith(".csv")],
         key=lambda x: int(x.split(".")[0]),
@@ -29,7 +29,7 @@ def main():
 
         x_vals, y_vals = data[:, 0], data[:, 1]
         label = file.split(".")[0]
-        plt.scatter(x_vals, y_vals, label=label, s=15, zorder=2)
+        plt.scatter(x_vals, y_vals, s=15, zorder=2)
 
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")

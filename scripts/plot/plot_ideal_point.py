@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def main():
-    data_dir = "out/data//MpMoead/241016-135052/ZDT1/idealPoint/1"
+    data_dir = "out/data//MpMoead/241016-141418/ZDT1/idealPoint/1"
     files = sorted(
         [f for f in os.listdir(data_dir) if f.endswith(".csv")],
         key=lambda x: int(x.split(".")[0]),

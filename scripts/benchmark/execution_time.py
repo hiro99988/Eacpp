@@ -22,7 +22,7 @@ def calculate_average_execution_time(directory):
 
 
 def write_average_times_to_json(directory, average_times):
-    output_file_path = os.path.join(directory, "AverageExecutionTimes.json")
+    output_file_path = os.path.join(directory, "averageExecutionTimes.json")
     with open(output_file_path, "w") as json_file:
         json.dump(average_times, json_file, indent=4)
 
