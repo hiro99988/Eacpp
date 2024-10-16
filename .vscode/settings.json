@@ -73,6 +73,7 @@
         "variant": "cpp",
         "ranges": "cpp",
         "cinttypes": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "valarray": "cpp"
     }
 }
