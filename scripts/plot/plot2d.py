@@ -20,6 +20,12 @@ def main():
         default="n",
         help="Save the plot (y/n)",
     )
+    parser.add_argument(
+        "-sp",
+        "--save_path",
+        type=str,
+        help="Path to save the plot",
+    )
     args = parser.parse_args()
 
     # ファイルの拡張子をチェック
@@ -46,14 +52,14 @@ def main():
     )
 
     # プロット
-    plt.scatter(data[:, 0], data[:, 1], s=1, zorder=2)
+    plt.scatter(data[:, 0], data[:, 1], s=10, zorder=2)
     plt.title(args.title)
     plt.xlabel(args.xlabel)
     plt.ylabel(args.ylabel)
 
     # プロットの保存
     if args.save == "y":
-        plt.savefig("plot.png")
+        plt.savefig(args.save_path)
 
     # プロットの表示
     plt.show()
