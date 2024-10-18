@@ -14,7 +14,7 @@ double ZDT2::G(const Eigen::ArrayXd& X) const {
     return 1.0 + 9.0 * sum / (DecisionVariablesNum() - 1);
 }
 
-double ZDT2::F2(double f1, double g) const {
+double ZDT2::H(double f1, double g) const {
     return 1.0 - std::pow(f1 / g, 2);
 }
 

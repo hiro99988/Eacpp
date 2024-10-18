@@ -24,7 +24,7 @@ class ZDT6Test : public ::testing::Test {
         return zdt6.G(X);
     }
     double F2(double f1, double g) {
-        return zdt6.F2(f1, g);
+        return zdt6.H(f1, g);
     }
 };
 

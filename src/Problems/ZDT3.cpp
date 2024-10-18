@@ -19,7 +19,7 @@ double ZDT3::G(const Eigen::ArrayXd& X) const {
     return 1.0 + 9.0 * sum / (DecisionVariablesNum() - 1);
 }
 
-double ZDT3::F2(double f1, double g) const {
+double ZDT3::H(double f1, double g) const {
     double div = f1 / g;
     return 1.0 - std::sqrt(div) - div * std::sin(10.0 * std::numbers::pi * f1);
 }
@@ -43,7 +43,9 @@ std::vector<Eigen::ArrayXd> ZDT3::GenerateParetoFront(int pointsNum) const {
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(ObjectivesNum()));
     for (int i = 0; i < xs.size(); i++) {
         double f1 = F1(xs[i]);
-        result[i] << f1, F2(f1, GOfParetoFront());
+        double h = H(f1, GOfParetoFront());
+        double f2 = GOfParetoFront() * h;
+        result[i] << f1, f2;
     }
 
     return result;

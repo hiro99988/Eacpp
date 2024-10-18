@@ -14,7 +14,7 @@ class ZDT1 : public ZDTBase {
    private:
     double F1(double x1) const override;
     double G(const Eigen::ArrayXd& x) const override;
-    double F2(double f1, double g) const override;
+    double H(double f1, double g) const override;
 
 #ifdef _TEST_
    public:

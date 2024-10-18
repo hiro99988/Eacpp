@@ -12,7 +12,8 @@ namespace Eacpp {
 void ZDTBase::ComputeObjectiveSet(Individuald& individual) const {
     double f1 = F1(individual.solution[0]);
     double g = G(individual.solution.tail(individual.solution.size() - 1));
-    double f2 = F2(f1, g);
+    double h = H(f1, g);
+    double f2 = g * h;
     Eigen::ArrayXd result(objectivesNum);
     result << f1, f2;
 
@@ -37,7 +38,9 @@ std::vector<Eigen::ArrayXd> ZDTBase::GenerateParetoFront(int pointsNum) const {
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(objectivesNum));
     for (int i = 0; i < pointsNum; i++) {
         double f1 = F1(x[i]);
-        result[i] << f1, F2(f1, gOfParetoFront);
+        double h = H(f1, gOfParetoFront);
+        double f2 = gOfParetoFront * h;
+        result[i] << f1, f2;
     }
     return result;
 }

@@ -43,7 +43,7 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
    protected:
     virtual double F1(double x1) const = 0;
     virtual double G(const Eigen::ArrayXd& X) const = 0;
-    virtual double F2(double f1, double g) const = 0;
+    virtual double H(double f1, double g) const = 0;
 
    private:
     constexpr static int objectivesNum = 2;

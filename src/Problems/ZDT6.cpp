@@ -17,7 +17,7 @@ double ZDT6::G(const Eigen::ArrayXd& X) const {
     return 1.0 + 9.0 * std::pow(sum / (static_cast<double>(DecisionVariablesNum()) - 1.0), 0.25);
 }
 
-double ZDT6::F2(double f1, double g) const {
+double ZDT6::H(double f1, double g) const {
     return 1.0 - std::pow(f1 / g, 2.0);
 }
 
@@ -28,7 +28,9 @@ std::vector<Eigen::ArrayXd> ZDT6::GenerateParetoFront(int pointsNum) const {
 
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(ObjectivesNum()));
     for (int i = 0; i < pointsNum; i++) {
-        result[i] << x[i], F2(x[i], GOfParetoFront());
+        double h = H(F1(x[i]), GOfParetoFront());
+        double f2 = GOfParetoFront() * h;
+        result[i] << x[i], f2;
     }
     return result;
 }

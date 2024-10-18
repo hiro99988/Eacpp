@@ -14,9 +14,15 @@ class ZDTBaseTest : public ::testing::Test {
     class ZDTBaseTmp : public ZDTBase {
        public:
         ZDTBaseTmp(int decisionVariablesNum) : ZDTBase(decisionVariablesNum) {}
-        double F1(double x1) const override { return 1.0; }
-        double G(const Eigen::ArrayXd& X) const override { return 1.0; }
-        double F2(double f1, double g) const override { return 2.0; }
+        double F1(double x1) const override {
+            return 1.0;
+        }
+        double G(const Eigen::ArrayXd& X) const override {
+            return 1.0;
+        }
+        double H(double f1, double g) const override {
+            return 2.0;
+        }
     };
 
     ZDTBaseTmp zdtBaseTmp{1};

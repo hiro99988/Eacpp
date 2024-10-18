@@ -21,7 +21,7 @@ double ZDT4::G(const Eigen::ArrayXd& X) const {
     return 1.0 + 10.0 * (static_cast<double>(DecisionVariablesNum()) - 1.0) + sum;
 }
 
-double ZDT4::F2(double f1, double g) const {
+double ZDT4::H(double f1, double g) const {
     return 1.0 - std::sqrt(f1 / g);
 }
 
