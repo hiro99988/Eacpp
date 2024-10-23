@@ -1,5 +1,4 @@
-#ifndef Utils_h
-#define Utils_h
+#pragma once
 
 #include <algorithm>
 #include <eigen3/Eigen/Core>
@@ -36,6 +35,7 @@ inline Eigen::ArrayXi Rangeea(const int start, const int end, const int step) {
 
 inline std::vector<double> Ranged(const double start, const double end, const double step) {
     std::vector<double> tmp;
+    tmp.reserve((end - start) / step + 1);
     for (double i = start; i <= end; i += step) {
         tmp.push_back(i);
     }
@@ -150,6 +150,18 @@ std::vector<size_t> ArgSort(const Range &range) {
     return indexes;
 }
 
-}  // namespace Eacpp
+template <typename T>
+std::vector<T> LinSpace(T start, T end, int division) {
+    std::vector<T> result;
+    result.reserve(division);
+    T val = start;
+    T dif = (end - start) / static_cast<T>(division - 1);
+    for (int i = 0; i < division; ++i) {
+        result.push_back(val);
+        val += dif;
+    }
 
-#endif
+    return result;
+};
+
+}  // namespace Eacpp
