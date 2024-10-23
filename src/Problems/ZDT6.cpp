@@ -28,7 +28,7 @@ std::vector<Eigen::ArrayXd> ZDT6::GenerateParetoFront(int pointsNum) const {
 
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(ObjectivesNum()));
     for (int i = 0; i < pointsNum; i++) {
-        double h = H(F1(x[i]), GOfParetoFront());
+        double h = H(x[i], GOfParetoFront());
         double f2 = GOfParetoFront() * h;
         result[i] << x[i], f2;
     }

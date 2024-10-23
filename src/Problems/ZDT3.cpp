@@ -33,19 +33,18 @@ std::vector<Eigen::ArrayXd> ZDT3::GenerateParetoFront(int pointsNum) const {
                                                                              {0.8233317983, 0.8518328654}}};
 
     int pointsNumPerRegion = pointsNum / regionsSize;
-    std::vector<double> xs;
-    xs.reserve(pointsNum);
+    std::vector<double> x;
+    x.reserve(pointsNum);
     for (auto&& r : regions) {
-        std::vector<double> x = Ranged(r.first, r.second, (r.second - r.first) / (pointsNumPerRegion - 1));
-        xs.insert(xs.end(), std::make_move_iterator(x.begin()), std::make_move_iterator(x.end()));
+        std::vector<double> tmp = LinSpace(r.first, r.second, pointsNumPerRegion);
+        x.insert(x.end(), tmp.begin(), tmp.end());
     }
 
     std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(ObjectivesNum()));
-    for (int i = 0; i < xs.size(); i++) {
-        double f1 = F1(xs[i]);
-        double h = H(f1, GOfParetoFront());
+    for (int i = 0; i < x.size(); i++) {
+        double h = H(x[i], GOfParetoFront());
         double f2 = GOfParetoFront() * h;
-        result[i] << f1, f2;
+        result[i] << x[i], f2;
     }
 
     return result;
