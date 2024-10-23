@@ -152,12 +152,11 @@ std::vector<size_t> ArgSort(const Range &range) {
 
 template <typename T>
 std::vector<T> LinSpace(T start, T end, int division) {
-    std::vector<T> result;
-    result.reserve(division);
+    std::vector<T> result(division);
     T val = start;
     T dif = (end - start) / static_cast<T>(division - 1);
     for (int i = 0; i < division; ++i) {
-        result.push_back(val);
+        result[i] = val;
         val += dif;
     }
 
