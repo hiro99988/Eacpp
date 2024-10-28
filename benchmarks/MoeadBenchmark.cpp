@@ -18,7 +18,7 @@
 #include "Mutations/PolynomialMutation.h"
 #include "Problems/Problems.h"
 #include "Reflections/Reflection.h"
-#include "Repairs/SamplingRepair.h"
+#include "Repairs/RealRandomRepair.h"
 #include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
         auto decomposition = std::make_shared<Tchebycheff>();
         auto mutation = std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), problem->VariableBounds());
         auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
-        auto repair = std::make_shared<SamplingRepair<double>>(sampling);
+        auto repair = std::make_shared<RealRandomRepair>(problem);
         auto selection = std::make_shared<RandomSelection>();
 
         Moead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, crossover, decomposition, mutation,
