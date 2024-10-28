@@ -105,9 +105,7 @@ template <typename DecisionVariableType>
 void Moead<DecisionVariableType>::Update() {
     for (auto&& individual : individuals) {
         Individual<DecisionVariableType> newIndividual = GenerateNewIndividual(individual);
-        if (!problem->IsFeasible(newIndividual)) {
             repair->Repair(newIndividual);
-        }
         problem->ComputeObjectiveSet(newIndividual);
         decomposition->UpdateIdealPoint(newIndividual.objectives);
         UpdateNeighborhood(individual, newIndividual);
