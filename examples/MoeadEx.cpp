@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<IProblem<double>> problem = Reflection<IProblem<double>>::Create(problemName);
 
-    auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9);
+    auto crossover = std::make_shared<SimulatedBinaryCrossover>(1.0, problem->VariableBounds());
     auto decomposition = std::make_shared<Tchebycheff>();
     auto mutation =
         std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, problem->VariableBounds());

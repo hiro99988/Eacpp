@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
         }
 
         std::shared_ptr<IProblem<double>> problem = std::move(Reflection<IProblem<double>>::Create(problemName));
-        auto crossover = std::make_shared<SimulatedBinaryCrossover>(crossoverRate);
+        auto crossover = std::make_shared<SimulatedBinaryCrossover>(crossoverRate, problem->VariableBounds());
         auto decomposition = std::make_shared<Tchebycheff>();
         auto mutation = std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), problem->VariableBounds());
         auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
