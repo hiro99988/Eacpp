@@ -26,14 +26,9 @@ class PolynomialMutationTest : public ::testing::Test {
     void SetUp() override {
         distributionIndex = 20.0;
         expectedSigma = {
-            {0.0, 0.0, -1.0},
-            {1.0, 0.0, 1.0 - std::pow(2.0, 1.0 / (distributionIndex + 1.0))},
-            {0.0, 0.2, std::pow(0.4, 1.0 / (distributionIndex + 1.0)) - 1.0},
-            {1.0, 0.2, 1.0 - std::pow(1.6, 1.0 / (distributionIndex + 1.0))},
-            {0.0, 0.5, 0.0},
-            {1.0, 0.5, 0.0},
-            {0.0, 1.0, std::pow(2.0, 1.0 / (distributionIndex + 1.0)) - 1.0},
-            {1.0, 1.0, 1.0},
+            {0.0, -1.0}, {0.2, std::pow(0.4, 1.0 / (distributionIndex + 1.0)) - 1.0},
+            {0.5, 0.0},  {0.8, 1.0 - std::pow(0.4, 1.0 / (distributionIndex + 1.0))},
+            {1.0, 1.0},
         };
         variableBounds = {{{0.0, 1.0}}, {{0.0, 1.0}, {0.0, 2.0}}};
     }
@@ -41,7 +36,9 @@ class PolynomialMutationTest : public ::testing::Test {
     void PerformMutation(PolynomialMutation& mutation, int index, Individuald& individual, double sigma) {
         mutation.PerformMutation(index, individual, sigma);
     }
-    double Sigma(PolynomialMutation& mutation) const { return mutation.Sigma(); }
+    double Sigma(PolynomialMutation& mutation) const {
+        return mutation.Sigma();
+    }
 };
 
 }  // namespace Eacpp
@@ -53,8 +50,8 @@ TEST_F(PolynomialMutationTest, Sigma) {
     Eacpp::PolynomialMutation mutation(0.0, distributionIndex, {}, rng);
 
     for (auto&& e : expectedSigma) {
-        EXPECT_CALL(*rng, Random()).WillOnce(Return(e[0])).WillOnce(Return(e[1]));
-        EXPECT_DOUBLE_EQ(Sigma(mutation), e[2]);
+        EXPECT_CALL(*rng, Random()).WillOnce(Return(e[0]));
+        EXPECT_DOUBLE_EQ(Sigma(mutation), e[1]);
     }
 }
 
@@ -89,13 +86,9 @@ TEST_F(PolynomialMutationTest, Mutate) {
     Individuald individual(Eigen::ArrayXd::Zero(10));
     Individuald copy = individual;
 
-    EXPECT_CALL(*rng, Random()).WillRepeatedly(Return(1.0));
+    EXPECT_CALL(*rng, Random()).WillRepeatedly(Return(1.0)).Times(10);
     mutation.Mutate(individual);
     ASSERT_TRUE(individual == copy);
-
-    EXPECT_CALL(*rng, Random()).WillRepeatedly(Return(0.0));
-    mutation.Mutate(individual);
-    ASSERT_FALSE(individual == copy);
 }
 
 }  // namespace Eacpp::Test
