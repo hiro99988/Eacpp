@@ -18,20 +18,19 @@ void PolynomialMutation::Mutate(Individuald& individual) const {
 }
 
 void PolynomialMutation::PerformMutation(int index, Individuald& individual, double sigma) const {
-    if (variableBounds.size() == 1) {
-        individual.solution(index) += sigma * (variableBounds[0].second - variableBounds[0].first);
-    } else if (index < _lastBoundIndex) {
+    if (index < variableBounds.size()) {
         individual.solution(index) += sigma * (variableBounds[index].second - variableBounds[index].first);
     } else {
-        individual.solution(index) += sigma * (variableBounds[_lastBoundIndex].second - variableBounds[_lastBoundIndex].first);
+        individual.solution(index) += sigma * (variableBounds.back().second - variableBounds.back().first);
     }
 }
 
 double PolynomialMutation::Sigma() const {
-    if (_rng->Random() <= 0.5) {
-        return std::pow(2.0 * _rng->Random(), 1.0 / (distributionIndex + 1.0)) - 1.0;
+    double random = _rng->Random();
+    if (random <= 0.5) {
+        return std::pow(2.0 * random, 1.0 / (distributionIndex + 1.0)) - 1.0;
     } else {
-        return 1.0 - std::pow(2.0 - 2.0 * _rng->Random(), 1.0 / (distributionIndex + 1.0));
+        return 1.0 - std::pow(2.0 - 2.0 * random, 1.0 / (distributionIndex + 1.0));
     }
 }
 
