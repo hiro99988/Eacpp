@@ -173,9 +173,7 @@ void MpMoead<DecisionVariableType>::Update() {
 
     for (auto&& i : internalIndexes) {
         Individual<DecisionVariableType> newIndividual = GenerateNewIndividual(i);
-        if (!problem->IsFeasible(newIndividual)) {
-            repair->Repair(newIndividual);
-        }
+        repair->Repair(newIndividual);
         problem->ComputeObjectiveSet(newIndividual);
         decomposition->UpdateIdealPoint(newIndividual.objectives);
         UpdateNeighboringIndividuals(i, newIndividual);
