@@ -65,9 +65,23 @@ TEST_F(SimulatedBinaryCrossoverTest, PerformCrossover) {
     parent2 << 0.72, 1.28, 2.81, 2.11;
     std::vector<Individuald> parents = {Individuald(parent1), Individuald(parent2)};
 
-    EXPECT_CALL(*rng, Random()).Times(4).WillRepeatedly(Return(1.0));
+    EXPECT_CALL(*rng, Random())
+        .WillOnce(Return(1.0))
+        .WillOnce(Return(0.0))
+        .WillOnce(Return(1.0))
+        .WillOnce(Return(1.0))
+        .WillOnce(Return(1.0))
+        .WillOnce(Return(0.0))
+        .WillOnce(Return(1.0))
+        .WillOnce(Return(1.0));
     Individuald child = PerformCrossover(crossover, parents);
-    EXPECT_TRUE(AreEqual(child.solution, parent1));
+    for (int i = 0; i < child.solution.size(); i++) {
+        if (i % 2 == 0) {
+            EXPECT_DOUBLE_EQ(child.solution[i], parent1[i]);
+        } else {
+            EXPECT_DOUBLE_EQ(child.solution[i], parent2[i]);
+        }
+    }
 
     EXPECT_CALL(*rng, Random())
         .WillOnce(Return(0.0))
