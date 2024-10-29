@@ -61,8 +61,8 @@ namespace Eacpp::Test {
 TEST_F(SimulatedBinaryCrossoverTest, PerformCrossover) {
     Eigen::ArrayXd parent1(4);
     Eigen::ArrayXd parent2(4);
-    parent1 << 0.72, 1.28, 2.81, 2.55;
-    parent2 << 0.35, 1.92, 2.33, 2.11;
+    parent1 << 0.35, 1.92, 2.33, 2.55;
+    parent2 << 0.72, 1.28, 2.81, 2.11;
     std::vector<Individuald> parents = {Individuald(parent1), Individuald(parent2)};
 
     EXPECT_CALL(*rng, Random()).Times(4).WillRepeatedly(Return(1.0));
@@ -95,12 +95,12 @@ TEST_F(SimulatedBinaryCrossoverTest, PerformCrossover) {
             double beta = Beta2(crossover, parent1[i], parent2[i], variableBounds[i].second);
             double alpha = Alpha(crossover, beta);
             double betaq = std::pow(1.0 / (2.0 - 0.8 * alpha), 1.0 / (distributionIndex + 1.0));
-            EXPECT_DOUBLE_EQ(child.solution[i], 0.5 * ((1.0 - betaq) * parent1[i] + (1.0 + betaq) * parent2[i]));
+            EXPECT_DOUBLE_EQ(child.solution[i], 0.5 * ((1.0 - betaq) * parent2[i] + (1.0 + betaq) * parent1[i]));
         } else {
             double beta = Beta2(crossover, parent1[i], parent2[i], variableBounds.back().second);
             double alpha = Alpha(crossover, beta);
             double betaq = std::pow(1.0 / (2.0 - 0.8 * alpha), 1.0 / (distributionIndex + 1.0));
-            EXPECT_DOUBLE_EQ(child.solution[i], 0.5 * ((1.0 - betaq) * parent1[i] + (1.0 + betaq) * parent2[i]));
+            EXPECT_DOUBLE_EQ(child.solution[i], 0.5 * ((1.0 - betaq) * parent2[i] + (1.0 + betaq) * parent1[i]));
         }
     }
 }

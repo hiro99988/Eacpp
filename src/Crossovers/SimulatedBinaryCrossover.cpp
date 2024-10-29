@@ -7,18 +7,30 @@
 #include <vector>
 
 #include "Individual/Individual.h"
+#include "Utils/Utils.h"
 
 namespace Eacpp {
 
 Individuald SimulatedBinaryCrossover::performCrossover(const std::vector<Individuald>& parents) const {
-    const Eigen::VectorXd& parent1 = parents[0].solution;
-    const Eigen::VectorXd& parent2 = parents[1].solution;
-    Eigen::VectorXd child = parent1;
+    constexpr double epsilon = 1e-14;
+
+    const Eigen::ArrayXd& parent1 = parents[0].solution;
+    const Eigen::ArrayXd& parent2 = parents[1].solution;
+    Eigen::ArrayXd child(parent1.size());
 
     for (int i = 0; i < child.size(); i++) {
-        if (_rng->Random() > crossoverRate) {
+        double x1 = parent1(i);
+        double x2 = parent2(i);
+        if (_rng->Random() > crossoverRate || x1 == x2 || std::abs(x1 - x2) <= epsilon) {
+            if (_rng->Random() < 0.5) {
+                child(i) = x1;
+            } else {
+                child(i) = x2;
+            }
             continue;
         }
+
+        swapIfMaxLessThanMin(x1, x2);
 
         std::pair<double, double> bound;
         if (i < variableBounds.size()) {
@@ -30,17 +42,17 @@ Individuald SimulatedBinaryCrossover::performCrossover(const std::vector<Individ
         double beta;
         bool isOne = _rng->Random() < 0.5;
         if (isOne) {
-            beta = Beta1(parent1(i), parent2(i), bound.first);
+            beta = Beta1(x1, x2, bound.first);
         } else {
-            beta = Beta2(parent1(i), parent2(i), bound.second);
+            beta = Beta2(x1, x2, bound.second);
         }
 
         double alpha = Alpha(beta);
         double betaq = Betaq(alpha);
         if (isOne) {
-            child(i) = 0.5 * ((1.0 + betaq) * parent1(i) + (1.0 - betaq) * parent2(i));
+            child(i) = 0.5 * ((1.0 + betaq) * x1 + (1.0 - betaq) * x2);
         } else {
-            child(i) = 0.5 * ((1.0 - betaq) * parent1(i) + (1.0 + betaq) * parent2(i));
+            child(i) = 0.5 * ((1.0 - betaq) * x1 + (1.0 + betaq) * x2);
         }
     }
 
