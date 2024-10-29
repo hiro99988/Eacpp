@@ -12,7 +12,8 @@
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
 #include "Problems/ZDT1.h"
-#include "Repairs/SamplingRepair.h"
+#include "Reflections/Reflection.h"
+#include "Repairs/RealRandomRepair.h"
 #include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 
@@ -27,24 +28,24 @@ int main(int argc, char** argv) {
     int neighborhoodSize = 7;
     int migrationInterval = 1;
     int H = 299;
+    std::string problemName = "ZDT1";
 
-    if (argc == 5) {
+    if (argc == 6) {
         generationNum = std::stoi(argv[1]);
         neighborhoodSize = std::stoi(argv[2]);
         migrationInterval = std::stoi(argv[3]);
         H = std::stoi(argv[4]);
+        problemName = argv[5];
     }
 
-    int totalPopulationSize = H + 1;
-
-    auto problem = std::make_shared<ZDT1>();
+    std::shared_ptr<IProblem<double>> problem = Reflection<IProblem<double>>::Create(problemName);
 
     auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9, problem->VariableBounds());
     auto decomposition = std::make_shared<Tchebycheff>();
     auto mutation =
         std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, problem->VariableBounds());
     auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
-    auto repair = std::make_shared<SamplingRepair<double>>(sampling);
+    auto repair = std::make_shared<RealRandomRepair>(problem);
     auto selection = std::make_shared<RandomSelection>();
 
     MpMoead<double> moead(generationNum, neighborhoodSize, H, migrationInterval, crossover, decomposition, mutation, problem,
@@ -62,11 +63,14 @@ int main(int argc, char** argv) {
         std::cout << "Maximum execution time across all processes: " << maxTime << " seconds" << std::endl;
     }
 
-    std::filesystem::path objectiveFilePath = "out/data/mp_moead/objective/objective-" + std::to_string(rank) + ".txt";
+    std::filesystem::path objectiveFilePath = "out/data/tmp/objective/" + std::to_string(rank) + ".csv";
     std::ofstream objectiveFile(objectiveFilePath);
     for (const auto& objectives : moead.GetObjectivesList()) {
-        for (size_t j = 0; j < objectives.size(); j++) {
-            objectiveFile << objectives[j] << " ";
+        for (int i = 0; i < objectives.size(); i++) {
+            objectiveFile << objectives[i];
+            if (i != objectives.size() - 1) {
+                objectiveFile << ",";
+            }
         }
         objectiveFile << std::endl;
     }
