@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "Utils/Utils.h"
+
 namespace Eacpp {
 
 template <typename T>
@@ -109,6 +111,38 @@ inline int CalculateNodeStartIndex(int totalTasks, int rank, int parallelSize) {
         startIndex += nodeWorkload;
     }
     return startIndex;
+}
+
+/**
+ * @brief ノードのインデックス範囲を生成します。
+ *
+ * @param totalTasks 全タスクの数。
+ * @param rank ノードのランク。
+ * @param parallelSize ノードの総数。
+ * @return std::vector<int> ノードのインデックス範囲。
+ */
+inline std::vector<int> GenerateNodeIndexes(int totalTasks, int rank, int parallelSize) {
+    int start = CalculateNodeStartIndex(totalTasks, rank, parallelSize);
+    int workload = CalculateNodeWorkload(totalTasks, rank, parallelSize);
+    std::vector<int> indexes = Rangei(start, start + workload - 1, 1);
+    return indexes;
+}
+
+/**
+ * @brief 全てのノードにおけるインデックス範囲を生成します。
+ *
+ * @param totalTasks 全タスクの数。
+ * @param parallelSize ノードの総数。
+ * @return std::vector<std::vector<int>> すべてのランクに関するノードインデックス。
+ */
+inline std::vector<std::vector<int>> GenerateAllNodeIndexes(int totalTasks, int parallelSize) {
+    std::vector<std::vector<int>> allNodeIndexes;
+    allNodeIndexes.resize(parallelSize);
+    for (int rank = 0; rank < parallelSize; rank++) {
+        allNodeIndexes.push_back(GenerateNodeIndexes(totalTasks, rank, parallelSize));
+    }
+
+    return allNodeIndexes;
 }
 
 /**
