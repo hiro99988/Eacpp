@@ -137,7 +137,7 @@ inline std::vector<int> GenerateNodeIndexes(int totalTasks, int rank, int parall
  */
 inline std::vector<std::vector<int>> GenerateAllNodeIndexes(int totalTasks, int parallelSize) {
     std::vector<std::vector<int>> allNodeIndexes;
-    allNodeIndexes.resize(parallelSize);
+    allNodeIndexes.reserve(parallelSize);
     for (int rank = 0; rank < parallelSize; rank++) {
         allNodeIndexes.push_back(GenerateNodeIndexes(totalTasks, rank, parallelSize));
     }
