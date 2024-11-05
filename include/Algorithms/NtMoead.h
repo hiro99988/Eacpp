@@ -32,6 +32,7 @@ namespace Eacpp {
 constexpr int maxBufferSize = 100;
 constexpr int messageTag = 0;
 
+// TODO: vectorにおいてできるだけreserveを使ってメモリ確保を行う
 template <typename DecisionVariableType>
 class NtMoead : public IMoead<DecisionVariableType> {
    public:
@@ -103,6 +104,7 @@ class NtMoead : public IMoead<DecisionVariableType> {
     std::vector<std::vector<int>> ReadAdjacencyList();
     void CalculateRankIndexesByNode(std::vector<int>& allRankIndexes, std::vector<int>& sizesAllRankIndexes,
                                     std::vector<int>& numsRankIndexes, std::vector<int>& sizesNumRank);
+    void CalculateRankIndexesToSend(std::vector<int>& allRankIndexes, std::vector<int>& numsRankIndexes);
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                std::vector<int>& populationSizes);
     std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors, std::vector<int>& indexes);
@@ -123,6 +125,7 @@ class NtMoead : public IMoead<DecisionVariableType> {
     void UpdateNeighboringIndividuals(int index, Individual<DecisionVariableType>& newIndividual);
     bool IsInternal(int index);
     bool IsExternal(int index);
+    bool HasIndividual(int index);
 
     std::unordered_map<int, std::vector<double>> CreateMessages();
     void SendMessages();
@@ -276,6 +279,7 @@ void NtMoead<DecisionVariableType>::InitializeIsland() {
     }
     std::vector<int> receivedRankIndexes = Scatterv(allRankIndexes, sizesAllRankIndexes, 1, rank, parallelSize);
     std::vector<int> receivedNumsRankIndexes = Scatterv(numsRankIndexes, sizesNumRank, 1, rank, parallelSize);
+    CalculateRankIndexesToSend(allRankIndexes, numsRankIndexes);
 
     // 受信したデータを2Dに変換
     std::vector<Eigen::ArrayXd> weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectivesNum);
@@ -341,8 +345,8 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(std::vector<int>&
                                                                std::vector<int>& numsRankIndexes,
                                                                std::vector<int>& sizesNumRank) {
     auto adjacencyList = ReadAdjacencyList();
+    // TODO: あるノードが必要としている解は，自分の解とその近傍の解であるため，近傍も含めて計算する
     auto allNodeIndexes = GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
-    // TODO: populationSizesを使ってreserveしたときに実行時間が早くなるか検証する
 
     for (int rank = 0; rank < adjacencyList.size(); rank++) {
         sizesNumRank.push_back(adjacencyList[rank].size());
@@ -365,6 +369,16 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(std::vector<int>&
         }
 
         sizesAllRankIndexes.push_back(size + adjacencyList[rank].size());
+    }
+}
+
+template <typename DecisionVariableType>
+void NtMoead<DecisionVariableType>::CalculateRankIndexesToSend(std::vector<int>& allRankIndexes,
+                                                               std::vector<int>& numsRankIndexes) {
+    for (int i = 0, count = 0; i < allRankIndexes.size(); i += numsRankIndexes[count] + 1, ++count) {
+        int rank = allRankIndexes[i];
+        rankIndexesToSend[rank].insert(rankIndexesToSend[rank].end(), allRankIndexes.begin() + i + 1,
+                                       allRankIndexes.begin() + i + 1 + numsRankIndexes[count]);
     }
 }
 
@@ -578,41 +592,50 @@ bool NtMoead<DecisionVariableType>::IsExternal(int index) {
 }
 
 template <typename DecisionVariableType>
-std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::CreateMessages() {
-    std::unordered_map<int, std::vector<double>> dataToSend;
-    // for (int i = 0; i < externalIndexes.size(); i++) {
-    //     int index = externalIndexes[i];
-    //     bool updated = (individuals[index].solution != clonedExternalIndividuals[index].solution).any();
-    //     if (updated) {
-    //         dataToSend[ranksForExternalIndividuals[i]].push_back(index);
-    //         dataToSend[ranksForExternalIndividuals[i]].insert(dataToSend[ranksForExternalIndividuals[i]].end(),
-    //                                                           individuals[index].solution.begin(),
-    //                                                           individuals[index].solution.end());
-    //     }
-    // }
+bool NtMoead<DecisionVariableType>::HasIndividual(int index) {
+    return individuals.find(index) != individuals.end();
+}
 
-    // std::vector<double> updatedInternalSolutions;
-    // for (auto&& i : updatedSolutionIndexes) {
-    //     updatedInternalSolutions.push_back(i);
-    //     updatedInternalSolutions.insert(updatedInternalSolutions.end(), individuals[i].solution.begin(),
-    //                                     individuals[i].solution.end());
-    // }
+template <typename DecisionVariableType>
+std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::CreateMessages() {
+    std::vector<double> updatedInternalIndividuals;
+    for (auto&& i : updatedSolutionIndexes) {
+        updatedInternalIndividuals.push_back(i);
+        updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].solution.begin(),
+                                          individuals[i].solution.end());
+        updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].objectives.begin(),
+                                          individuals[i].objectives.end());
+    }
+
+    std::unordered_map<int, std::vector<double>> dataToSend;
+    for (auto&& [rank, indexes] : rankIndexesToSend) {
+        dataToSend[rank] = std::vector<double>();
+        for (auto&& i : indexes) {
+            if (!HasIndividual(i)) {
+                continue;
+            }
+
+            dataToSend[rank].push_back(i);
+            dataToSend[rank].insert(dataToSend[rank].end(), individuals[i].solution.begin(), individuals[i].solution.end());
+            dataToSend[rank].insert(dataToSend[rank].end(), individuals[i].objectives.begin(), individuals[i].objectives.end());
+        }
+    }
 
     // for (auto&& [rank, message] : dataToSend) {
-    //     message.insert(message.end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
+    //     message.insert(message.end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
     // }
 
     // for (auto&& i : ranksToSend) {
-    //     dataToSend[i].insert(dataToSend[i].end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
+    //     dataToSend[i].insert(dataToSend[i].end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
     // }
 
     // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
     // if (rank == special) {
     //     constexpr int dest = 0;
-    //     dataToSend[dest] = updatedInternalSolutions;
+    //     dataToSend[dest] = updatedInternalIndividuals;
     // } else if (rank == parallelSize - special - 1) {
     //     int dest = parallelSize - 1;
-    //     dataToSend[dest] = updatedInternalSolutions;
+    //     dataToSend[dest] = updatedInternalIndividuals;
     // }
 
     return dataToSend;
