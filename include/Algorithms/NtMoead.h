@@ -183,6 +183,7 @@ void NtMoead<DecisionVariableType>::Update() {
         messages = ReceiveMessages();
 
         updatedSolutionIndexes.clear();
+        updatedExternalSolutionIndexes.clear();
         for (auto&& message : messages) {
             UpdateWithMessage(message);
         }
@@ -219,6 +220,7 @@ void NtMoead<DecisionVariableType>::Clear() {
     internalIndexes.clear();
     externalIndexes.clear();
     updatedSolutionIndexes.clear();
+    updatedExternalSolutionIndexes.clear();
     individuals.clear();
 }
 
@@ -558,6 +560,8 @@ void NtMoead<DecisionVariableType>::UpdateNeighboringIndividuals(int index, Indi
             individuals[i].UpdateFrom(newIndividual);
             if (IsInternal(i)) {
                 updatedSolutionIndexes.insert(i);
+            } else {
+                updatedExternalSolutionIndexes.insert(i);
             }
         }
     }
