@@ -387,7 +387,7 @@ void MpMoead<DecisionVariableType>::CalculateRanksToSent(const std::vector<int>&
                                                          const std::vector<int>& populationSizes,
                                                          std::vector<int>& outRanksToSentByRank, std::vector<int>& outSizes) {
     std::vector<std::set<int>> ranksToSentByRank(parallelSize, std::set<int>());
-    for (int dest = 0, count = 0; dest < parallelSize; ++dest, count += populationSizes[dest] * neighborhoodSize) {
+    for (int dest = 0, count = 0; dest < parallelSize; count += populationSizes[dest] * neighborhoodSize, ++dest) {
         std::vector<int> neighborhood;
         std::copy(neighborhoodIndexes.begin() + count,
                   neighborhoodIndexes.begin() + count + populationSizes[dest] * neighborhoodSize,
