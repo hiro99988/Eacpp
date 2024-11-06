@@ -350,7 +350,7 @@ std::vector<std::vector<int>> NtMoead<DecisionVariableType>::ReadAdjacencyList()
 /// @param noduplicateIndexes 重複のない自身と近傍のインデックス
 /// @param outAllRankIndexes {{rank1, index1, index2, rank2, index3, ...}, {rank3, index4, ...}, ...}
 /// @param outSizesAllRankIndexes {allSizeOfNode1, allSizeOfNode2, ...}
-/// @param outNumsRankIndexes {{numOfRank1, numOfRank2, ...}, {numOfRank3, ...}, ...} rank number are not included
+/// @param outNumsRankIndexes {{numOfRank1, numOfRank2, ...}, {numOfRank3, ...}, ...}
 /// @param outSizesNumRank {sizeOfNumOfNode1, sizeOfNumOfNode2, ...} equal to degrees of nodes
 template <typename DecisionVariableType>
 void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(const std::vector<std::vector<int>>& noduplicateIndexes,
@@ -376,7 +376,7 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(const std::vector
 
             outAllRankIndexes.push_back(neighbor);
             outAllRankIndexes.insert(outAllRankIndexes.end(), individualIndexes.begin(), individualIndexes.end());
-            outNumsRankIndexes.push_back(individualIndexes.size());
+            outNumsRankIndexes.push_back(individualIndexes.size() + 1);
             size += individualIndexes.size() + 1;
         }
 
