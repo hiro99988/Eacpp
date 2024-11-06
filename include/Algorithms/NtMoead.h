@@ -291,7 +291,7 @@ void NtMoead<DecisionVariableType>::InitializeIsland() {
     }
     std::vector<int> receivedRankIndexes = Scatterv(allRankIndexes, sizesAllRankIndexes, 1, rank, parallelSize);
     std::vector<int> receivedNumsRankIndexes = Scatterv(numsRankIndexes, sizesNumRank, 1, rank, parallelSize);
-    CalculateRankIndexesToSend(allRankIndexes, numsRankIndexes);
+    CalculateRankIndexesToSend(receivedRankIndexes, receivedNumsRankIndexes);
 
     // 受信したデータを2Dに変換
     std::vector<Eigen::ArrayXd> weightVectors = TransformToEigenArrayX2d(receivedWeightVectors, objectivesNum);
