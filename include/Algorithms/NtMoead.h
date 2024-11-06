@@ -387,10 +387,10 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(const std::vector
 template <typename DecisionVariableType>
 void NtMoead<DecisionVariableType>::CalculateRankIndexesToSend(std::vector<int>& allRankIndexes,
                                                                std::vector<int>& numsRankIndexes) {
-    for (int i = 0, count = 0; i < allRankIndexes.size(); i += numsRankIndexes[count] + 1, ++count) {
+    for (int i = 0, count = 0; i < allRankIndexes.size(); i += numsRankIndexes[count], ++count) {
         int rank = allRankIndexes[i];
         rankIndexesToSend[rank].insert(rankIndexesToSend[rank].end(), allRankIndexes.begin() + i + 1,
-                                       allRankIndexes.begin() + i + 1 + numsRankIndexes[count]);
+                                       allRankIndexes.begin() + i + numsRankIndexes[count]);
     }
 }
 
