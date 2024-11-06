@@ -99,6 +99,7 @@ class NtMoead : public IMoead<DecisionVariableType> {
 
     std::set<int> updatedExternalSolutionIndexes;
     std::unordered_map<int, std::vector<int>> rankIndexesToSend;
+    std::unordered_map<int, std::vector<double>> receivedIndividuals;
 
     void Clear();
     std::vector<std::vector<int>> ReadAdjacencyList();
@@ -626,64 +627,44 @@ bool NtMoead<DecisionVariableType>::HasIndividual(int index) {
 
 template <typename DecisionVariableType>
 std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::CreateMessages() {
-    std::vector<double> updatedInternalIndividuals;
-    for (auto&& i : updatedSolutionIndexes) {
-        updatedInternalIndividuals.push_back(i);
-        updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].solution.begin(),
-                                          individuals[i].solution.end());
-        updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].objectives.begin(),
-                                          individuals[i].objectives.end());
-    }
-
     std::unordered_map<int, std::vector<double>> dataToSend;
     for (auto&& [rank, indexes] : rankIndexesToSend) {
-        dataToSend[rank] = std::vector<double>();
-        for (auto&& i : indexes) {
-            if (!HasIndividual(i)) {
-                continue;
-            }
+        for (auto&& index : indexes) {
+            if (individuals.find(index) != individuals.end()) {
+                if (IsInternal(index) && updatedSolutionIndexes.find(index) != updatedSolutionIndexes.end()) {
+                    continue;
+                }
 
-            dataToSend[rank].push_back(i);
-            dataToSend[rank].insert(dataToSend[rank].end(), individuals[i].solution.begin(), individuals[i].solution.end());
-            dataToSend[rank].insert(dataToSend[rank].end(), individuals[i].objectives.begin(), individuals[i].objectives.end());
+                dataToSend[rank].push_back(index);
+                dataToSend[rank].insert(dataToSend[rank].end(), individuals[index].solution.begin(),
+                                        individuals[index].solution.end());
+                dataToSend[rank].insert(dataToSend[rank].end(), individuals[index].objectives.begin(),
+                                        individuals[index].objectives.end());
+            } else if (receivedIndividuals.find(index) != receivedIndividuals.end()) {
+                dataToSend[rank].insert(dataToSend[rank].end(), receivedIndividuals[index].begin(),
+                                        receivedIndividuals[index].end());
+            }
         }
     }
-
-    // for (auto&& [rank, message] : dataToSend) {
-    //     message.insert(message.end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
-    // }
-
-    // for (auto&& i : ranksToSend) {
-    //     dataToSend[i].insert(dataToSend[i].end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
-    // }
-
-    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    // if (rank == special) {
-    //     constexpr int dest = 0;
-    //     dataToSend[dest] = updatedInternalIndividuals;
-    // } else if (rank == parallelSize - special - 1) {
-    //     int dest = parallelSize - 1;
-    //     dataToSend[dest] = updatedInternalIndividuals;
-    // }
 
     return dataToSend;
 }
 
 template <typename DecisionVariableType>
 void NtMoead<DecisionVariableType>::SendMessages() {
-    // // MPI_Isendで使うバッファ
-    // static std::array<std::unordered_map<int, std::vector<double>>, maxBufferSize> sendMessageBuffers;
-    // static int sendMessageBufferIndex = 0;
-    // sendMessageBufferIndex = (sendMessageBufferIndex + 1) % maxBufferSize;
+    // MPI_Isendで使うバッファ
+    static std::array<std::unordered_map<int, std::vector<double>>, maxBufferSize> sendMessageBuffers;
+    static int sendMessageBufferIndex = 0;
+    sendMessageBufferIndex = (sendMessageBufferIndex + 1) % maxBufferSize;
 
-    // std::unordered_map<int, std::vector<double>>& sendMessages = sendMessageBuffers[sendMessageBufferIndex];
-    // sendMessages = CreateMessages();
+    std::unordered_map<int, std::vector<double>>& sendMessages = sendMessageBuffers[sendMessageBufferIndex];
+    sendMessages = CreateMessages();
 
-    // // メッセージを送信する
-    // MPI_Request request;
-    // for (auto&& [dest, message] : sendMessages) {
-    //     MPI_Isend(message.data(), message.size(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
-    // }
+    // メッセージを送信する
+    MPI_Request request;
+    for (auto&& [dest, message] : sendMessages) {
+        MPI_Isend(message.data(), message.size(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
+    }
 }
 
 // bufferが無限バージョン
@@ -709,52 +690,59 @@ void NtMoead<DecisionVariableType>::SendMessages() {
 template <typename DecisionVariableType>
 std::vector<std::vector<double>> NtMoead<DecisionVariableType>::ReceiveMessages() {
     std::vector<std::vector<double>> receiveMessages;
-    // for (auto&& source : neighboringRanks) {
-    //     while (true) {
-    //         MPI_Status status;
-    //         int canReceive;
-    //         MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive, &status);
-    //         if (!canReceive) {
-    //             break;
-    //         }
+    for (auto&& [source, _] : rankIndexesToSend) {
+        while (true) {
+            MPI_Status status;
+            int canReceive;
+            MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive, &status);
+            if (!canReceive) {
+                break;
+            }
 
-    //         int receiveDataSize;
-    //         MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
-    //         std::vector<double> receive = std::vector<double>(receiveDataSize);
-    //         MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    //         receiveMessages.push_back(std::move(receive));
-    //     }
-    // }
+            int receiveDataSize;
+            MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
+            std::vector<double> receive = std::vector<double>(receiveDataSize);
+            MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            receiveMessages.push_back(std::move(receive));
+        }
+    }
 
     return receiveMessages;
 }
 
 template <typename DecisionVariableType>
 void NtMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& message) {
-    // for (int i = 0; i < message.size(); i += decisionVariablesNum + 1) {
-    //     int index = message[i];
-    //     if (!(IsInternal(index) || IsExternal(index))) {
-    //         continue;
-    //     }
+    int step = decisionVariablesNum + objectivesNum + 1;
+    for (int i = 0; i < message.size(); i += step) {
+        int index = message[i];
+        bool isInternal = IsInternal(index);
+        bool isExternal = IsExternal(index);
+        if (!(isInternal || isExternal)) {
+            receivedIndividuals[index] = std::vector<double>(message.begin() + i, message.begin() + i + step);
+            Eigen::ArrayXd newObjectives =
+                Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1 + decisionVariablesNum, objectivesNum);
+            decomposition->UpdateIdealPoint(newObjectives);
+            continue;
+        }
 
-    //     Eigen::ArrayX<DecisionVariableType> newSolution =
-    //         Eigen::Map<Eigen::ArrayX<DecisionVariableType>>(message.data() + i + 1, decisionVariablesNum);
-    //     Individual<DecisionVariableType> newIndividual(newSolution);
-    //     problem->ComputeObjectiveSet(newIndividual);
-    //     if (IsExternal(index)) {
-    //         clonedExternalIndividuals[index].UpdateFrom(newIndividual);
-    //     } else {
-    //         double newSubObjective = decomposition->ComputeObjective(individuals[index].weightVector,
-    //         newIndividual.objectives); double oldSubObjective =
-    //             decomposition->ComputeObjective(individuals[index].weightVector, individuals[index].objectives);
-    //         if (newSubObjective < oldSubObjective) {
-    //             individuals[index].UpdateFrom(newIndividual);
-    //             updatedSolutionIndexes.insert(index);
-    //         }
-    //     }
+        Eigen::ArrayX<DecisionVariableType> newSolution =
+            Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1, decisionVariablesNum);
+        Eigen::ArrayXd newObjectives = Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1 + decisionVariablesNum, objectivesNum);
+        Individual<DecisionVariableType> newIndividual(std::move(newSolution), std::move(newObjectives));
+        if (isExternal) {
+            individuals[index].UpdateFrom(newIndividual);
+        } else {
+            double newSubObjective = decomposition->ComputeObjective(individuals[index].weightVector, newIndividual.objectives);
+            double oldSubObjective =
+                decomposition->ComputeObjective(individuals[index].weightVector, individuals[index].objectives);
+            if (newSubObjective < oldSubObjective) {
+                individuals[index].UpdateFrom(newIndividual);
+                updatedSolutionIndexes.insert(index);
+            }
+        }
 
-    //     decomposition->UpdateIdealPoint(newIndividual.objectives);
-    // }
+        decomposition->UpdateIdealPoint(newIndividual.objectives);
+    }
 }
 
 }  // namespace Eacpp
