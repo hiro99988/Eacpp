@@ -103,7 +103,6 @@ class MpMoead : public IMoead<DecisionVariableType> {
     std::vector<int> ranksToSend;
 
     void Clear();
-    std::vector<int> GenerateInternalIndexes();
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
                                                                                std::vector<int>& populationSizes);
     std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors, std::vector<int>& indexes);
@@ -117,7 +116,6 @@ class MpMoead : public IMoead<DecisionVariableType> {
 
     void InitializePopulation();
     void InitializeExternalPopulation(std::vector<std::vector<double>>& receivedSolutions);
-    void InitializeObjectives();
     void InitializeIdealPoint();
     void MakeLocalCopyOfExternalIndividuals();
     std::vector<Individual<DecisionVariableType>> SelectParents(int index);
@@ -241,10 +239,6 @@ void MpMoead<DecisionVariableType>::InitializeMpi() {
     MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
 }
 
-/* FIXME:
- 近傍3，ノード数5の場合，C2からC0に解を送信する必要があるが，C2は自分の近傍の解の近傍に自分の解が含まれている場合にC1・C3に送信するため，できていない．
- 加えて，ノード数と母集団サイズが近い場合，初期化処理が停止してしまう．
- */
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<double> weightVectors1d;
@@ -285,23 +279,14 @@ void MpMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<Eigen::ArrayXd> externalNeighboringWeightVectors =
         TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors, objectivesNum);
 
-    internalIndexes = GenerateInternalIndexes();
+    internalIndexes = GenerateNodeIndexes(totalPopulationSize, rank, parallelSize);
     CalculateNeighboringRanks();
     InitializePopulation();
 
     auto receivedExternalSolutions = ScatterPopulation();
 
     InitializeExternalPopulation(receivedExternalSolutions);
-    InitializeObjectives();
     InitializeIndividualAndWeightVector(weightVectors, neighborhoodIndexes, externalNeighboringWeightVectors);
-}
-
-template <typename DecisionVariableType>
-std::vector<int> MpMoead<DecisionVariableType>::GenerateInternalIndexes() {
-    int start = CalculateNodeStartIndex(totalPopulationSize, rank, parallelSize);
-    int populationSize = CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    std::vector<int> solutionIndexes = Rangei(start, start + populationSize - 1, 1);
-    return solutionIndexes;
 }
 
 template <typename DecisionVariableType>
@@ -356,29 +341,22 @@ void MpMoead<DecisionVariableType>::InitializePopulation() {
     std::vector<Individual<DecisionVariableType>> sampledIndividuals = sampling->Sample(sampleNum, decisionVariablesNum);
     for (int i = 0; i < internalIndexes.size(); i++) {
         individuals[internalIndexes[i]] = sampledIndividuals[i];
-    }
-}
-
-template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::InitializeExternalPopulation(std::vector<std::vector<double>>& receivedSolutions) {
-    for (auto&& solutions : receivedSolutions) {
-        for (int i = 0; i < solutions.size(); i += decisionVariablesNum + 1) {
-            int index = solutions[i];
-            if (IsExternal(index)) {
-                clonedExternalIndividuals[index].solution =
-                    Eigen::Map<Eigen::ArrayXd>(solutions.data() + (i + 1), decisionVariablesNum);
-            }
-        }
-    }
-}
-
-template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::InitializeObjectives() {
-    for (int i = 0; i < internalIndexes.size(); i++) {
         problem->ComputeObjectiveSet(individuals[internalIndexes[i]]);
     }
-    for (int i = 0; i < externalIndexes.size(); i++) {
-        problem->ComputeObjectiveSet(clonedExternalIndividuals[externalIndexes[i]]);
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::InitializeExternalPopulation(std::vector<std::vector<double>>& receivedIndividuals) {
+    for (auto&& receive : receivedIndividuals) {
+        for (int i = 0; i < receive.size(); i += decisionVariablesNum + objectivesNum + 1) {
+            int index = receive[i];
+            if (IsExternal(index)) {
+                clonedExternalIndividuals[index].solution =
+                    Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1), decisionVariablesNum);
+                clonedExternalIndividuals[index].objectives =
+                    Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1 + decisionVariablesNum), objectivesNum);
+            }
+        }
     }
 }
 
@@ -417,36 +395,37 @@ void MpMoead<DecisionVariableType>::CalculateRanksToSent(const std::vector<int>&
 
 template <typename DecisionVariableType>
 std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ScatterPopulation() {
-    std::vector<double> solutionsToSend;
-    solutionsToSend.reserve(internalIndexes.size() * (decisionVariablesNum + 1));
+    std::vector<double> individualsToSend;
+    individualsToSend.reserve(internalIndexes.size() * (decisionVariablesNum + objectivesNum + 1));
     for (auto&& i : internalIndexes) {
-        solutionsToSend.push_back(i);
-        solutionsToSend.insert(solutionsToSend.end(), individuals[i].solution.begin(), individuals[i].solution.end());
+        individualsToSend.push_back(i);
+        individualsToSend.insert(individualsToSend.end(), individuals[i].solution.begin(), individuals[i].solution.end());
+        individualsToSend.insert(individualsToSend.end(), individuals[i].objectives.begin(), individuals[i].objectives.end());
     }
-    int dataSize = solutionsToSend.size();
 
     std::vector<MPI_Request> requests;
     requests.reserve(ranksToSend.size());
     for (auto&& i : ranksToSend) {
         requests.emplace_back();
-        MPI_Isend(solutionsToSend.data(), solutionsToSend.size(), MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD, &requests.back());
+        MPI_Isend(individualsToSend.data(), individualsToSend.size(), MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD,
+                  &requests.back());
     }
 
-    std::vector<std::vector<double>> receivedSolutions;
-    receivedSolutions.reserve(neighboringRanks.size());
+    std::vector<std::vector<double>> receivedIndividuals;
+    receivedIndividuals.reserve(neighboringRanks.size());
     for (auto&& rank : neighboringRanks) {
         MPI_Status status;
         MPI_Probe(rank, messageTag, MPI_COMM_WORLD, &status);
         int receivedDataSize;
         MPI_Get_count(&status, MPI_DOUBLE, &receivedDataSize);
-        receivedSolutions.emplace_back(receivedDataSize);
-        MPI_Recv(receivedSolutions.back().data(), receivedDataSize, MPI_DOUBLE, rank, messageTag, MPI_COMM_WORLD,
+        receivedIndividuals.emplace_back(receivedDataSize);
+        MPI_Recv(receivedIndividuals.back().data(), receivedDataSize, MPI_DOUBLE, rank, messageTag, MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
     }
 
     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-    return receivedSolutions;
+    return receivedIndividuals;
 }
 
 template <typename DecisionVariableType>
@@ -464,14 +443,12 @@ void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIdealPoint() {
-    decomposition->InitializeIdealPoint(objectivesNum);
-
-    for (int i = 0; i < internalIndexes.size(); i++) {
-        decomposition->UpdateIdealPoint(individuals[internalIndexes[i]].objectives);
+    for (auto&& [_, individual] : individuals) {
+        decomposition->UpdateIdealPoint(individual.objectives);
     }
 
-    for (int i = 0; i < externalIndexes.size(); i++) {
-        decomposition->UpdateIdealPoint(clonedExternalIndividuals[externalIndexes[i]].objectives);
+    for (auto&& [_, individual] : clonedExternalIndividuals) {
+        decomposition->UpdateIdealPoint(individual.objectives);
     }
 }
 
@@ -530,41 +507,33 @@ bool MpMoead<DecisionVariableType>::IsExternal(int index) {
 
 template <typename DecisionVariableType>
 std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::CreateMessages() {
+    std::vector<double> updatedInternalIndividuals;
+    updatedInternalIndividuals.reserve(updatedSolutionIndexes.size() * (decisionVariablesNum + objectivesNum + 1));
+    for (auto&& i : updatedSolutionIndexes) {
+        updatedInternalIndividuals.push_back(i);
+        updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].solution.begin(),
+                                          individuals[i].solution.end());
+        updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].objectives.begin(),
+                                          individuals[i].objectives.end());
+    }
+
     std::unordered_map<int, std::vector<double>> dataToSend;
     for (int i = 0; i < externalIndexes.size(); i++) {
         int index = externalIndexes[i];
         bool updated = (individuals[index].solution != clonedExternalIndividuals[index].solution).any();
         if (updated) {
-            dataToSend[ranksForExternalIndividuals[i]].push_back(index);
-            dataToSend[ranksForExternalIndividuals[i]].insert(dataToSend[ranksForExternalIndividuals[i]].end(),
-                                                              individuals[index].solution.begin(),
-                                                              individuals[index].solution.end());
+            int rank = ranksForExternalIndividuals[i];
+            dataToSend[rank].push_back(index);
+            dataToSend[rank].insert(dataToSend[rank].end(), individuals[index].solution.begin(),
+                                    individuals[index].solution.end());
+            dataToSend[rank].insert(dataToSend[rank].end(), individuals[index].objectives.begin(),
+                                    individuals[index].objectives.end());
         }
     }
 
-    std::vector<double> updatedInternalSolutions;
-    for (auto&& i : updatedSolutionIndexes) {
-        updatedInternalSolutions.push_back(i);
-        updatedInternalSolutions.insert(updatedInternalSolutions.end(), individuals[i].solution.begin(),
-                                        individuals[i].solution.end());
-    }
-
     for (auto&& [rank, message] : dataToSend) {
-        message.insert(message.end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
+        message.insert(message.end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
     }
-
-    // for (auto&& i : ranksToSend) {
-    //     dataToSend[i].insert(dataToSend[i].end(), updatedInternalSolutions.begin(), updatedInternalSolutions.end());
-    // }
-
-    // int special = neighborhoodSize / CalculateNodeWorkload(totalPopulationSize, rank, parallelSize);
-    // if (rank == special) {
-    //     constexpr int dest = 0;
-    //     dataToSend[dest] = updatedInternalSolutions;
-    // } else if (rank == parallelSize - special - 1) {
-    //     int dest = parallelSize - 1;
-    //     dataToSend[dest] = updatedInternalSolutions;
-    // }
 
     return dataToSend;
 }
@@ -631,16 +600,16 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages(
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& message) {
-    for (int i = 0; i < message.size(); i += decisionVariablesNum + 1) {
+    for (int i = 0; i < message.size(); i += decisionVariablesNum + objectivesNum + 1) {
         int index = message[i];
         if (!(IsInternal(index) || IsExternal(index))) {
             continue;
         }
 
         Eigen::ArrayX<DecisionVariableType> newSolution =
-            Eigen::Map<Eigen::ArrayX<DecisionVariableType>>(message.data() + i + 1, decisionVariablesNum);
-        Individual<DecisionVariableType> newIndividual(newSolution);
-        problem->ComputeObjectiveSet(newIndividual);
+            Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1, decisionVariablesNum);
+        Eigen::ArrayXd newObjectives = Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1 + decisionVariablesNum, objectivesNum);
+        Individual<DecisionVariableType> newIndividual(std::move(newSolution), std::move(newObjectives));
         if (IsExternal(index)) {
             clonedExternalIndividuals[index].UpdateFrom(newIndividual);
         } else {
