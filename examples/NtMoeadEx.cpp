@@ -47,7 +47,8 @@ int main(int argc, char** argv) {
     auto repair = std::make_shared<RealRandomRepair>(problem);
     auto selection = std::make_shared<RandomSelection>();
 
-    auto moead = NtMoead<double>(500, 21, 59, 1, crossover, decomposition, mutation, problem, repair, sampling, selection);
+    auto moead = NtMoead<double>(generationNum, neighborhoodSize, H, migrationInterval, crossover, decomposition, mutation,
+                                 problem, repair, sampling, selection);
 
     double start = MPI_Wtime();
 
