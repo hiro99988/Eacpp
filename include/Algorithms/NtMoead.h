@@ -95,18 +95,21 @@ class NtMoead : public IMoead<DecisionVariableType> {
     std::vector<int> internalIndexes;
     std::vector<int> externalIndexes;
     std::set<int> updatedSolutionIndexes;
-    std::set<int> updatedExternalSolutionIndexes;
     std::unordered_map<int, Individual<DecisionVariableType>> individuals;
 
+    std::set<int> updatedExternalSolutionIndexes;
     std::unordered_map<int, std::vector<int>> rankIndexesToSend;
 
     void Clear();
     std::vector<std::vector<int>> ReadAdjacencyList();
-    void CalculateRankIndexesByNode(std::vector<int>& allRankIndexes, std::vector<int>& sizesAllRankIndexes,
-                                    std::vector<int>& numsRankIndexes, std::vector<int>& sizesNumRank);
+    void CalculateRankIndexesByNode(const std::vector<std::vector<int>>& noduplicateIndexes,
+                                    std::vector<int>& outAllRankIndexes, std::vector<int>& outSizesAllRankIndexes,
+                                    std::vector<int>& outNumsRankIndexes, std::vector<int>& outSizesNumRank);
     void CalculateRankIndexesToSend(std::vector<int>& allRankIndexes, std::vector<int>& numsRankIndexes);
-    std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
-                                                                               std::vector<int>& populationSizes);
+    std::vector<std::vector<int>> CalculateNoduplicateIndexes(const std::vector<int>& neighborhoodIndexes,
+                                                              const std::vector<int>& populationSizes);
+    std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(
+        const std::vector<std::vector<int>>& noduplicateIndexes, const std::vector<std::vector<int>>& allNodeIndexes);
     std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors, std::vector<int>& indexes);
     std::set<int> CalculateNeighboringRanks();
     void InitializeIndividualAndWeightVector(std::vector<Eigen::ArrayXd>& weightVectors,
@@ -225,6 +228,7 @@ void NtMoead<DecisionVariableType>::Clear() {
     updatedSolutionIndexes.clear();
     updatedExternalSolutionIndexes.clear();
     individuals.clear();
+    rankIndexesToSend.clear();
 }
 
 template <typename DecisionVariableType>
@@ -254,13 +258,20 @@ void NtMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<int> receivedNeighborhoodIndexes =
         Scatterv(neighborhoodIndexes1d, populationSizes, neighborhoodSize, rank, parallelSize);
 
+    std::vector<std::vector<int>> noduplicateIndexes;
+    std::vector<std::vector<int>> allNodeIndexes;
+    if (rank == 0) {
+        noduplicateIndexes = CalculateNoduplicateIndexes(neighborhoodIndexes1d, populationSizes);
+        allNodeIndexes = GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
+    }
+
     // ノード全体の近傍のインデックスと重みベクトルを生成
     std::vector<int> noduplicateNeighborhoodIndexes;
     std::vector<int> neighborhoodSizes;
     std::vector<double> sendExternalNeighboringWeightVectors;
     if (rank == 0) {
         std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
-            GenerateExternalNeighborhood(neighborhoodIndexes1d, populationSizes);
+            GenerateExternalNeighborhood(noduplicateIndexes, allNodeIndexes);
         sendExternalNeighboringWeightVectors = GetWeightVectorsMatchingIndexes(weightVectors1d, noduplicateNeighborhoodIndexes);
     }
 
@@ -269,13 +280,13 @@ void NtMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<double> receivedExternalNeighboringWeightVectors =
         Scatterv(sendExternalNeighboringWeightVectors, neighborhoodSizes, objectivesNum, rank, parallelSize);
 
-    // 隣接ノードに送信する
+    // 通信対象のノードと送信するインデックスを分散
     std::vector<int> allRankIndexes;
     std::vector<int> sizesAllRankIndexes;
     std::vector<int> numsRankIndexes;
     std::vector<int> sizesNumRank;
     if (rank == 0) {
-        CalculateRankIndexesByNode(allRankIndexes, sizesAllRankIndexes, numsRankIndexes, sizesNumRank);
+        CalculateRankIndexesByNode(noduplicateIndexes, allRankIndexes, sizesAllRankIndexes, numsRankIndexes, sizesNumRank);
     }
     std::vector<int> receivedRankIndexes = Scatterv(allRankIndexes, sizesAllRankIndexes, 1, rank, parallelSize);
     std::vector<int> receivedNumsRankIndexes = Scatterv(numsRankIndexes, sizesNumRank, 1, rank, parallelSize);
@@ -335,33 +346,33 @@ std::vector<std::vector<int>> NtMoead<DecisionVariableType>::ReadAdjacencyList()
 
 /// @brief 各ノードにおいて，通信対象のノードと送信するインデックスを計算する
 /// @tparam DecisionVariableType
+/// @param noduplicateIndexes 重複のない自身と近傍のインデックス
 /// @param allRankIndexes {{rank1, index1, index2, rank2, index3, ...}, {rank3, index4, ...}, ...}
 /// @param sizesAllRankIndexes {allSizeOfNode1, allSizeOfNode2, ...}
 /// @param numsRankIndexes {{numOfRank1, numOfRank2, ...}, {numOfRank3, ...}, ...} rank number are not included
 /// @param sizesNumRank {sizeOfNumOfNode1, sizeOfNumOfNode2, ...} equal to degrees of nodes
 template <typename DecisionVariableType>
-void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(std::vector<int>& allRankIndexes,
-                                                               std::vector<int>& sizesAllRankIndexes,
-                                                               std::vector<int>& numsRankIndexes,
-                                                               std::vector<int>& sizesNumRank) {
+void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(const std::vector<std::vector<int>>& noduplicateIndexes,
+                                                               std::vector<int>& outAllRankIndexes,
+                                                               std::vector<int>& outSizesAllRankIndexes,
+                                                               std::vector<int>& outNumsRankIndexes,
+                                                               std::vector<int>& outSizesNumRank) {
     auto adjacencyList = ReadAdjacencyList();
-    // TODO: あるノードが必要としている解は，自分の解とその近傍の解であるため，近傍も含めて計算する
-    auto allNodeIndexes = GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
-
     for (int rank = 0; rank < adjacencyList.size(); rank++) {
         sizesNumRank.push_back(adjacencyList[rank].size());
 
         int size = 0;
         for (auto&& neighbor : adjacencyList[rank]) {
             std::set<int> individualIndexes;
-            individualIndexes.insert(allNodeIndexes[neighbor].begin(), allNodeIndexes[neighbor].end());
+            individualIndexes.insert(noduplicateIndexes[neighbor].begin(), noduplicateIndexes[neighbor].end());
             for (auto&& k : adjacencyList[neighbor]) {
                 if (k == rank) {
                     continue;
                 }
 
-                individualIndexes.insert(allNodeIndexes[k].begin(), allNodeIndexes[k].end());
+                individualIndexes.insert(noduplicateIndexes[k].begin(), noduplicateIndexes[k].end());
             }
+
             allRankIndexes.push_back(neighbor);
             allRankIndexes.insert(allRankIndexes.end(), individualIndexes.begin(), individualIndexes.end());
             numsRankIndexes.push_back(individualIndexes.size());
@@ -383,12 +394,11 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesToSend(std::vector<int>&
 }
 
 template <typename DecisionVariableType>
-std::pair<std::vector<int>, std::vector<int>> NtMoead<DecisionVariableType>::GenerateExternalNeighborhood(
-    std::vector<int>& neighborhoodIndexes, std::vector<int>& populationSizes) {
-    std::vector<int> noduplicateNeighborhoodIndexes;
-    std::vector<int> neighborhoodSizes;
-    for (int i = 0; i < populationSizes.size(); i++) {
-        int start = std::reduce(populationSizes.begin(), populationSizes.begin() + i);
+std::vector<std::vector<int>> NtMoead<DecisionVariableType>::CalculateNoduplicateIndexes(
+    const std::vector<int>& neighborhoodIndexes, const std::vector<int>& populationSizes) {
+    std::vector<std::vector<int>> noduplicateIndexes;
+    noduplicateIndexes.reserve(parallelSize);
+    for (int i = 0, start = 0; i < parallelSize; start += populationSizes[i], i++) {
         int end = start + populationSizes[i];
 
         std::vector<int> indexes(neighborhoodIndexes.begin() + (start * neighborhoodSize),
@@ -398,12 +408,28 @@ std::pair<std::vector<int>, std::vector<int>> NtMoead<DecisionVariableType>::Gen
         std::sort(indexes.begin(), indexes.end());
         indexes.erase(std::unique(indexes.begin(), indexes.end()), indexes.end());
 
-        // 自分の担当する解のインデックスを削除
-        std::erase_if(indexes, [&](int index) { return start <= index && index < end; });
+        noduplicateIndexes.push_back(indexes);
+    }
+
+    return noduplicateIndexes;
+}
+
+template <typename DecisionVariableType>
+std::pair<std::vector<int>, std::vector<int>> NtMoead<DecisionVariableType>::GenerateExternalNeighborhood(
+    const std::vector<std::vector<int>>& noduplicateIndexes, const std::vector<std::vector<int>>& allNodeIndexes) {
+    std::vector<int> noduplicateNeighborhoodIndexes;
+    std::vector<int> neighborhoodSizes;
+    for (int i = 0; i < noduplicateIndexes.size(); i++) {
+        std::vector<int> indexes = noduplicateIndexes[i];
+        std::vector<int>& internalIndexes = allNodeIndexes[i];
+        std::erase_if(indexes, [&](int index) {
+            return std::find(internalIndexes.begin(), internalIndexes.end(), index) != internalIndexes.end();
+        });
 
         noduplicateNeighborhoodIndexes.insert(noduplicateNeighborhoodIndexes.end(), indexes.begin(), indexes.end());
         neighborhoodSizes.push_back(indexes.size());
     }
+
     return {noduplicateNeighborhoodIndexes, neighborhoodSizes};
 }
 
