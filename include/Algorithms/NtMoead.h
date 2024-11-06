@@ -107,7 +107,8 @@ class NtMoead : public IMoead<DecisionVariableType> {
                                     std::vector<int>& outNumsRankIndexes, std::vector<int>& outSizesNumRank);
     void CalculateRankIndexesToSend(std::vector<int>& allRankIndexes, std::vector<int>& numsRankIndexes);
     std::vector<std::vector<int>> CalculateNoduplicateIndexes(const std::vector<int>& neighborhoodIndexes,
-                                                              const std::vector<int>& populationSizes);
+                                                              const std::vector<int>& populationSizes,
+                                                              const std::vector<std::vector<int>>& allNodeIndexes);
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(
         const std::vector<std::vector<int>>& noduplicateIndexes, const std::vector<std::vector<int>>& allNodeIndexes);
     std::vector<double> GetWeightVectorsMatchingIndexes(std::vector<double>& weightVectors, std::vector<int>& indexes);
@@ -261,8 +262,8 @@ void NtMoead<DecisionVariableType>::InitializeIsland() {
     std::vector<std::vector<int>> noduplicateIndexes;
     std::vector<std::vector<int>> allNodeIndexes;
     if (rank == 0) {
-        noduplicateIndexes = CalculateNoduplicateIndexes(neighborhoodIndexes1d, populationSizes);
         allNodeIndexes = GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
+        noduplicateIndexes = CalculateNoduplicateIndexes(neighborhoodIndexes1d, populationSizes, allNodeIndexes);
     }
 
     // ノード全体の近傍のインデックスと重みベクトルを生成
@@ -376,10 +377,10 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesByNode(const std::vector
             outAllRankIndexes.push_back(neighbor);
             outAllRankIndexes.insert(outAllRankIndexes.end(), individualIndexes.begin(), individualIndexes.end());
             outNumsRankIndexes.push_back(individualIndexes.size());
-            size += individualIndexes.size();
+            size += individualIndexes.size() + 1;
         }
 
-        outSizesAllRankIndexes.push_back(size + adjacencyList[rank].size());
+        outSizesAllRankIndexes.push_back(size);
     }
 }
 
@@ -395,7 +396,8 @@ void NtMoead<DecisionVariableType>::CalculateRankIndexesToSend(std::vector<int>&
 
 template <typename DecisionVariableType>
 std::vector<std::vector<int>> NtMoead<DecisionVariableType>::CalculateNoduplicateIndexes(
-    const std::vector<int>& neighborhoodIndexes, const std::vector<int>& populationSizes) {
+    const std::vector<int>& neighborhoodIndexes, const std::vector<int>& populationSizes,
+    const std::vector<std::vector<int>>& allNodeIndexes) {
     std::vector<std::vector<int>> noduplicateIndexes;
     noduplicateIndexes.reserve(parallelSize);
     for (int i = 0, start = 0; i < parallelSize; start += populationSizes[i], i++) {
@@ -403,6 +405,7 @@ std::vector<std::vector<int>> NtMoead<DecisionVariableType>::CalculateNoduplicat
 
         std::vector<int> indexes(neighborhoodIndexes.begin() + (start * neighborhoodSize),
                                  neighborhoodIndexes.begin() + (end * neighborhoodSize));
+        indexes.insert(indexes.end(), allNodeIndexes[i].begin(), allNodeIndexes[i].end());
 
         // 重複を削除
         std::sort(indexes.begin(), indexes.end());
