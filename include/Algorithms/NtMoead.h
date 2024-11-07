@@ -232,6 +232,7 @@ void NtMoead<DecisionVariableType>::Clear() {
     updatedSolutionIndexes.clear();
     individuals.clear();
     rankIndexesToSend.clear();
+    receivedIndividuals.clear();
 }
 
 template <typename DecisionVariableType>
