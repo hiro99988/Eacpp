@@ -82,7 +82,7 @@ void ReleaseIsend(int parallelSize) {
                 }
 
                 int dataSize;
-                MPI_Get_count(&statuses[source], MPI_DOUBLE, &dataSize);
+                MPI_Get_count(&statuses[j], MPI_DOUBLE, &dataSize);
                 std::vector<double> tempData(dataSize);
                 MPI_Recv(tempData.data(), dataSize, MPI_DOUBLE, source, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
