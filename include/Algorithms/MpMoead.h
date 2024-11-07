@@ -443,6 +443,7 @@ void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeIdealPoint() {
+    decomposition->InitializeIdealPoint(objectivesNum);
     for (auto&& [_, individual] : individuals) {
         decomposition->UpdateIdealPoint(individual.objectives);
     }

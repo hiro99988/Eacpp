@@ -567,6 +567,7 @@ void NtMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
 
 template <typename DecisionVariableType>
 void NtMoead<DecisionVariableType>::InitializeIdealPoint() {
+    decomposition->InitializeIdealPoint(objectivesNum);
     for (auto&& [_, individual] : individuals) {
         decomposition->UpdateIdealPoint(individual.objectives);
     }
