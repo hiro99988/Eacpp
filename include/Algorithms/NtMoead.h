@@ -97,7 +97,6 @@ class NtMoead : public IMoead<DecisionVariableType> {
     std::set<int> updatedSolutionIndexes;
     std::unordered_map<int, Individual<DecisionVariableType>> individuals;
 
-    std::set<int> updatedExternalSolutionIndexes;
     std::unordered_map<int, std::vector<int>> rankIndexesToSend;
     std::unordered_map<int, std::vector<double>> receivedIndividuals;
 
@@ -131,6 +130,8 @@ class NtMoead : public IMoead<DecisionVariableType> {
     bool IsInternal(int index);
     bool IsExternal(int index);
     bool HasIndividual(int index);
+    bool IsReceivedIndividual(int index);
+    bool IsUpdated(int index);
 
     std::unordered_map<int, std::vector<double>> CreateMessages();
     void SendMessages();
@@ -188,10 +189,11 @@ void NtMoead<DecisionVariableType>::Update() {
     if (currentGeneration % migrationInterval == 0) {
         std::vector<std::vector<double>> messages;
         SendMessages();
+
+        receivedIndividuals.clear();
         messages = ReceiveMessages();
 
         updatedSolutionIndexes.clear();
-        updatedExternalSolutionIndexes.clear();
         for (auto&& message : messages) {
             UpdateWithMessage(message);
         }
@@ -228,7 +230,6 @@ void NtMoead<DecisionVariableType>::Clear() {
     internalIndexes.clear();
     externalIndexes.clear();
     updatedSolutionIndexes.clear();
-    updatedExternalSolutionIndexes.clear();
     individuals.clear();
     rankIndexesToSend.clear();
 }
@@ -604,8 +605,6 @@ void NtMoead<DecisionVariableType>::UpdateNeighboringIndividuals(int index, Indi
             individuals[i].UpdateFrom(newIndividual);
             if (IsInternal(i)) {
                 updatedSolutionIndexes.insert(i);
-            } else {
-                updatedExternalSolutionIndexes.insert(i);
             }
         }
     }
@@ -627,12 +626,22 @@ bool NtMoead<DecisionVariableType>::HasIndividual(int index) {
 }
 
 template <typename DecisionVariableType>
+bool NtMoead<DecisionVariableType>::IsReceivedIndividual(int index) {
+    return receivedIndividuals.find(index) != receivedIndividuals.end();
+}
+
+template <typename DecisionVariableType>
+bool NtMoead<DecisionVariableType>::IsUpdated(int index) {
+    return updatedSolutionIndexes.find(index) != updatedSolutionIndexes.end();
+}
+
+template <typename DecisionVariableType>
 std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::CreateMessages() {
     std::unordered_map<int, std::vector<double>> dataToSend;
     for (auto&& [rank, indexes] : rankIndexesToSend) {
         for (auto&& index : indexes) {
-            if (individuals.find(index) != individuals.end()) {
-                if (IsInternal(index) && updatedSolutionIndexes.find(index) != updatedSolutionIndexes.end()) {
+            if (HasIndividual(index)) {
+                if (IsInternal(index) && IsUpdated(index)) {
                     continue;
                 }
 
@@ -641,7 +650,7 @@ std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::Crea
                                         individuals[index].solution.end());
                 dataToSend[rank].insert(dataToSend[rank].end(), individuals[index].objectives.begin(),
                                         individuals[index].objectives.end());
-            } else if (receivedIndividuals.find(index) != receivedIndividuals.end()) {
+            } else if (IsReceivedIndividual(index)) {
                 dataToSend[rank].insert(dataToSend[rank].end(), receivedIndividuals[index].begin(),
                                         receivedIndividuals[index].end());
             }
