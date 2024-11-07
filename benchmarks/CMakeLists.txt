@@ -19,3 +19,6 @@ target_link_libraries(MpMoeadBenchmark.out Eacpp nlohmann_json::nlohmann_json MP
 
 add_executable(ParetoFront.out ParetoFront.cpp)
 target_link_libraries(ParetoFront.out Eacpp)
+
+add_executable(NtMoeadBenchmark.out NtMoeadBenchmark.cpp)
+target_link_libraries(NtMoeadBenchmark.out Eacpp nlohmann_json::nlohmann_json MPI::MPI_CXX)
