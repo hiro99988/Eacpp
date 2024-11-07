@@ -32,6 +32,7 @@ namespace Eacpp {
 
 constexpr int maxBufferSize = 100;
 constexpr int messageTag = 0;
+constexpr int idealPointTag = 1;
 
 template <typename DecisionVariableType>
 class MpMoead : public IMoead<DecisionVariableType> {
@@ -549,10 +550,14 @@ void MpMoead<DecisionVariableType>::SendMessages() {
     std::unordered_map<int, std::vector<double>>& sendMessages = sendMessageBuffers[sendMessageBufferIndex];
     sendMessages = CreateMessages();
 
+    std::vector<double> idealPoint(decomposition->IdealPoint().data(), decomposition->IdealPoint().data() + objectivesNum);
+
     // メッセージを送信する
     MPI_Request request;
     for (auto&& [dest, message] : sendMessages) {
         MPI_Isend(message.data(), message.size(), MPI_DOUBLE, dest, messageTag, MPI_COMM_WORLD, &request);
+
+        MPI_Isend(idealPoint.data(), idealPoint.size(), MPI_DOUBLE, dest, idealPointTag, MPI_COMM_WORLD, &request);
     }
 }
 
@@ -593,6 +598,12 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages(
             std::vector<double> receive = std::vector<double>(receiveDataSize);
             MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             receiveMessages.push_back(std::move(receive));
+
+            std::vector<double> receivedIdealPoint(objectivesNum);
+            MPI_Recv(receivedIdealPoint.data(), objectivesNum, MPI_DOUBLE, source, idealPointTag, MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+            Eigen::ArrayXd idealPoint = Eigen::Map<Eigen::ArrayXd>(receivedIdealPoint.data(), objectivesNum);
+            decomposition->UpdateIdealPoint(idealPoint);
         }
     }
 
