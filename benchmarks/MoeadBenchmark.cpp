@@ -108,12 +108,12 @@ int main(int argc, char** argv) {
         auto repair = std::make_shared<RealRandomRepair>(problem);
         auto selection = std::make_shared<RandomSelection>();
 
-        Moead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, crossover, decomposition, mutation,
-                            problem, repair, sampling, selection);
-
         std::cout << "Problem: " << problemName << std::endl;
 
         for (int i = 0; i < trial; i++) {
+            Moead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, crossover, decomposition, mutation,
+                                problem, repair, sampling, selection);
+
             int generation = 0;
             double totalExecutionTime = 0.0;
             std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;

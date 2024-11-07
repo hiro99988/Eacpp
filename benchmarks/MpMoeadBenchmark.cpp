@@ -145,12 +145,12 @@ int main(int argc, char** argv) {
         auto repair = std::make_shared<RealRandomRepair>(problem);
         auto selection = std::make_shared<RandomSelection>();
 
-        MpMoead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, crossover,
-                              decomposition, mutation, problem, repair, sampling, selection);
-
         RANK0(std::cout << "Problem: " << problemName << std::endl;)
 
         for (int i = 0; i < trial; i++) {
+            MpMoead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, crossover,
+                                  decomposition, mutation, problem, repair, sampling, selection);
+
             ReleaseIsend(parallelSize);
 
             int generation = 0;
