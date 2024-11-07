@@ -643,7 +643,7 @@ std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::Crea
     for (auto&& [rank, indexes] : rankIndexesToSend) {
         for (auto&& index : indexes) {
             if (HasIndividual(index)) {
-                if (IsInternal(index) && IsUpdated(index)) {
+                if (IsInternal(index) && !IsUpdated(index)) {
                     continue;
                 }
 
