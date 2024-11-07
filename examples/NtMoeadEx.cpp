@@ -51,9 +51,8 @@ int main(int argc, char** argv) {
                                  problem, repair, sampling, selection);
 
     double start = MPI_Wtime();
-
-    moead.Initialize();
-    // moead.Run();
+    ;
+    moead.Run();
 
     double end = MPI_Wtime();
     double executionTime = end - start;
@@ -63,17 +62,17 @@ int main(int argc, char** argv) {
         std::cout << "Maximum execution time across all processes: " << maxTime << " seconds" << std::endl;
     }
 
-    // std::filesystem::path objectiveFilePath = "out/data/tmp/objective/" + std::to_string(rank) + ".csv";
-    // std::ofstream objectiveFile(objectiveFilePath);
-    // for (const auto& objectives : moead.GetObjectivesList()) {
-    //     for (int i = 0; i < objectives.size(); i++) {
-    //         objectiveFile << objectives[i];
-    //         if (i != objectives.size() - 1) {
-    //             objectiveFile << ",";
-    //         }
-    //     }
-    //     objectiveFile << std::endl;
-    // }
+    std::filesystem::path objectiveFilePath = "out/data/tmp/objective/" + std::to_string(rank) + ".csv";
+    std::ofstream objectiveFile(objectiveFilePath);
+    for (const auto& objectives : moead.GetObjectivesList()) {
+        for (int i = 0; i < objectives.size(); i++) {
+            objectiveFile << objectives[i];
+            if (i != objectives.size() - 1) {
+                objectiveFile << ",";
+            }
+        }
+        objectiveFile << std::endl;
+    }
 
     MPI_Finalize();
 
