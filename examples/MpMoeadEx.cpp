@@ -11,7 +11,7 @@
 #include "Crossovers/SimulatedBinaryCrossover.h"
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
-#include "Problems/ZDT1.h"
+#include "Problems/Problems.h"
 #include "Reflections/Reflection.h"
 #include "Repairs/RealRandomRepair.h"
 #include "Samplings/RealRandomSampling.h"
