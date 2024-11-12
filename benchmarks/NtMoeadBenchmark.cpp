@@ -1,5 +1,6 @@
 #include <mpi.h>
 
+#include <array>
 #include <chrono>
 #include <eigen3/Eigen/Core>
 #include <filesystem>
@@ -65,19 +66,26 @@ std::string GetTimestamp() {
 }
 
 void ReleaseIsend(int parallelSize) {
-    for (int i = 0; i < parallelSize; i++) {
+    for (int source = 0; source < parallelSize; source++) {
         while (true) {
-            int flag;
-            MPI_Status status;
-            MPI_Iprobe(i, 0, MPI_COMM_WORLD, &flag, &status);
-            if (!flag) {
+            std::array<int, 2> flags;
+            std::array<MPI_Status, 2> statuses;
+            MPI_Iprobe(source, 0, MPI_COMM_WORLD, &flags[0], &statuses[0]);
+            MPI_Iprobe(source, 1, MPI_COMM_WORLD, &flags[1], &statuses[1]);
+            if (!flags[0] && !flags[1]) {
                 break;
             }
 
-            int dataSize;
-            MPI_Get_count(&status, MPI_DOUBLE, &dataSize);
-            std::vector<double> tempData(dataSize);
-            MPI_Recv(tempData.data(), dataSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for (int j = 0; j < 2; j++) {
+                if (!flags[j]) {
+                    continue;
+                }
+
+                int dataSize;
+                MPI_Get_count(&statuses[j], MPI_DOUBLE, &dataSize);
+                std::vector<double> tempData(dataSize);
+                MPI_Recv(tempData.data(), dataSize, MPI_DOUBLE, source, j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
         }
     }
 }
