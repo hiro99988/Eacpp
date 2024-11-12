@@ -42,7 +42,8 @@ class MpMoead : public IMoead<DecisionVariableType> {
             const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
             const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
             const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
-            const std::shared_ptr<ISampling<DecisionVariableType>>& sampling, const std::shared_ptr<ISelection>& selection)
+            const std::shared_ptr<ISampling<DecisionVariableType>>& sampling, const std::shared_ptr<ISelection>& selection,
+            bool idealPointMigration = false)
         : generationNum(generationNum),
           neighborhoodSize(neighborhoodSize),
           migrationInterval(migrationInterval),
@@ -58,9 +59,12 @@ class MpMoead : public IMoead<DecisionVariableType> {
         this->repair = repair;
         this->sampling = sampling;
         this->selection = selection;
+        this->idealPointMigration = idealPointMigration;
         decisionVariablesNum = problem->DecisionVariablesNum();
         objectivesNum = problem->ObjectivesNum();
         currentGeneration = 0;
+        singleMessageSize = decisionVariablesNum + objectivesNum + 1;
+        isIdealPointUpdated = false;
     }
     virtual ~MpMoead() {}
 
@@ -101,6 +105,9 @@ class MpMoead : public IMoead<DecisionVariableType> {
     std::vector<int> ranksForExternalIndividuals;
     std::set<int> neighboringRanks;
     std::vector<int> ranksToSend;
+    int singleMessageSize;
+    bool idealPointMigration;
+    bool isIdealPointUpdated;
 
     void Clear();
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(std::vector<int>& neighborhoodIndexes,
@@ -116,13 +123,14 @@ class MpMoead : public IMoead<DecisionVariableType> {
 
     void InitializePopulation();
     void InitializeExternalPopulation(std::vector<std::vector<double>>& receivedSolutions);
-    void InitializeIdealPoint();
     void MakeLocalCopyOfExternalIndividuals();
     std::vector<Individual<DecisionVariableType>> SelectParents(int index);
     Individual<DecisionVariableType> GenerateNewIndividual(int index);
     void UpdateNeighboringIndividuals(int index, Individual<DecisionVariableType>& newIndividual);
     bool IsInternal(int index);
     bool IsExternal(int index);
+    void UpdateIdealPoint(const Eigen::ArrayXd& objectives);
+    void UpdateIdealPointWithMessage(const std::vector<double>& message);
 
     std::unordered_map<int, std::vector<double>> CreateMessages();
     void SendMessages();
@@ -158,10 +166,10 @@ void MpMoead<DecisionVariableType>::Run() {
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Initialize() {
     Clear();
-    totalPopulationSize = initializer.CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
     InitializeMpi();
+    totalPopulationSize = initializer.CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
+    decomposition->InitializeIdealPoint(objectivesNum);
     InitializeIsland();
-    InitializeIdealPoint();
     currentGeneration = 0;
 }
 
@@ -173,7 +181,7 @@ void MpMoead<DecisionVariableType>::Update() {
         Individual<DecisionVariableType> newIndividual = GenerateNewIndividual(i);
         repair->Repair(newIndividual);
         problem->ComputeObjectiveSet(newIndividual);
-        decomposition->UpdateIdealPoint(newIndividual.objectives);
+        UpdateIdealPoint(newIndividual.objectives);
         UpdateNeighboringIndividuals(i, newIndividual);
     }
 
@@ -185,6 +193,7 @@ void MpMoead<DecisionVariableType>::Update() {
         messages = ReceiveMessages();
 
         updatedSolutionIndexes.clear();
+        isIdealPointUpdated = false;
         for (auto&& message : messages) {
             UpdateWithMessage(message);
         }
@@ -342,20 +351,28 @@ void MpMoead<DecisionVariableType>::InitializePopulation() {
     for (int i = 0; i < internalIndexes.size(); i++) {
         individuals[internalIndexes[i]] = sampledIndividuals[i];
         problem->ComputeObjectiveSet(individuals[internalIndexes[i]]);
+        decomposition->UpdateIdealPoint(individuals[internalIndexes[i]].objectives);
     }
 }
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::InitializeExternalPopulation(std::vector<std::vector<double>>& receivedIndividuals) {
     for (auto&& receive : receivedIndividuals) {
-        for (int i = 0; i < receive.size(); i += decisionVariablesNum + objectivesNum + 1) {
+        for (int i = 0; i < receive.size(); i += singleMessageSize) {
             int index = receive[i];
-            if (IsExternal(index)) {
-                clonedExternalIndividuals[index].solution =
-                    Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1), decisionVariablesNum);
-                clonedExternalIndividuals[index].objectives =
-                    Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1 + decisionVariablesNum), objectivesNum);
+            if (!IsExternal(index)) {
+                continue;
             }
+
+            clonedExternalIndividuals[index].solution =
+                Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1), decisionVariablesNum);
+            clonedExternalIndividuals[index].objectives =
+                Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1 + decisionVariablesNum), objectivesNum);
+            UpdateIdealPoint(clonedExternalIndividuals[index].objectives);
+        }
+
+        if (idealPointMigration) {
+            UpdateIdealPointWithMessage(receive);
         }
     }
 }
@@ -396,11 +413,17 @@ void MpMoead<DecisionVariableType>::CalculateRanksToSent(const std::vector<int>&
 template <typename DecisionVariableType>
 std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ScatterPopulation() {
     std::vector<double> individualsToSend;
-    individualsToSend.reserve(internalIndexes.size() * (decisionVariablesNum + objectivesNum + 1));
+    individualsToSend.reserve(idealPointMigration ? internalIndexes.size() * singleMessageSize + objectivesNum
+                                                  : internalIndexes.size() * singleMessageSize);
     for (auto&& i : internalIndexes) {
         individualsToSend.push_back(i);
         individualsToSend.insert(individualsToSend.end(), individuals[i].solution.begin(), individuals[i].solution.end());
         individualsToSend.insert(individualsToSend.end(), individuals[i].objectives.begin(), individuals[i].objectives.end());
+    }
+
+    if (idealPointMigration) {
+        individualsToSend.insert(individualsToSend.end(), decomposition->IdealPoint().begin(),
+                                 decomposition->IdealPoint().end());
     }
 
     std::vector<MPI_Request> requests;
@@ -438,18 +461,6 @@ void MpMoead<DecisionVariableType>::InitializeIndividualAndWeightVector(
     }
     for (int i = 0; i < externalIndexes.size(); i++) {
         clonedExternalIndividuals[externalIndexes[i]].weightVector = std::move(externalNeighboringWeightVectors[i]);
-    }
-}
-
-template <typename DecisionVariableType>
-void MpMoead<DecisionVariableType>::InitializeIdealPoint() {
-    decomposition->InitializeIdealPoint(objectivesNum);
-    for (auto&& [_, individual] : individuals) {
-        decomposition->UpdateIdealPoint(individual.objectives);
-    }
-
-    for (auto&& [_, individual] : clonedExternalIndividuals) {
-        decomposition->UpdateIdealPoint(individual.objectives);
     }
 }
 
@@ -507,9 +518,30 @@ bool MpMoead<DecisionVariableType>::IsExternal(int index) {
 }
 
 template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::UpdateIdealPoint(const Eigen::ArrayXd& objectives) {
+    auto idealPoint = decomposition->IdealPoint();
+    for (int i = 0; i < objectivesNum; i++) {
+        if (objectives(i) < idealPoint(i)) {
+            isIdealPointUpdated = true;
+            decomposition->UpdateIdealPoint(objectives);
+            break;
+        }
+    }
+}
+
+template <typename DecisionVariableType>
+void MpMoead<DecisionVariableType>::UpdateIdealPointWithMessage(const std::vector<double>& message) {
+    if (message.size() % singleMessageSize == objectivesNum) {
+        Eigen::ArrayXd receivedIdealPoint =
+            Eigen::Map<const Eigen::ArrayXd>(message.data() + (message.size() - objectivesNum), objectivesNum);
+        UpdateIdealPoint(receivedIdealPoint);
+    }
+}
+
+template <typename DecisionVariableType>
 std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::CreateMessages() {
     std::vector<double> updatedInternalIndividuals;
-    updatedInternalIndividuals.reserve(updatedSolutionIndexes.size() * (decisionVariablesNum + objectivesNum + 1));
+    updatedInternalIndividuals.reserve(updatedSolutionIndexes.size() * singleMessageSize);
     for (auto&& i : updatedSolutionIndexes) {
         updatedInternalIndividuals.push_back(i);
         updatedInternalIndividuals.insert(updatedInternalIndividuals.end(), individuals[i].solution.begin(),
@@ -532,8 +564,12 @@ std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::Crea
         }
     }
 
+    // FIXME: externalIndexesの解が一つも更新されていなかった場合，何もメッセ－ジを送らないことになってしまう
     for (auto&& [rank, message] : dataToSend) {
         message.insert(message.end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
+        if (idealPointMigration && isIdealPointUpdated) {
+            message.insert(message.end(), decomposition->IdealPoint().begin(), decomposition->IdealPoint().end());
+        }
     }
 
     return dataToSend;
@@ -590,7 +626,7 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages(
 
             int receiveDataSize;
             MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
-            std::vector<double> receive = std::vector<double>(receiveDataSize);
+            std::vector<double> receive(receiveDataSize);
             MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source, messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             receiveMessages.push_back(std::move(receive));
         }
@@ -601,7 +637,11 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages(
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& message) {
-    for (int i = 0; i < message.size(); i += decisionVariablesNum + objectivesNum + 1) {
+    int limit = message.size();
+    if (idealPointMigration && message.size() % singleMessageSize == objectivesNum) {
+        limit -= objectivesNum;
+    }
+    for (int i = 0; i < limit; i += singleMessageSize) {
         int index = message[i];
         if (!(IsInternal(index) || IsExternal(index))) {
             continue;
@@ -623,7 +663,11 @@ void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& messa
             }
         }
 
-        decomposition->UpdateIdealPoint(newIndividual.objectives);
+        UpdateIdealPoint(newIndividual.objectives);
+    }
+
+    if (idealPointMigration) {
+        UpdateIdealPointWithMessage(message);
     }
 }
 

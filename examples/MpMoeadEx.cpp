@@ -29,13 +29,15 @@ int main(int argc, char** argv) {
     int migrationInterval = 1;
     int H = 299;
     std::string problemName = "ZDT1";
+    bool idealPointMigration = false;
 
-    if (argc == 6) {
+    if (argc == 7) {
         generationNum = std::stoi(argv[1]);
         neighborhoodSize = std::stoi(argv[2]);
         migrationInterval = std::stoi(argv[3]);
         H = std::stoi(argv[4]);
         problemName = argv[5];
+        idealPointMigration = std::stoi(argv[6]);
     }
 
     std::shared_ptr<IProblem<double>> problem = Reflection<IProblem<double>>::Create(problemName);
@@ -49,7 +51,7 @@ int main(int argc, char** argv) {
     auto selection = std::make_shared<RandomSelection>();
 
     MpMoead<double> moead(generationNum, neighborhoodSize, H, migrationInterval, crossover, decomposition, mutation, problem,
-                          repair, sampling, selection);
+                          repair, sampling, selection, idealPointMigration);
 
     double start = MPI_Wtime();
 
@@ -67,7 +69,7 @@ int main(int argc, char** argv) {
     std::ofstream objectiveFile(objectiveFilePath);
     for (const auto& objectives : moead.GetObjectivesList()) {
         for (int i = 0; i < objectives.size(); i++) {
-            objectiveFile << objectives[i];
+            objectiveFile << objectives(i);
             if (i != objectives.size() - 1) {
                 objectiveFile << ",";
             }
