@@ -115,6 +115,7 @@ int main(int argc, char** argv) {
     int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
     int migrationInterval = parameter["migrationInterval"];
     double crossoverRate = parameter["crossoverRate"];
+    bool idealPointMigration = parameter["idealPointMigration"];
     std::vector<std::string> problemNames = problems["problems"];
 
     const std::filesystem::path outputDirectoryPath = "out/data/MpMoead/" + GetTimestamp() + "/";
@@ -149,9 +150,7 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < trial; i++) {
             MpMoead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, crossover,
-                                  decomposition, mutation, problem, repair, sampling, selection);
-
-            ReleaseIsend(parallelSize);
+                                  decomposition, mutation, problem, repair, sampling, selection, idealPointMigration);
 
             int generation = 0;
             double totalExecutionTime = 0.0;
@@ -218,6 +217,8 @@ int main(int argc, char** argv) {
             }
 
             executionTimesFile << i + 1 << "," << totalExecutionTime << std::endl;
+
+            ReleaseIsend(parallelSize);
         }
     }
 
