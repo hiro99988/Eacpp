@@ -638,7 +638,8 @@ std::vector<std::vector<double>> MpMoead<DecisionVariableType>::ReceiveMessages(
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& message) {
     int limit = message.size();
-    if (idealPointMigration && message.size() % singleMessageSize == objectivesNum) {
+    bool containsIdealPoint = idealPointMigration && message.size() % singleMessageSize == objectivesNum;
+    if (containsIdealPoint) {
         limit -= objectivesNum;
     }
     for (int i = 0; i < limit; i += singleMessageSize) {
@@ -666,7 +667,7 @@ void MpMoead<DecisionVariableType>::UpdateWithMessage(std::vector<double>& messa
         UpdateIdealPoint(newIndividual.objectives);
     }
 
-    if (idealPointMigration) {
+    if (containsIdealPoint) {
         UpdateIdealPointWithMessage(message);
     }
 }
