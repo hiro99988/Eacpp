@@ -564,11 +564,11 @@ std::unordered_map<int, std::vector<double>> MpMoead<DecisionVariableType>::Crea
         }
     }
 
-    // FIXME: externalIndexesの解が一つも更新されていなかった場合，何もメッセ－ジを送らないことになってしまう
-    for (auto&& [rank, message] : dataToSend) {
-        message.insert(message.end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
+    for (auto&& rank : neighboringRanks) {
+        dataToSend[rank].insert(dataToSend[rank].end(), updatedInternalIndividuals.begin(), updatedInternalIndividuals.end());
         if (idealPointMigration && isIdealPointUpdated) {
-            message.insert(message.end(), decomposition->IdealPoint().begin(), decomposition->IdealPoint().end());
+            dataToSend[rank].insert(dataToSend[rank].end(), decomposition->IdealPoint().begin(),
+                                    decomposition->IdealPoint().end());
         }
     }
 
