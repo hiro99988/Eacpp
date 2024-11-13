@@ -693,8 +693,9 @@ std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::Crea
     }
 
     if (idealPointMigration && isIdealPointUpdated) {
-        for (auto&& [rank, message] : dataToSend) {
-            message.insert(message.end(), decomposition->IdealPoint().begin(), decomposition->IdealPoint().end());
+        for (auto&& [rank, _] : rankIndexesToSend) {
+            dataToSend[rank].insert(dataToSend[rank].end(), decomposition->IdealPoint().begin(),
+                                    decomposition->IdealPoint().end());
         }
     }
 
