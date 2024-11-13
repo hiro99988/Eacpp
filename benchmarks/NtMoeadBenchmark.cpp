@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
     int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
     int migrationInterval = parameter["migrationInterval"];
     double crossoverRate = parameter["crossoverRate"];
+    bool idealPointMigration = parameter["idealPointMigration"];
     std::vector<std::string> problemNames = problems["problems"];
 
     const std::filesystem::path outputDirectoryPath = "out/data/NtMoead/" + GetTimestamp() + "/";
@@ -150,7 +151,7 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < trial; i++) {
             NtMoead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, crossover,
-                                  decomposition, mutation, problem, repair, sampling, selection);
+                                  decomposition, mutation, problem, repair, sampling, selection, idealPointMigration);
 
             ReleaseIsend(parallelSize);
 
