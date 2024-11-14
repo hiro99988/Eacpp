@@ -178,6 +178,7 @@ void NtMoead<DecisionVariableType>::Initialize() {
     totalPopulationSize = initializer.CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
     decomposition->InitializeIdealPoint(objectivesNum);
     InitializeIsland();
+    std::cout << "rank: " << rank << " initialized" << std::endl;
     currentGeneration = 0;
 }
 
@@ -197,7 +198,6 @@ void NtMoead<DecisionVariableType>::Update() {
         std::vector<std::vector<double>> messages;
         SendMessages();
 
-        receivedIndividuals.clear();
         messages = ReceiveMessages();
 
         updatedSolutionIndexes.clear();
@@ -688,6 +688,7 @@ std::unordered_map<int, std::vector<double>> NtMoead<DecisionVariableType>::Crea
             } else if (IsReceivedIndividual(index)) {
                 dataToSend[rank].insert(dataToSend[rank].end(), receivedIndividuals[index].begin(),
                                         receivedIndividuals[index].end());
+                receivedIndividuals.erase(index);
             }
         }
     }

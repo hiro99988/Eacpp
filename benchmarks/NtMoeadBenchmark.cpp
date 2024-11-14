@@ -153,8 +153,6 @@ int main(int argc, char** argv) {
             NtMoead<double> moead(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, crossover,
                                   decomposition, mutation, problem, repair, sampling, selection, idealPointMigration);
 
-            ReleaseIsend(parallelSize);
-
             int generation = 0;
             double totalExecutionTime = 0.0;
             std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
@@ -220,6 +218,9 @@ int main(int argc, char** argv) {
             }
 
             executionTimesFile << i + 1 << "," << totalExecutionTime << std::endl;
+
+            MPI_Barrier(MPI_COMM_WORLD);
+            ReleaseIsend(parallelSize);
         }
     }
 
