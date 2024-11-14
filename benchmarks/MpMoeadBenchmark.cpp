@@ -178,9 +178,9 @@ int main(int argc, char** argv) {
                 AddIdealPoint(generation, decomposition->IdealPoint(), transitionOfIdealPoint);
             }
 
-            double maxTime;
-            MPI_Reduce(&totalExecutionTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-            RANK0(std::cout << "Trial " << i + 1 << " Total execution time: " << totalExecutionTime << " seconds" << std::endl;)
+            double maxExecutionTime;
+            MPI_Reduce(&totalExecutionTime, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            RANK0(std::cout << "Trial " << i + 1 << " Total execution time: " << maxExecutionTime << " seconds" << std::endl;)
 
             std::filesystem::path currentObjectiveDirectoryPath = objectiveDirectoryPath / (std::to_string(i + 1));
             std::filesystem::path currentIdealPointDirectoryPath = idealPointDirectoryPath / (std::to_string(i + 1));
@@ -216,7 +216,7 @@ int main(int argc, char** argv) {
                 idealPointFile << std::endl;
             }
 
-            executionTimesFile << i + 1 << "," << totalExecutionTime << std::endl;
+            executionTimesFile << i + 1 << "," << maxExecutionTime << std::endl;
 
             ReleaseIsend(parallelSize);
         }
