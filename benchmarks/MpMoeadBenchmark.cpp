@@ -216,7 +216,7 @@ int main(int argc, char** argv) {
                 idealPointFile << std::endl;
             }
 
-            executionTimesFile << i + 1 << "," << maxExecutionTime << std::endl;
+            RANK0(executionTimesFile << i + 1 << "," << maxExecutionTime << std::endl;)
 
             ReleaseIsend(parallelSize);
         }

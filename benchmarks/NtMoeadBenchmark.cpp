@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
                 idealPointFile << std::endl;
             }
 
-            executionTimesFile << i + 1 << "," << maxExecutionTime << std::endl;
+            RANK0(executionTimesFile << i + 1 << "," << maxExecutionTime << std::endl;)
 
             MPI_Barrier(MPI_COMM_WORLD);
             ReleaseIsend(parallelSize);
