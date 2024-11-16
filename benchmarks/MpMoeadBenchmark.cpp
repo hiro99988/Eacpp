@@ -95,7 +95,6 @@ void AddIdealPoint(int gen, const Eigen::ArrayXd& add, std::vector<std::pair<int
 
 int main(int argc, char** argv) {
     constexpr const char* ParameterFilePath = "data/inputs/benchmarks/parameter.json";
-    constexpr const char* ProblemsFilePath = "data/inputs/benchmarks/Problems.json";
 
     int rank;
     int parallelSize;
@@ -104,10 +103,8 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
 
     auto parameterFile = OpenInputFile(ParameterFilePath);
-    auto problemsFile = OpenInputFile(ProblemsFilePath);
 
     nlohmann::json parameter = nlohmann::json::parse(parameterFile);
-    nlohmann::json problems = nlohmann::json::parse(problemsFile);
 
     int trial = parameter["trial"];
     int generationNum = parameter["generationNum"];
@@ -116,7 +113,7 @@ int main(int argc, char** argv) {
     int migrationInterval = parameter["migrationInterval"];
     double crossoverRate = parameter["crossoverRate"];
     bool idealPointMigration = parameter["idealPointMigration"];
-    std::vector<std::string> problemNames = problems["problems"];
+    std::vector<std::string> problemNames = parameter["problems"];
 
     const std::filesystem::path outputDirectoryPath = "out/data/MpMoead/" + GetTimestamp() + "/";
     if (rank == 0) {

@@ -1,9 +1,16 @@
 {
-    "trial": 31,
+    "trial": 2,
     "generationNum": 1000,
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 299,
     "migrationInterval": 1,
     "crossoverRate": 0.9,
-    "idealPointMigration": false
+    "idealPointMigration": false,
+    "problems": [
+        "ZDT1",
+        "ZDT2",
+        "ZDT3",
+        "ZDT4",
+        "ZDT6"
+    ]
 }

@@ -72,20 +72,17 @@ void AddIdealPoint(int gen, const Eigen::ArrayXd& add, std::vector<std::pair<int
 
 int main(int argc, char** argv) {
     constexpr const char* ParameterFilePath = "data/inputs/benchmarks/parameter.json";
-    constexpr const char* ProblemsFilePath = "data/inputs/benchmarks/Problems.json";
 
     auto parameterFile = OpenInputFile(ParameterFilePath);
-    auto problemsFile = OpenInputFile(ProblemsFilePath);
 
     nlohmann::json parameter = nlohmann::json::parse(parameterFile);
-    nlohmann::json problems = nlohmann::json::parse(problemsFile);
 
     int trial = parameter["trial"];
     int generationNum = parameter["generationNum"];
     int neighborhoodSize = parameter["neighborhoodSize"];
     int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
     double crossoverRate = parameter["crossoverRate"];
-    std::vector<std::string> problemNames = problems["problems"];
+    std::vector<std::string> problemNames = parameter["problems"];
 
     const std::filesystem::path outputDirectoryPath = "out/data/Moead/" + GetTimestamp() + "/";
     CreateDirectories(outputDirectoryPath);
