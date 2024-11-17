@@ -53,6 +53,9 @@ class Moead : public IMoead<DecisionVariableType> {
 
     virtual ~Moead() {}
 
+    int GenerationNum() const override {
+        return generationNum;
+    }
     void Initialize() override;
     void Update() override;
     void Run() override;

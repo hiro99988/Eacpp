@@ -8,6 +8,7 @@ template <typename DecisionVariableType>
 struct IMoead {
     virtual ~IMoead() {}
 
+    virtual int GenerationNum() const = 0;
     virtual void Initialize() = 0;
     virtual void Update() = 0;
     virtual void Run() = 0;
