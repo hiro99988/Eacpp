@@ -68,8 +68,8 @@ class NtMoead : public IMoead<DecisionVariableType> {
     }
     ~NtMoead() {}
 
-    int GenerationNum() const override {
-        return generationNum;
+    int CurrentGeneration() const override {
+        return currentGeneration;
     }
     void Run() override;
     void Initialize() override;

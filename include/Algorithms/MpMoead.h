@@ -68,8 +68,8 @@ class MpMoead : public IMoead<DecisionVariableType> {
     }
     virtual ~MpMoead() {}
 
-    int GenerationNum() const override {
-        return generationNum;
+    int CurrentGeneration() const override {
+        return currentGeneration;
     }
     void Run() override;
     void Initialize() override;
