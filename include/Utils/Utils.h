@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <chrono>
 #include <eigen3/Eigen/Core>
 #include <iostream>
 #include <iterator>
@@ -162,5 +163,13 @@ std::vector<T> LinSpace(T start, T end, int division) {
 
     return result;
 };
+
+inline std::string GetTimestamp(const char *format = "%y%m%d-%H%M%S") {
+    auto now = std::chrono::system_clock::now();
+    auto nowTime = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&nowTime), format);
+    return ss.str();
+}
 
 }  // namespace Eacpp
