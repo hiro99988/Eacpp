@@ -10,6 +10,11 @@
 
 namespace Eacpp {
 
+#define RANK0(code)  \
+    if (rank == 0) { \
+        code;        \
+    }
+
 template <typename T>
 constexpr bool false_v = false;
 
@@ -145,6 +150,15 @@ inline std::vector<std::vector<int>> GenerateAllNodeIndexes(int totalTasks, int 
     return allNodeIndexes;
 }
 
+inline std::vector<int> GenerateDisplacements(const std::vector<int>& dataCounts) {
+    std::vector<int> displacements(dataCounts.size());
+    for (int i = 0; i < dataCounts.size(); i++) {
+        displacements[i] = i == 0 ? 0 : displacements[i - 1] + dataCounts[i - 1];
+    }
+
+    return displacements;
+}
+
 /**
  * @brief
  * scatterv操作のための各ノードのデータ数と変位を生成します。
@@ -157,11 +171,11 @@ inline std::vector<std::vector<int>> GenerateAllNodeIndexes(int totalTasks, int 
 inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDisplacements(const std::vector<int>& nodeWorkloads,
                                                                                         int dataSize, int parallelSize) {
     std::vector<int> dataCounts(parallelSize);
-    std::vector<int> displacements(parallelSize);
     for (int i = 0; i < parallelSize; i++) {
         dataCounts[i] = nodeWorkloads[i] * dataSize;
-        displacements[i] = i == 0 ? 0 : displacements[i - 1] + dataCounts[i - 1];
     }
+
+    std::vector<int> displacements = GenerateDisplacements(dataCounts);
     return {dataCounts, displacements};
 }
 
@@ -192,6 +206,53 @@ std::vector<T> Scatterv(const std::vector<T>& send, const std::vector<int>& node
     return received;
 }
 
+template <typename T>
+void Gatherv(const std::vector<T>& send, int rank, int parallelSize, std::vector<T>& outReceiveBuffer,
+             std::vector<int>& outSizes) {
+    int localSize = send.size();
+    if (rank == 0) {
+        outSizes.resize(parallelSize);
+    }
+    MPI_Gather(&localSize, 1, MPI_INT, outSizes.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    std::vector<int> displacements;
+    if (rank == 0) {
+        displacements = GenerateDisplacements(outSizes);
+    }
+
+    if (rank == 0) {
+        outReceiveBuffer.resize(outSizes.back() + displacements.back());
+    }
+
+    MPI_Gatherv(send.data(), send.size(), GetMpiDataType(send), outReceiveBuffer.data(), outSizes.data(), displacements.data(),
+                GetMpiDataType(send), 0, MPI_COMM_WORLD);
+}
+
+template <typename T>
+std::vector<T> Gatherv(const std::vector<T>& send, int rank, int parallelSize) {
+    int localSize = send.size();
+    std::vector<int> sizes;
+    if (rank == 0) {
+        sizes.resize(parallelSize);
+    }
+    MPI_Gather(&localSize, 1, MPI_INT, sizes.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    std::vector<int> displacements;
+    if (rank == 0) {
+        displacements = GenerateDisplacements(sizes);
+    }
+
+    std::vector<double> receiveBuffer;
+    if (rank == 0) {
+        receiveBuffer.resize(sizes.back() + displacements.back());
+    }
+
+    MPI_Gatherv(send.data(), send.size(), GetMpiDataType(send), receiveBuffer.data(), sizes.data(), displacements.data(),
+                GetMpiDataType(send), 0, MPI_COMM_WORLD);
+
+    return receiveBuffer;
+}
+
 inline int GetRankFromIndex(int totalTasks, int index, int parallelSize) {
     int start = 0;
     int end = 0;
@@ -209,6 +270,26 @@ inline int GetRankFromIndex(int totalTasks, int index, int parallelSize) {
         }
     }
     return parallelSize - 1;
+}
+
+inline void ReleaseIsend(int parallelSize, MPI_Datatype dataType) {
+    constexpr int tag = 0;
+
+    for (int i = 0; i < parallelSize; i++) {
+        while (true) {
+            int flag;
+            MPI_Status status;
+            MPI_Iprobe(i, tag, MPI_COMM_WORLD, &flag, &status);
+            if (!flag) {
+                break;
+            }
+
+            int dataSize;
+            MPI_Get_count(&status, dataType, &dataSize);
+            std::vector<double> tempData(dataSize);
+            MPI_Recv(tempData.data(), dataSize, dataType, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    }
 }
 
 }  // namespace Eacpp
