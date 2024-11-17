@@ -30,12 +30,12 @@
 
 namespace Eacpp {
 
-constexpr int maxBufferSize = 100;
-constexpr int messageTag = 0;
-
 template <typename DecisionVariableType>
 class MpMoead : public IMoead<DecisionVariableType> {
    public:
+    constexpr static int maxBufferSize = 100;
+    constexpr static int messageTag = 0;
+
     MpMoead(int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector, int migrationInterval,
             const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
             const std::shared_ptr<IDecomposition>& decomposition,

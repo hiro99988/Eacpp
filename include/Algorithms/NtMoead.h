@@ -29,13 +29,13 @@
 
 namespace Eacpp {
 
-constexpr int maxBufferSize = 100;
-constexpr int messageTag = 0;
-
 // TODO: vectorにおいてできるだけreserveを使ってメモリ確保を行う
 template <typename DecisionVariableType>
 class NtMoead : public IMoead<DecisionVariableType> {
    public:
+    constexpr static int maxBufferSize = 100;
+    constexpr static int messageTag = 0;
+
     NtMoead(int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector, int migrationInterval,
             const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
             const std::shared_ptr<IDecomposition>& decomposition,
