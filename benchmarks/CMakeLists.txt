@@ -14,14 +14,8 @@ FetchContent_MakeAvailable(json)
 add_executable(MoeadBenchmark.out MoeadBenchmark.cpp)
 target_link_libraries(MoeadBenchmark.out Eacpp nlohmann_json::nlohmann_json)
 
-add_executable(MpMoeadBenchmark.out MpMoeadBenchmark.cpp)
-target_link_libraries(MpMoeadBenchmark.out Eacpp nlohmann_json::nlohmann_json MPI::MPI_CXX)
-
 add_executable(ParetoFront.out ParetoFront.cpp)
 target_link_libraries(ParetoFront.out Eacpp)
-
-add_executable(NtMoeadBenchmark.out NtMoeadBenchmark.cpp)
-target_link_libraries(NtMoeadBenchmark.out Eacpp nlohmann_json::nlohmann_json MPI::MPI_CXX)
 
 add_executable(ParallelMoeadBenchmark.out ParallelMoeadBenchmark.cpp)
 target_link_libraries(ParallelMoeadBenchmark.out Eacpp nlohmann_json::nlohmann_json MPI::MPI_CXX)
