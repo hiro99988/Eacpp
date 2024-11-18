@@ -55,6 +55,9 @@ int main(int argc, char** argv) {
     const std::filesystem::path outputDirectoryPath = "out/data/Moead/" + GetTimestamp() + "/";
     std::filesystem::create_directories(outputDirectoryPath);
 
+    std::filesystem::copy(ParameterFilePath, outputDirectoryPath / "parameter.json",
+                          std::filesystem::copy_options::overwrite_existing);
+
     Stopwatch stopwatch;
     for (auto&& problemName : problemNames) {
         const std::filesystem::path outputProblemDirectoryPath = outputDirectoryPath / problemName;

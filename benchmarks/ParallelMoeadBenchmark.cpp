@@ -67,9 +67,10 @@ class ParallelMoeadBenchmark {
         MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
     }
 
-    void ReadParameters(std::ifstream& file, int& outTrial, int& outGenerationNum, int& outNeighborhoodSize,
-                        int& outDivisionsNumOfWeightVector, int& outMigrationInterval, double& outCrossoverRate,
-                        bool& outIdealPointMigration, std::vector<std::string>& outProblemNames) {
+    nlohmann::json_abi_v3_11_3::json ReadParameters(std::ifstream& file, int& outTrial, int& outGenerationNum,
+                                                    int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
+                                                    int& outMigrationInterval, double& outCrossoverRate,
+                                                    bool& outIdealPointMigration, std::vector<std::string>& outProblemNames) {
         nlohmann::json parameter = nlohmann::json::parse(file);
 
         outTrial = parameter["trial"];
@@ -80,6 +81,8 @@ class ParallelMoeadBenchmark {
         outCrossoverRate = parameter["crossoverRate"];
         outIdealPointMigration = parameter["idealPointMigration"];
         outProblemNames = parameter["problems"];
+
+        return parameter;
     }
 
     void AddIdealPoint(int gen, const Eigen::ArrayXd& add) {
@@ -159,12 +162,19 @@ class ParallelMoeadBenchmark {
         double crossoverRate;
         bool idealPointMigration;
         std::vector<std::string> problemNames;
-        std::ifstream parameterFile(parameterFilePath);
-        ReadParameters(parameterFile, trial, generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval,
-                       crossoverRate, idealPointMigration, problemNames);
+        auto parameterFile = OpenInputFile(parameterFilePath);
+        auto parameter = ReadParameters(parameterFile, trial, generationNum, neighborhoodSize, divisionsNumOfWeightVector,
+                                        migrationInterval, crossoverRate, idealPointMigration, problemNames);
 
         const std::filesystem::path outputDirectoryPath = "out/data/" + moeadName + "/" + GetTimestamp() + "/";
         RANK0(std::filesystem::create_directories(outputDirectoryPath);)
+
+        if (rank == 0) {
+            parameter["parallelSize"] = parallelSize;
+            std::string parameterString = parameter.dump(4);
+            std::ofstream parameterOutputFile(outputDirectoryPath / "parameter.json");
+            parameterOutputFile << parameterString;
+        }
 
         MpiStopwatch stopwatch;
         for (auto&& problemName : problemNames) {
