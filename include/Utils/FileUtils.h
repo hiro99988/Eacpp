@@ -48,14 +48,22 @@ void WriteCsvLine(std::ofstream& file, const T& data, CsvLineEnd lineEnding = Cs
 }
 
 template <std::ranges::range T>
-void WriteCsv(std::ofstream& file, const std::vector<T>& data) {
+void WriteCsv(std::ofstream& file, const std::vector<T>& data, std::vector<std::string> header = {}) {
+    if (!header.empty()) {
+        WriteCsvLine(file, header);
+    }
+
     for (const auto& row : data) {
         WriteCsvLine(file, row);
     }
 }
 
 template <typename T, std::ranges::range U>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data) {
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, std::vector<std::string> header = {}) {
+    if (!header.empty()) {
+        WriteCsvLine(file, header);
+    }
+
     for (const auto& [key, row] : data) {
         file << key << ",";
         WriteCsvLine(file, row);
@@ -63,7 +71,11 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data) {
 }
 
 template <std::ranges::range T, std::ranges::range U>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data) {
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, std::vector<std::string> header = {}) {
+    if (!header.empty()) {
+        WriteCsvLine(file, header);
+    }
+
     for (const auto& [keys, row] : data) {
         WriteCsvLine(file, keys, CsvLineEnd::Comma);
         WriteCsvLine(file, row);
@@ -71,7 +83,11 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data) {
 }
 
 template <std::ranges::range T>
-void WriteCsv(std::ofstream& file, const T& data, int step) {
+void WriteCsv(std::ofstream& file, const T& data, int step, std::vector<std::string> header = {}) {
+    if (!header.empty()) {
+        WriteCsvLine(file, header);
+    }
+
     int count = 0;
     for (const auto& elem : data) {
         file << elem;
