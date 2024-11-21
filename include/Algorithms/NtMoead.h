@@ -181,7 +181,6 @@ void NtMoead<DecisionVariableType>::Initialize() {
     totalPopulationSize = initializer.CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
     decomposition->InitializeIdealPoint(objectivesNum);
     InitializeIsland();
-    std::cout << "rank: " << rank << " initialized" << std::endl;
     currentGeneration = 0;
 }
 
