@@ -121,7 +121,7 @@ size_t SimpleGraph<T>::ElementsNum(int nodesNum) const {
 }
 
 template <typename T>
-T SimpleGraph<T>::Element(size_t row, size_t col) {
+T SimpleGraph<T>::Element(size_t row, size_t col) const {
     if (row == col) {
         return 0;
     }

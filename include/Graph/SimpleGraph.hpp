@@ -38,7 +38,7 @@ class SimpleGraph {
 
     size_t Index(size_t row, size_t col) const;
     size_t ElementsNum(int nodesNum) const;
-    T Element(size_t row, size_t col);
+    T Element(size_t row, size_t col) const;
 };
 
 template class SimpleGraph<bool>;
