@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Mutations/IMutation.h"
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
@@ -14,7 +14,9 @@ class MutationBase : public IMutation<T> {
    public:
     double mutationRate;
 
-    explicit MutationBase(double mutationRate) : mutationRate(mutationRate) { _rng = std::make_shared<Rng>(); }
+    explicit MutationBase(double mutationRate) : mutationRate(mutationRate) {
+        _rng = std::make_shared<Rng>();
+    }
     MutationBase(double mutationRate, std::shared_ptr<IRng> rng) : mutationRate(mutationRate), _rng(rng) {}
     virtual ~MutationBase() {}
 

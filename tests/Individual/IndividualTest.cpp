@@ -4,7 +4,7 @@
 #include <eigen3/Eigen/Core>
 #include <vector>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Utils/EigenUtils.h"
 
 namespace Eacpp {

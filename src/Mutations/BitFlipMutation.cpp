@@ -1,6 +1,6 @@
 #include "Mutations/BitFlipMutation.h"
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/Rng.h"
 
 namespace Eacpp {

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "Crossovers/SimulatedBinaryCrossover.h"
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/MockRng.h"
 #include "Utils/EigenUtils.h"
 

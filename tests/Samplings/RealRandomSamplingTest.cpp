@@ -7,7 +7,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/MockRng.h"
 #include "Samplings/RealRandomSampling.h"
 #include "Utils/EigenUtils.h"

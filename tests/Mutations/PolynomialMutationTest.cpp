@@ -9,7 +9,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Mutations/PolynomialMutation.h"
 #include "Rng/MockRng.h"
 

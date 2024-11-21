@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Crossovers/ICrossover.h"
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
 
@@ -24,7 +24,9 @@ class CrossoverBase : public ICrossover<T> {
         : _parentsNum(parentNum), crossoverRate(crossoverRate), _rng(rng) {}
     virtual ~CrossoverBase() {}
 
-    int GetParentNum() const override { return _parentsNum; }
+    int GetParentNum() const override {
+        return _parentsNum;
+    }
 
     Individual<T> Cross(const std::vector<Individual<T>>& parents) const override {
         int actualParentNum = parents.size();

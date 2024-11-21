@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 
 using namespace Eacpp;
 

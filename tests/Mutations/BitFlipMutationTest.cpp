@@ -4,7 +4,7 @@
 #include <eigen3/Eigen/Core>
 #include <memory>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Mutations/BitFlipMutation.h"
 #include "Rng/MockRng.h"
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Crossovers/CrossoverBase.h"
-#include "Individual/Individual.h"
+#include "Individual.h"
 
 namespace Eacpp::Test {
 
@@ -13,13 +13,17 @@ class CrossoverBaseTest : public ::testing::Test {
     class CrossoverBaseTmp : public CrossoverBase<int> {
        public:
         CrossoverBaseTmp(int parentNum, double crossoverRate) : CrossoverBase<int>(parentNum, crossoverRate) {}
-        Individuali performCrossover(const std::vector<Individuali>& parents) const override { return parents[0]; }
+        Individuali performCrossover(const std::vector<Individuali>& parents) const override {
+            return parents[0];
+        }
     };
 
     CrossoverBaseTmp crossoverBase{2, 1.0};
 };
 
-TEST_F(CrossoverBaseTest, GetParentNum) { EXPECT_EQ(crossoverBase.GetParentNum(), 2); }
+TEST_F(CrossoverBaseTest, GetParentNum) {
+    EXPECT_EQ(crossoverBase.GetParentNum(), 2);
+}
 
 TEST_F(CrossoverBaseTest, CrossException) {
     Individuali parent(1);

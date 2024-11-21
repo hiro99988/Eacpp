@@ -4,7 +4,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Problems/IProblem.h"
 #include "Repairs/IRepair.h"
 #include "Rng/IRng.h"

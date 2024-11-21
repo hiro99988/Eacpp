@@ -18,7 +18,7 @@
 #include "Algorithms/MoeadInitializer.h"
 #include "Crossovers/ICrossover.h"
 #include "Decompositions/IDecomposition.h"
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Mutations/IMutation.h"
 #include "Problems/IProblem.h"
 #include "Repairs/IRepair.h"

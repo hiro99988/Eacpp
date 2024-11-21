@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 
 namespace Eacpp {
 

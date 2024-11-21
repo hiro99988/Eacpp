@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Crossovers/CrossoverBase.h"
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/IRng.h"
 
 namespace Eacpp {

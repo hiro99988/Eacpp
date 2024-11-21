@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
 #include "Samplings/ISampling.h"

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Repairs/SamplingRepair.h"
 #include "Samplings/MockSampling.h"
 

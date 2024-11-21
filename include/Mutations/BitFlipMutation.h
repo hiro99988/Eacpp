@@ -3,7 +3,7 @@
 #include <eigen3/Eigen/Core>
 #include <memory>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Mutations/MutationBase.h"
 #include "Rng/IRng.h"
 

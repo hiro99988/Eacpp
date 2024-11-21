@@ -3,7 +3,7 @@
 #include <cmath>
 #include <eigen3/Eigen/Core>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 
 namespace Eacpp {
 

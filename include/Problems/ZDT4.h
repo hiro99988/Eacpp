@@ -4,7 +4,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Problems/ZDTBase.h"
 #include "Reflections/Reflection.h"
 

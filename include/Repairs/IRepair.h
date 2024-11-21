@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Individual/Individual.h"
+#include "Individual.h"
 
 namespace Eacpp {
 

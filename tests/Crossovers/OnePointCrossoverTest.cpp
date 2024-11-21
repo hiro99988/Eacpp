@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "Crossovers/OnePointCrossover.h"
-#include "Individual/Individual.h"
+#include "Individual.h"
 #include "Rng/MockRng.h"
 
 using ::testing::_;
