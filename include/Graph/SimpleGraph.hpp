@@ -9,8 +9,8 @@ namespace Eacpp {
 template <typename T>
 class SimpleGraph {
    public:
-    SimpleGraph(int nodesNum) : nodesNum(nodesNum), matrix(ElementsNum(nodesNum), 0) {}
-    SimpleGraph(int nodesNum, const std::vector<T>& matrix) : nodesNum(nodesNum), matrix(matrix) {
+    SimpleGraph(int nodesNum) : _nodesNum(nodesNum), _matrix(ElementsNum(nodesNum), 0) {}
+    SimpleGraph(int nodesNum, const std::vector<T>& matrix) : _nodesNum(nodesNum), _matrix(matrix) {
         if (matrix.size() != ElementsNum(nodesNum)) {
             throw std::invalid_argument("nodesNum and matrix size mismatch");
         }
@@ -20,7 +20,7 @@ class SimpleGraph {
     typename std::vector<T>::const_reference operator()(int row, int col) const;
 
     const std::vector<T>& Matrix() const {
-        return matrix;
+        return _matrix;
     }
 
     /// @brief Calculate the length of the shortest path from the specified start node to the end node.
@@ -35,8 +35,8 @@ class SimpleGraph {
     void TwoOpt(size_t parent1, size_t parent2, size_t child1, size_t child2);
 
    private:
-    int nodesNum;
-    std::vector<T> matrix;
+    int _nodesNum;
+    std::vector<T> _matrix;
 
     size_t Index(size_t row, size_t col) const;
     size_t ElementsNum(int nodesNum) const;
