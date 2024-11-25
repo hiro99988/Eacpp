@@ -10,19 +10,19 @@ namespace Eacpp {
 void NetworkTopologySearch::Search() const {
     InitializeNeighborhood();
 
-    std::vector<int> distances(graph.NodesNum(), -1);
-    std::vector<int> previous(graph.NodesNum(), -1);
+    std::vector<int> distances(_graph.NodesNum(), -1);
+    std::vector<int> previous(_graph.NodesNum(), -1);
 
     std::queue<int> queue;
-    queue.push(extremeNodes[0]);
-    distances[extremeNodes[0]] = 0;
+    queue.push(_extremeNodes[0]);
+    distances[_extremeNodes[0]] = 0;
 
     while (!queue.empty()) {
         int node = queue.front();
         queue.pop();
 
-        for (int i = 0; i < neighborhoodSize; ++i) {
-            int neighbor = neighborhood[node][i];
+        for (int i = 0; i < _neighborhoodSize; ++i) {
+            int neighbor = _neighborhood[node][i];
 
             if (distances[neighbor] == -1) {
                 distances[neighbor] = distances[node] + 1;
@@ -32,7 +32,7 @@ void NetworkTopologySearch::Search() const {
         }
     }
 
-    int current = extremeNodes[1];
+    int current = _extremeNodes[1];
     std::vector<int> path;
 
     while (current != -1) {
@@ -51,8 +51,8 @@ void NetworkTopologySearch::Search() const {
 
 void NetworkTopologySearch::InitializeNeighborhood() const {
     std::vector<std::vector<int>> neighborhoods;
-    neighborhoods = moeadInitializer.CalculateNeighborhoods2d(
-        neighborhoodSize, moeadInitializer.GenerateWeightVectors(neighborhoodSize, objectivesNum));
+    neighborhoods = _moeadInitializer.CalculateNeighborhoods2d(
+        _neighborhoodSize, _moeadInitializer.GenerateWeightVectors(_neighborhoodSize, _objectivesNum));
 
     for (int i = 0; i < neighborhoods.size(); ++i) {
         for (int j = 0; j < neighborhoods[i].size(); ++j) {
