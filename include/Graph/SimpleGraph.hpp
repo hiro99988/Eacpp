@@ -31,6 +31,7 @@ class SimpleGraph {
     int MaxDegree() const;
     int AverageShortestPathLength() const;
     std::vector<std::vector<int>> ToAdjacencyList() const;
+    void TwoOpt(size_t parent1, size_t parent2, size_t child1, size_t child2);
 
    private:
     int nodesNum;

@@ -107,6 +107,18 @@ std::vector<std::vector<int>> SimpleGraph<T>::ToAdjacencyList() const {
 }
 
 template <typename T>
+void SimpleGraph<T>::TwoOpt(size_t parent1, size_t child1, size_t parent2, size_t child2) {
+    if (parent1 == parent2 || parent1 == child2 || parent2 == child1 || child1 == child2) {
+        throw std::invalid_argument("No duplicate nodes allowed");
+    }
+
+    this[parent1, child1] = 0;
+    this[parent2, child2] = 0;
+    this[parent1, child2] = 1;
+    this[parent2, child1] = 1;
+}
+
+template <typename T>
 size_t SimpleGraph<T>::Index(size_t row, size_t col) const {
     if (row > col) {
         std::swap(row, col);
