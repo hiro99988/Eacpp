@@ -9,18 +9,16 @@ namespace Eacpp {
 
 template <typename T>
 typename std::vector<T>::reference SimpleGraph<T>::operator()(int row, int col) {
-    if (row == col) {
-        throw std::invalid_argument("No self-edges allowed");
-    }
+    ValidateIndexes(row, col);
+    ValidateEdge(row, col);
 
     return matrix[Index(row, col)];
 }
 
 template <typename T>
 typename std::vector<T>::const_reference SimpleGraph<T>::operator()(int row, int col) const {
-    if (row == col) {
-        throw std::invalid_argument("No self-edges allowed");
-    }
+    ValidateIndexes(row, col);
+    ValidateEdge(row, col);
 
     return matrix[Index(row, col)];
 }
@@ -108,6 +106,9 @@ std::vector<std::vector<int>> SimpleGraph<T>::ToAdjacencyList() const {
 
 template <typename T>
 void SimpleGraph<T>::TwoOpt(size_t parent1, size_t child1, size_t parent2, size_t child2) {
+    ValidateIndexes(parent1, parent2, child1, child2);
+    ValidateEdge(parent1, child1);
+    ValidateEdge(parent2, child2);
     if (parent1 == parent2 || parent1 == child2 || parent2 == child1 || child1 == child2) {
         throw std::invalid_argument("No duplicate nodes allowed");
     }
@@ -120,6 +121,9 @@ void SimpleGraph<T>::TwoOpt(size_t parent1, size_t child1, size_t parent2, size_
 
 template <typename T>
 size_t SimpleGraph<T>::Index(size_t row, size_t col) const {
+    ValidateIndexes(row, col);
+    ValidateEdge(row, col);
+
     if (row > col) {
         std::swap(row, col);
     }
@@ -134,11 +138,32 @@ size_t SimpleGraph<T>::ElementsNum(int nodesNum) const {
 
 template <typename T>
 T SimpleGraph<T>::Element(size_t row, size_t col) const {
+    ValidateIndexes(row, col);
+
     if (row == col) {
         return 0;
     }
 
     return matrix[Index(row, col)];
+}
+
+template <typename T>
+template <typename... Args>
+    requires std::same_as<Args..., size_t>
+void SimpleGraph<T>::ValidateIndexes(Args... indexes) const {
+    for (size_t index : {indexes...}) {
+        if (index >= nodesNum) {
+            throw std::out_of_range("Index out of range " + std::to_string(index) + " >= " + std::to_string(nodesNum) +
+                                    " nodesNum");
+        }
+    }
+}
+
+template <typename T>
+void SimpleGraph<T>::ValidateEdge(size_t row, size_t col) const {
+    if (row == col) {
+        throw std::invalid_argument("No self-edges allowed " + std::to_string(row) + " == " + std::to_string(col));
+    }
 }
 
 }  // namespace Eacpp

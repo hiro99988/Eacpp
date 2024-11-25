@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <stdexcept>
 #include <vector>
 
@@ -40,6 +41,12 @@ class SimpleGraph {
     size_t Index(size_t row, size_t col) const;
     size_t ElementsNum(int nodesNum) const;
     T Element(size_t row, size_t col) const;
+
+    template <typename... Args>
+        requires std::same_as<Args..., size_t>
+    void ValidateIndexes(Args... indexes) const;
+
+    void ValidateEdge(size_t row, size_t col) const;
 };
 
 template class SimpleGraph<bool>;
