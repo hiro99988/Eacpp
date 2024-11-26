@@ -19,3 +19,6 @@ target_link_libraries(NtMoeadEx.out Eacpp MPI::MPI_CXX)
 
 add_executable(Test.out Test.cpp)
 target_link_libraries(Test.out Eacpp)
+
+add_executable(GraphEx.out GraphEx.cpp)
+target_link_libraries(GraphEx.out Eacpp)
