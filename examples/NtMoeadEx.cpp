@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <tuple>
 #include <vector>
 
@@ -24,19 +25,16 @@ int main(int argc, char** argv) {
     MPI_Init(nullptr, nullptr);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int generationNum = 500;
-    int neighborhoodSize = 21;
-    int migrationInterval = 1;
-    int H = 299;
-    std::string problemName = "ZDT1";
+    std::ifstream file("data/inputs/exampleParameter.json");
+    nlohmann::json parameter = nlohmann::json::parse(file);
 
-    if (argc == 6) {
-        generationNum = std::stoi(argv[1]);
-        neighborhoodSize = std::stoi(argv[2]);
-        migrationInterval = std::stoi(argv[3]);
-        H = std::stoi(argv[4]);
-        problemName = argv[5];
-    }
+    int generationNum = parameter["generationNum"];
+    int neighborhoodSize = parameter["neighborhoodSize"];
+    int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
+    int migrationInterval = parameter["migrationInterval"];
+    bool idealPointMigration = parameter["idealPointMigration"];
+    std::string problemName = parameter["problem"];
+    std::string adjacencyListFileName = parameter["adjacencyListFileName"];
 
     std::shared_ptr<IProblem<double>> problem = Reflection<IProblem<double>>::Create(problemName);
 
@@ -47,8 +45,9 @@ int main(int argc, char** argv) {
     auto repair = std::make_shared<RealRandomRepair>(problem);
     auto selection = std::make_shared<RandomSelection>();
 
-    auto moead = NtMoead<double>(generationNum, neighborhoodSize, H, migrationInterval, crossover, decomposition, mutation,
-                                 problem, repair, sampling, selection);
+    auto moead =
+        NtMoead<double>(generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, adjacencyListFileName,
+                        crossover, decomposition, mutation, problem, repair, sampling, selection);
 
     double start = MPI_Wtime();
     ;

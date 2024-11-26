@@ -15,7 +15,7 @@ add_executable(MpMoeadEx.out MpMoeadEx.cpp)
 target_link_libraries(MpMoeadEx.out Eacpp MPI::MPI_CXX)
 
 add_executable(NtMoeadEx.out NtMoeadEx.cpp)
-target_link_libraries(NtMoeadEx.out Eacpp MPI::MPI_CXX)
+target_link_libraries(NtMoeadEx.out Eacpp MPI::MPI_CXX nlohmann_json::nlohmann_json)
 
 add_executable(Test.out Test.cpp)
 target_link_libraries(Test.out Eacpp)

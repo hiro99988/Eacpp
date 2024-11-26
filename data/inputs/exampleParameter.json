@@ -1,0 +1,9 @@
+{
+    "generationNum": 1000,
+    "neighborhoodSize": 21,
+    "divisionsNumOfWeightVector": 299,
+    "migrationInterval": 1,
+    "idealPointMigration": false,
+    "problem": "ZDT1",
+    "adjacencyListFileName": "data/graph/10ForTest.csv"
+}
