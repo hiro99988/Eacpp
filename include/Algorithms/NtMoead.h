@@ -37,7 +37,7 @@ class NtMoead : public IMoead<DecisionVariableType> {
     constexpr static int messageTag = 0;
 
     NtMoead(int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector, int migrationInterval,
-            const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
+            std::string adjacencyListFileName, const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
             const std::shared_ptr<IDecomposition>& decomposition,
             const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
             const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
@@ -47,7 +47,8 @@ class NtMoead : public IMoead<DecisionVariableType> {
         : generationNum(generationNum),
           neighborhoodSize(neighborhoodSize),
           divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-          migrationInterval(migrationInterval) {
+          migrationInterval(migrationInterval),
+          adjacencyListFileName(adjacencyListFileName) {
         if (!crossover || !decomposition || !mutation || !problem || !repair || !sampling || !selection) {
             throw std::invalid_argument("Null pointer is passed");
         }
@@ -89,6 +90,7 @@ class NtMoead : public IMoead<DecisionVariableType> {
     int neighborhoodSize;
     int migrationInterval;
     int divisionsNumOfWeightVector;
+    std::string adjacencyListFileName;
     std::shared_ptr<ICrossover<DecisionVariableType>> crossover;
     std::shared_ptr<IDecomposition> decomposition;
     std::shared_ptr<IMutation<DecisionVariableType>> mutation;
@@ -332,9 +334,7 @@ void NtMoead<DecisionVariableType>::InitializeIsland() {
 
 template <typename DecisionVariableType>
 std::vector<std::vector<int>> NtMoead<DecisionVariableType>::ReadAdjacencyList() {
-    constexpr const char* filename = "data/graph/hoffmanSingletonGraphAdjacencyList.csv";
-
-    std::ifstream ifs(filename);
+    std::ifstream ifs(adjacencyListFileName);
     if (!ifs) {
         std::cerr << "Failed to open " << filename << std::endl;
         std::exit(1);
