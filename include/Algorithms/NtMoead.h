@@ -336,7 +336,7 @@ template <typename DecisionVariableType>
 std::vector<std::vector<int>> NtMoead<DecisionVariableType>::ReadAdjacencyList() {
     std::ifstream ifs(adjacencyListFileName);
     if (!ifs) {
-        std::cerr << "Failed to open " << filename << std::endl;
+        std::cerr << "Failed to open " << adjacencyListFileName << std::endl;
         std::exit(1);
     }
 
