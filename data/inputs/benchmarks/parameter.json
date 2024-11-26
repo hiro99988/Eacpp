@@ -1,5 +1,5 @@
 {
-    "trial": 2,
+    "trial": 31,
     "generationNum": 1000,
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 299,
@@ -12,5 +12,6 @@
         "ZDT3",
         "ZDT4",
         "ZDT6"
-    ]
+    ],
+    "adjacencyListFileName": "data/graph/hoffmanSingletonGraphAdjacencyList.csv"
 }

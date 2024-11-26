@@ -70,7 +70,8 @@ class ParallelMoeadBenchmark {
     nlohmann::json_abi_v3_11_3::json ReadParameters(std::ifstream& file, int& outTrial, int& outGenerationNum,
                                                     int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
                                                     int& outMigrationInterval, double& outCrossoverRate,
-                                                    bool& outIdealPointMigration, std::vector<std::string>& outProblemNames) {
+                                                    bool& outIdealPointMigration, std::vector<std::string>& outProblemNames,
+                                                    std::string& outAdjacencyListFileName) {
         nlohmann::json parameter = nlohmann::json::parse(file);
 
         outTrial = parameter["trial"];
@@ -81,6 +82,7 @@ class ParallelMoeadBenchmark {
         outCrossoverRate = parameter["crossoverRate"];
         outIdealPointMigration = parameter["idealPointMigration"];
         outProblemNames = parameter["problems"];
+        outAdjacencyListFileName = parameter["adjacencyListFileName"];
 
         return parameter;
     }
@@ -162,9 +164,11 @@ class ParallelMoeadBenchmark {
         double crossoverRate;
         bool idealPointMigration;
         std::vector<std::string> problemNames;
+        std::string adjacencyListFileName;
         auto parameterFile = OpenInputFile(parameterFilePath);
-        auto parameter = ReadParameters(parameterFile, trial, generationNum, neighborhoodSize, divisionsNumOfWeightVector,
-                                        migrationInterval, crossoverRate, idealPointMigration, problemNames);
+        auto parameter =
+            ReadParameters(parameterFile, trial, generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval,
+                           crossoverRate, idealPointMigration, problemNames, adjacencyListFileName);
 
         const std::filesystem::path outputDirectoryPath = "out/data/" + moeadName + "/" + GetTimestamp() + "/";
         RANK0(std::filesystem::create_directories(outputDirectoryPath);)
@@ -218,9 +222,9 @@ class ParallelMoeadBenchmark {
                                                               migrationInterval, crossover, decomposition, mutation, problem,
                                                               repair, sampling, selection, idealPointMigration);
                 } else if (moeadName == MoeadNames[1]) {
-                    moead = std::make_unique<NtMoead<double>>(generationNum, neighborhoodSize, divisionsNumOfWeightVector,
-                                                              migrationInterval, crossover, decomposition, mutation, problem,
-                                                              repair, sampling, selection, idealPointMigration);
+                    moead = std::make_unique<NtMoead<double>>(
+                        generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval, adjacencyListFileName,
+                        crossover, decomposition, mutation, problem, repair, sampling, selection, idealPointMigration);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }
