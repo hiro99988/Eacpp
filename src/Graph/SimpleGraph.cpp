@@ -49,7 +49,114 @@ SimpleGraph<T> SimpleGraph<T>::GnpRandomGraph(int nodesNum, double probability) 
     return graph;
 }
 
-typename std::vector<T>::reference SimpleGraph<T>::operator()(int row, int col) {
+template <typename T>
+SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
+    if (nodesNum * degree % 2 != 0) {
+        throw std::invalid_argument("The value of (nodesNum * degree) must be even");
+    }
+
+    if (degree < 0 || degree >= nodesNum) {
+        throw std::invalid_argument("Degree must be in the range [0, nodesNum)");
+    }
+
+    if (degree == 0) {
+        SimpleGraph<T> emptyGraph(nodesNum);
+        return emptyGraph;
+    }
+
+    SimpleGraph<T> graph(nodesNum);
+
+    struct TryCreation {
+        std::set<std::pair<int, int>> operator()(int nodesNum, int degree) {
+            std::set<std::pair<int, int>> edges;
+            std::vector<int> stubs;
+            for (int i = 0; i < nodesNum; ++i) {
+                stubs.insert(stubs.end(), degree, i);
+            }
+
+            while (!stubs.empty()) {
+                std::map<int, int> potentialEdges;
+                std::shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
+                auto stubIter = stubs.begin();
+                while (stubIter != stubs.end()) {
+                    int s1 = *stubIter++;
+                    if (stubIter == stubs.end()) {
+                        potentialEdges[s1]++;
+                        break;
+                    }
+
+                    int s2 = *stubIter++;
+                    if (s1 > s2) {
+                        std::swap(s1, s2);
+                    }
+
+                    if (s1 != s2 && edges.find({std::min(s1, s2), std::max(s1, s2)}) == edges.end()) {
+                        edges.insert({s1, s2});
+                    } else {
+                        potentialEdges[s1]++;
+                        potentialEdges[s2]++;
+                    }
+                }
+
+                if (!Suitable(edges, potentialEdges)) {
+                    return {};  // 失敗
+                }
+
+                stubs.clear();
+                for (const auto& kv : potentialEdges) {
+                    stubs.insert(stubs.end(), kv.second, kv.first);
+                }
+            }
+
+            return edges;
+        }
+
+        bool Suitable(const std::set<std::pair<int, int>>& edges, const std::map<int, int>& potentialEdges) {
+            if (potentialEdges.empty()) {
+                return true;
+            }
+
+            std::vector<int> nodes;
+            for (const auto& kv : potentialEdges) {
+                nodes.push_back(kv.first);
+            }
+
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                for (size_t j = i + 1; j < nodes.size(); ++j) {
+                    int s1 = nodes[i];
+                    int s2 = nodes[j];
+                    if (s1 == s2) {
+                        continue;
+                    }
+
+                    if (edges.find({std::min(s1, s2), std::max(s1, s2)}) == edges.end()) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+    } tryCreation;
+
+    // エッジセットの生成を試行
+    std::set<std::pair<int, int>> edges = tryCreation();
+    int max_attempts = 10;
+    while (edges.empty() && max_attempts-- > 0) {
+        edges = tryCreation();
+    }
+    if (edges.empty()) {
+        throw std::runtime_error("Failed to generate a random regular graph");
+    }
+
+    // エッジをグラフに追加
+    for (const auto& edge : edges) {
+        graph(edge.first, edge.second) = 1;
+        graph(edge.second, edge.first) = 1;
+    }
+
+    return graph;
+}
 
 template <typename T>
 typename std::vector<T>::reference SimpleGraph<T>::operator[](size_t index) {

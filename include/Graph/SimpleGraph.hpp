@@ -20,8 +20,13 @@ class SimpleGraph {
     static size_t ElementsNum(int nodesNum);
     static SimpleGraph<T> GnpRandomGraph(int nodesNum, double probability);
 
-    typename std::vector<T>::reference operator()(int row, int col);
-    typename std::vector<T>::const_reference operator()(int row, int col) const;
+    /// @brief Returns a random degree-regular graph on nodesNum.
+    /// @param nodesNum The number of nodes. The value of (nodesNum * degree) must be even.
+    /// @param degree The degree of each node.
+    /// @return a random degree-regular graph on nodesNum.
+    /// @throw std::invalid_argument if the value of (nodesNum * degree) is odd or degree is not in the range [0, nodesNum).
+    /// @details A regular graph is a graph where each node has the same number of neighbors.
+    static SimpleGraph<T> RandomRegularGraph(int nodesNum, int degree);
 
     typename std::vector<T>::reference operator[](size_t index);
     typename std::vector<T>::const_reference operator[](size_t index) const;
