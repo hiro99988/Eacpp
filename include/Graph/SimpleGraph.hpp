@@ -18,6 +18,7 @@ class SimpleGraph {
     }
 
     static size_t ElementsNum(int nodesNum);
+    static SimpleGraph<T> EmptyGraph(int nodesNum);
     static SimpleGraph<T> GnpRandomGraph(int nodesNum, double probability);
 
     /// @brief Returns a random degree-regular graph on nodesNum.

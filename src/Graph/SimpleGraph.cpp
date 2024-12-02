@@ -19,6 +19,12 @@ size_t SimpleGraph<T>::ElementsNum(int nodesNum) {
 }
 
 template <typename T>
+SimpleGraph<T> SimpleGraph<T>::EmptyGraph(int nodesNum) {
+    SimpleGraph<T> graph(nodesNum);
+    return graph;
+}
+
+template <typename T>
 SimpleGraph<T> SimpleGraph<T>::GnpRandomGraph(int nodesNum, double probability) {
     if (probability < 0 || probability > 1) {
         throw std::invalid_argument("Probability must be in the range [0, 1]");
