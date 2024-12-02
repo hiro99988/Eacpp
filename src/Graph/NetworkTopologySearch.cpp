@@ -35,11 +35,11 @@ void NetworkTopologySearch::Search() {
             neighbor[index] = !neighbor[index];
         } else {
             auto indexes = _rng->Integers(0, neighbor.NodesNum() - 1, 2, false);
-            auto child1 = _rng->Choice(neighbor.GetEdges(indexes[0]), 1, false);
-            auto child2 = _rng->Choice(neighbor.GetEdges(indexes[1]), 1, false);
+            auto child1 = _rng->Choice(neighbor.Neighbors(indexes[0]), 1, false);
+            auto child2 = _rng->Choice(neighbor.Neighbors(indexes[1]), 1, false);
             while (child1[0] == indexes[1] || child2[0] == indexes[0] || child1[0] == child2[0]) {
-                child1 = _rng->Choice(neighbor.GetEdges(indexes[0]), 1, false);
-                child2 = _rng->Choice(neighbor.GetEdges(indexes[1]), 1, false);
+                child1 = _rng->Choice(neighbor.Neighbors(indexes[0]), 1, false);
+                child2 = _rng->Choice(neighbor.Neighbors(indexes[1]), 1, false);
             }
 
             neighbor.TwoOpt(indexes[0], indexes[1], child1[0], child2[0]);
