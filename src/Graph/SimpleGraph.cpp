@@ -296,7 +296,7 @@ void SimpleGraph<T>::TwoOpt(size_t parent1, size_t child1, size_t parent2, size_
 }
 
 template <typename T>
-std::vector<int> SimpleGraph<T>::GetEdges(size_t node) const {
+std::vector<int> SimpleGraph<T>::Neighbors(size_t node) const {
     ValidateIndexes(node);
 
     std::vector<int> edges;

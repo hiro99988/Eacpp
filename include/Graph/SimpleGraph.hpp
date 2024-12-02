@@ -54,7 +54,7 @@ class SimpleGraph {
     double AverageShortestPathLength() const;
     std::vector<std::vector<int>> ToAdjacencyList() const;
     void TwoOpt(size_t parent1, size_t parent2, size_t child1, size_t child2);
-    std::vector<int> GetEdges(size_t node) const;
+    std::vector<int> Neighbors(size_t node) const;
 
    private:
     int _nodesNum;
