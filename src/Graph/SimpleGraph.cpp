@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <deque>
+#include <map>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -31,8 +32,7 @@ SimpleGraph<T> SimpleGraph<T>::GnpRandomGraph(int nodesNum, double probability) 
     }
 
     if (probability <= 0) {
-        SimpleGraph<T> emptyGraph(nodesNum);
-        return emptyGraph;
+        return EmptyGraph(nodesNum);
     }
 
     if (probability >= 1) {
@@ -66,48 +66,47 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
     }
 
     if (degree == 0) {
-        SimpleGraph<T> emptyGraph(nodesNum);
-        return emptyGraph;
+        return EmptyGraph(nodesNum);
     }
 
-    SimpleGraph<T> graph(nodesNum);
-
     struct TryCreation {
+        /// @brief create edge set for a random degree-regular graph
+        /// @return edge set. if the condition is not met, return an empty set.
         std::set<std::pair<int, int>> operator()(int nodesNum, int degree) {
             std::set<std::pair<int, int>> edges;
+            // represent a half-edge to give each node a connection point
             std::vector<int> stubs;
             for (int i = 0; i < nodesNum; ++i) {
                 stubs.insert(stubs.end(), degree, i);
             }
 
+            // repeat until all stubs are connected
             while (!stubs.empty()) {
+                // store the number of potential edges for each node
                 std::map<int, int> potentialEdges;
                 std::shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
                 auto stubIter = stubs.begin();
                 while (stubIter != stubs.end()) {
                     int s1 = *stubIter++;
-                    if (stubIter == stubs.end()) {
-                        potentialEdges[s1]++;
-                        break;
-                    }
-
                     int s2 = *stubIter++;
                     if (s1 > s2) {
                         std::swap(s1, s2);
                     }
 
-                    if (s1 != s2 && edges.find({std::min(s1, s2), std::max(s1, s2)}) == edges.end()) {
+                    if (s1 != s2 && edges.find({s1, s2}) == edges.end()) {
                         edges.insert({s1, s2});
                     } else {
+                        // Need to record nodes that need to be reconnected to the edge because the edge could not be connected
                         potentialEdges[s1]++;
                         potentialEdges[s2]++;
                     }
                 }
 
                 if (!Suitable(edges, potentialEdges)) {
-                    return {};  // 失敗
+                    return {};  // failed to find suitable edge set
                 }
 
+                // update stubs with nodes that need to be reconnected
                 stubs.clear();
                 for (const auto& kv : potentialEdges) {
                     stubs.insert(stubs.end(), kv.second, kv.first);
@@ -117,6 +116,8 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
             return edges;
         }
 
+        /// @brief Check if there are suitable edges remaining.
+        /// @return true if there are suitable edges remaining, false if the generation of the graph has failed.
         bool Suitable(const std::set<std::pair<int, int>>& edges, const std::map<int, int>& potentialEdges) {
             if (potentialEdges.empty()) {
                 return true;
@@ -127,14 +128,14 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
                 nodes.push_back(kv.first);
             }
 
-            for (size_t i = 0; i < nodes.size(); ++i) {
-                for (size_t j = i + 1; j < nodes.size(); ++j) {
-                    int s1 = nodes[i];
-                    int s2 = nodes[j];
+            // Check if there are any suitable edges left.
+            for (auto&& s1 : nodes) {
+                for (auto&& s2 : nodes) {
                     if (s1 == s2) {
-                        continue;
+                        break;
                     }
 
+                    // if suitable edge found, return true
                     if (edges.find({std::min(s1, s2), std::max(s1, s2)}) == edges.end()) {
                         return true;
                     }
@@ -145,20 +146,14 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
         }
     } tryCreation;
 
-    // エッジセットの生成を試行
-    std::set<std::pair<int, int>> edges = tryCreation();
-    int max_attempts = 10;
-    while (edges.empty() && max_attempts-- > 0) {
-        edges = tryCreation();
-    }
-    if (edges.empty()) {
-        throw std::runtime_error("Failed to generate a random regular graph");
+    auto edges = tryCreation(nodesNum, degree);
+    while (edges.empty()) {
+        edges = tryCreation(nodesNum, degree);
     }
 
-    // エッジをグラフに追加
+    SimpleGraph<T> graph(nodesNum);
     for (const auto& edge : edges) {
         graph(edge.first, edge.second) = 1;
-        graph(edge.second, edge.first) = 1;
     }
 
     return graph;
