@@ -299,15 +299,15 @@ template <typename T>
 std::vector<int> SimpleGraph<T>::Neighbors(size_t node) const {
     ValidateIndexes(node);
 
-    std::vector<int> edges;
+    std::vector<int> neighbors;
 
     for (int i = 0; i < _nodesNum; ++i) {
         if (node != i && Element(node, i)) {
-            edges.push_back(i);
+            neighbors.push_back(i);
         }
     }
 
-    return edges;
+    return neighbors;
 }
 
 template <typename T>
