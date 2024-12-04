@@ -1,25 +1,25 @@
 #pragma once
 
-#include <concepts>
-#include <stdexcept>
+#include <set>
 #include <vector>
 
 namespace Eacpp {
 
-template <typename T>
 class SimpleGraph {
    public:
-    SimpleGraph() : _nodesNum(0), _matrix() {}
-    SimpleGraph(int nodesNum) : _nodesNum(nodesNum), _matrix(ElementsNum(nodesNum), 0) {}
-    SimpleGraph(int nodesNum, const std::vector<T>& matrix) : _nodesNum(nodesNum), _matrix(matrix) {
-        if (matrix.size() != ElementsNum(nodesNum)) {
-            throw std::invalid_argument("nodesNum and matrix size mismatch");
-        }
-    }
+    using Node = std::size_t;
+    using Edge = std::pair<Node, Node>;
 
-    static size_t ElementsNum(int nodesNum);
-    static SimpleGraph<T> EmptyGraph(int nodesNum);
-    static SimpleGraph<T> GnpRandomGraph(int nodesNum, double probability);
+   public:
+    SimpleGraph() : _nodesNum(0), _edges(), _adjacencyList() {}
+    SimpleGraph(Node nodesNum) : _nodesNum(nodesNum), _edges(), _adjacencyList(nodesNum) {}
+
+    static SimpleGraph FromEdges(Node nodesNum, const std::set<Edge>& edges);
+    static SimpleGraph EmptyGraph(Node nodesNum);
+    static SimpleGraph GnpRandomGraph(Node nodesNum, double probability);
+
+    bool operator==(const SimpleGraph& other) const;
+    bool operator!=(const SimpleGraph& other) const;
 
     /// @brief Returns a random degree-regular graph on nodesNum.
     /// @param nodesNum The number of nodes. The value of (nodesNum * degree) must be even.
@@ -27,50 +27,43 @@ class SimpleGraph {
     /// @return a random degree-regular graph on nodesNum.
     /// @throw std::invalid_argument if the value of (nodesNum * degree) is odd or degree is not in the range [0, nodesNum).
     /// @details A regular graph is a graph where each node has the same number of neighbors.
-    static SimpleGraph<T> RandomRegularGraph(int nodesNum, int degree);
+    static SimpleGraph RandomRegularGraph(Node nodesNum, Node degree);
 
-    typename std::vector<T>::reference operator[](size_t index);
-    typename std::vector<T>::const_reference operator[](size_t index) const;
-    typename std::vector<T>::reference operator()(size_t row, size_t col);
-    typename std::vector<T>::const_reference operator()(size_t row, size_t col) const;
-
-    int size() const {
-        return _matrix.size();
-    }
-
-    int NodesNum() const {
-        return _nodesNum;
-    }
-
-    void resize(int nodesNum);
+    Node NodesNum() const;
+    const std::set<Edge>& Edges() const;
+    const std::vector<std::set<Node>>& AdjacencyList() const;
+    void AddEdge(Edge edge);
+    void AddEdge(Node u, Node v);
+    void RemoveEdge(Edge edge);
+    void RemoveEdge(Node u, Node v);
+    void Clear();
+    bool HasEdge(Edge edge) const;
+    bool HasEdge(Node u, Node v) const;
+    std::set<Node> Neighbors(Node n) const;
+    Node Degree(Node n) const;
+    Node MaxDegree() const;
+    void Resize(Node nodesNum);
 
     /// @brief Calculate the length of the shortest path from the specified start node to the end node.
     /// @param start The index of the start node.
     /// @param end The index of the end node.
     /// @return The length of the path from the start node to the end node. If there is no path, -1 is returned.
-    int ShortestPathLength(int start, int end) const;
+    Node ShortestPathLength(Node start, Node end) const;
 
-    int MaxDegree() const;
     double AverageShortestPathLength() const;
-    std::vector<std::vector<int>> ToAdjacencyList() const;
-    void TwoOpt(size_t parent1, size_t child1, size_t parent2, size_t child2);
-    std::vector<int> Neighbors(size_t node) const;
+    bool TwoOpt(Edge edge1, Edge edge2);
+    bool TwoOpt(Node parent1, Node child1, Node parent2, Node child2);
 
    private:
-    int _nodesNum;
-    std::vector<T> _matrix;
-
-    size_t Index(size_t row, size_t col) const;
-    T Element(size_t row, size_t col) const;
+    Node _nodesNum;
+    std::set<Edge> _edges;
+    std::vector<std::set<Node>> _adjacencyList;
 
     template <typename... Args>
     void ValidateIndexes(Args... indexes) const;
-
-    void ValidateEdge(size_t row, size_t col) const;
-};  // namespace Eacpp
-
-template class SimpleGraph<bool>;
-template class SimpleGraph<int>;
-template class SimpleGraph<unsigned int>;
+    template <typename... Args>
+    void ValidateEdges(const Args&... edges) const;
+    void NormalizeEdges(Edge& edges) const;
+};
 
 }  // namespace Eacpp

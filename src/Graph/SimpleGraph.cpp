@@ -14,19 +14,21 @@
 
 namespace Eacpp {
 
-template <typename T>
-size_t SimpleGraph<T>::ElementsNum(int nodesNum) {
-    return nodesNum * (nodesNum - 1) / 2;
-}
+SimpleGraph SimpleGraph::FromEdges(Node nodesNum, const std::set<Edge>& edges) {
+    SimpleGraph graph(nodesNum);
 
-template <typename T>
-SimpleGraph<T> SimpleGraph<T>::EmptyGraph(int nodesNum) {
-    SimpleGraph<T> graph(nodesNum);
+    for (const auto& edge : edges) {
+        graph.AddEdge(edge);
+    }
+
     return graph;
 }
 
-template <typename T>
-SimpleGraph<T> SimpleGraph<T>::GnpRandomGraph(int nodesNum, double probability) {
+SimpleGraph SimpleGraph::EmptyGraph(Node nodesNum) {
+    return SimpleGraph(nodesNum);
+}
+
+SimpleGraph SimpleGraph::GnpRandomGraph(Node nodesNum, double probability) {
     if (probability < 0 || probability > 1) {
         throw std::invalid_argument("Probability must be in the range [0, 1]");
     }
@@ -35,19 +37,13 @@ SimpleGraph<T> SimpleGraph<T>::GnpRandomGraph(int nodesNum, double probability) 
         return EmptyGraph(nodesNum);
     }
 
-    if (probability >= 1) {
-        std::vector<T> matrix(ElementsNum(nodesNum), 1);
-        SimpleGraph<T> completeGraph(nodesNum, matrix);
-        return completeGraph;
-    }
-
     Rng rng;
-    SimpleGraph<T> graph(nodesNum);
+    SimpleGraph graph(nodesNum);
 
     for (int i = 0; i < nodesNum; ++i) {
         for (int j = i + 1; j < nodesNum; ++j) {
             if (rng.Random() < probability) {
-                graph(i, j) = 1;
+                graph.AddEdge(i, j);
             }
         }
     }
@@ -55,8 +51,7 @@ SimpleGraph<T> SimpleGraph<T>::GnpRandomGraph(int nodesNum, double probability) 
     return graph;
 }
 
-template <typename T>
-SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
+SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
     if (nodesNum * degree % 2 != 0) {
         throw std::invalid_argument("The value of (nodesNum * degree) must be even");
     }
@@ -72,8 +67,8 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
     struct TryCreation {
         /// @brief create edge set for a random degree-regular graph
         /// @return edge set. if the condition is not met, return an empty set.
-        std::set<std::pair<int, int>> operator()(int nodesNum, int degree) {
-            std::set<std::pair<int, int>> edges;
+        std::set<Edge> operator()(int nodesNum, int degree) {
+            std::set<Edge> edges;
             // represent a half-edge to give each node a connection point
             std::vector<int> stubs;
             for (int i = 0; i < nodesNum; ++i) {
@@ -118,7 +113,7 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
 
         /// @brief Check if there are suitable edges remaining.
         /// @return true if there are suitable edges remaining, false if the generation of the graph has failed.
-        bool Suitable(const std::set<std::pair<int, int>>& edges, const std::map<int, int>& potentialEdges) {
+        bool Suitable(const std::set<Edge>& edges, const std::map<int, int>& potentialEdges) {
             if (potentialEdges.empty()) {
                 return true;
             }
@@ -151,110 +146,144 @@ SimpleGraph<T> SimpleGraph<T>::RandomRegularGraph(int nodesNum, int degree) {
         edges = tryCreation(nodesNum, degree);
     }
 
-    SimpleGraph<T> graph(nodesNum);
-    for (const auto& edge : edges) {
-        graph(edge.first, edge.second) = 1;
+    return FromEdges(nodesNum, edges);
+}
+
+bool SimpleGraph::operator==(const SimpleGraph& other) const {
+    return _nodesNum == other._nodesNum && _edges == other._edges && _adjacencyList == other._adjacencyList;
+}
+
+bool SimpleGraph::operator!=(const SimpleGraph& other) const {
+    return !(*this == other);
+}
+
+SimpleGraph::Node SimpleGraph::NodesNum() const {
+    return _nodesNum;
+}
+
+const std::set<SimpleGraph::Edge>& SimpleGraph::Edges() const {
+    return _edges;
+}
+
+const std::vector<std::set<SimpleGraph::Node>>& SimpleGraph::AdjacencyList() const {
+    return _adjacencyList;
+}
+
+void SimpleGraph::AddEdge(Edge edge) {
+    ValidateEdges(edge);
+    NormalizeEdges(edge);
+
+    if (_edges.insert(edge).second) {
+        _adjacencyList[edge.first].insert(edge.second);
+        _adjacencyList[edge.second].insert(edge.first);
     }
-
-    return graph;
 }
 
-template <typename T>
-typename std::vector<T>::reference SimpleGraph<T>::operator[](size_t index) {
-    if (index >= _matrix.size()) {
-        throw std::out_of_range("Index out of range " + std::to_string(index) + " >= " + std::to_string(_matrix.size()));
+void SimpleGraph::AddEdge(Node u, Node v) {
+    AddEdge({u, v});
+}
+
+void SimpleGraph::RemoveEdge(Edge edge) {
+    ValidateEdges(edge);
+    NormalizeEdges(edge);
+
+    if (_edges.erase(edge) > 0) {
+        _adjacencyList[edge.first].erase(edge.second);
+        _adjacencyList[edge.second].erase(edge.first);
     }
-
-    return _matrix[index];
 }
 
-template <typename T>
-typename std::vector<T>::const_reference SimpleGraph<T>::operator[](size_t index) const {
-    if (index >= _matrix.size()) {
-        throw std::out_of_range("Index out of range " + std::to_string(index) + " >= " + std::to_string(_matrix.size()));
+void SimpleGraph::RemoveEdge(Node u, Node v) {
+    RemoveEdge({u, v});
+}
+
+void SimpleGraph::Clear() {
+    _edges.clear();
+    for (auto& neighbors : _adjacencyList) {
+        neighbors.clear();
     }
-
-    return _matrix[index];
 }
 
-template <typename T>
-typename std::vector<T>::reference SimpleGraph<T>::operator()(size_t row, size_t col) {
-    ValidateIndexes(row, col);
-    ValidateEdge(row, col);
+bool SimpleGraph::HasEdge(Edge edge) const {
+    ValidateEdges(edge);
+    NormalizeEdges(edge);
 
-    return _matrix[Index(row, col)];
+    return _edges.find(edge) != _edges.end();
 }
 
-template <typename T>
-typename std::vector<T>::const_reference SimpleGraph<T>::operator()(size_t row, size_t col) const {
-    ValidateIndexes(row, col);
-    ValidateEdge(row, col);
-
-    return _matrix[Index(row, col)];
+bool SimpleGraph::HasEdge(Node u, Node v) const {
+    return HasEdge({u, v});
 }
 
-template <typename T>
-void SimpleGraph<T>::resize(int nodesNum) {
-    _nodesNum = nodesNum;
-    _matrix.resize(ElementsNum(nodesNum), 0);
+std::set<SimpleGraph::Node> SimpleGraph::Neighbors(Node n) const {
+    ValidateIndexes(n);
+
+    return _adjacencyList[n];
 }
 
-template <typename T>
-int SimpleGraph<T>::ShortestPathLength(int start, int end) const {
-    if (start == end) {
-        return 0;
-    }
+SimpleGraph::Node SimpleGraph::Degree(Node n) const {
+    ValidateIndexes(n);
 
-    std::vector<int> distances(_nodesNum, -1);
-    distances[start] = 0;
-
-    std::deque<int> queue;
-    queue.push_back(start);
-
-    while (!queue.empty()) {
-        int node = queue.front();
-        queue.pop_front();
-
-        for (int i = 0; i < _nodesNum; ++i) {
-            if (Element(node, i) && distances[i] == -1) {
-                distances[i] = distances[node] + 1;
-                queue.push_back(i);
-            }
-        }
-    }
-
-    return distances[end];
+    return _adjacencyList[n].size();
 }
 
-template <typename T>
-int SimpleGraph<T>::MaxDegree() const {
-    int maxDegree = 0;
+SimpleGraph::Node SimpleGraph::MaxDegree() const {
+    Node maxDegree = 0;
 
-    for (int i = 0; i < _nodesNum; ++i) {
-        int degree = 0;
-        for (int j = 0; j < _nodesNum; ++j) {
-            if (Element(i, j)) {
-                ++degree;
-            }
-        }
-
-        if (degree > maxDegree) {
-            maxDegree = degree;
+    for (const auto& neighbors : _adjacencyList) {
+        if (neighbors.size() > maxDegree) {
+            maxDegree = neighbors.size();
         }
     }
 
     return maxDegree;
 }
 
-template <typename T>
-double SimpleGraph<T>::AverageShortestPathLength() const {
+void SimpleGraph::Resize(Node nodesNum) {
+    _nodesNum = nodesNum;
+    _edges.clear();
+    _adjacencyList.resize(nodesNum);
+}
+
+SimpleGraph::Node SimpleGraph::ShortestPathLength(Node start, Node end) const {
+    ValidateIndexes(start, end);
+
+    if (start == end) {
+        return 0;
+    }
+
+    std::deque<Node> queue;
+    std::vector<int> distance(_nodesNum, -1);
+
+    queue.push_back(start);
+    distance[start] = 0;
+
+    while (!queue.empty()) {
+        Node current = queue.front();
+        queue.pop_front();
+
+        for (auto&& neighbor : _adjacencyList[current]) {
+            if (distance[neighbor] == -1) {
+                distance[neighbor] = distance[current] + 1;
+                queue.push_back(neighbor);
+
+                if (neighbor == end) {
+                    return distance[neighbor];
+                }
+            }
+        }
+    }
+
+    return -1;
+}
+
+double SimpleGraph::AverageShortestPathLength() const {
     double sum = 0;
     int count = 0;
 
     for (int i = 0; i < _nodesNum; ++i) {
         for (int j = i + 1; j < _nodesNum; ++j) {
             int pathLength = ShortestPathLength(i, j);
-
             if (pathLength != -1) {
                 sum += pathLength;
                 ++count;
@@ -265,77 +294,32 @@ double SimpleGraph<T>::AverageShortestPathLength() const {
     return sum / count;
 }
 
-template <typename T>
-std::vector<std::vector<int>> SimpleGraph<T>::ToAdjacencyList() const {
-    std::vector<std::vector<int>> adjacencyList(_nodesNum);
+bool SimpleGraph::TwoOpt(Edge edge1, Edge edge2) {
+    ValidateEdges(edge1, edge2);
 
-    for (int i = 0; i < _nodesNum; ++i) {
-        for (int j = 0; j < _nodesNum; ++j) {
-            if (Element(i, j)) {
-                adjacencyList[i].push_back(j);
-            }
-        }
+    if (edge1.first == edge2.first || edge1.first == edge2.second || edge1.second == edge2.first ||
+        edge1.second == edge2.second) {
+        return false;
     }
 
-    return adjacencyList;
-}
-
-template <typename T>
-void SimpleGraph<T>::TwoOpt(size_t parent1, size_t child1, size_t parent2, size_t child2) {
-    ValidateIndexes(parent1, parent2, child1, child2);
-    ValidateEdge(parent1, child1);
-    ValidateEdge(parent2, child2);
-    if (parent1 == parent2 || parent1 == child2 || parent2 == child1 || child1 == child2) {
-        throw std::invalid_argument("No duplicate nodes allowed");
+    if (!HasEdge(edge1) || !HasEdge(edge2)) {
+        return false;
     }
 
-    _matrix[Index(parent1, child1)] = 0;
-    _matrix[Index(parent2, child2)] = 0;
-    _matrix[Index(parent1, child2)] = 1;
-    _matrix[Index(parent2, child1)] = 1;
+    RemoveEdge(edge1);
+    RemoveEdge(edge2);
+    AddEdge(edge1.first, edge2.second);
+    AddEdge(edge2.first, edge1.second);
+
+    return true;
 }
 
-template <typename T>
-std::vector<int> SimpleGraph<T>::Neighbors(size_t node) const {
-    ValidateIndexes(node);
-
-    std::vector<int> neighbors;
-
-    for (int i = 0; i < _nodesNum; ++i) {
-        if (node != i && Element(node, i)) {
-            neighbors.push_back(i);
-        }
-    }
-
-    return neighbors;
+bool SimpleGraph::TwoOpt(Node parent1, Node child1, Node parent2, Node child2) {
+    return TwoOpt({parent1, child1}, {parent2, child2});
 }
 
-template <typename T>
-size_t SimpleGraph<T>::Index(size_t row, size_t col) const {
-    ValidateIndexes(row, col);
-    ValidateEdge(row, col);
-
-    if (row > col) {
-        std::swap(row, col);
-    }
-
-    return row * (_nodesNum - 1) - (row * (row + 1) / 2) + col - 1;
-}
-
-template <typename T>
-T SimpleGraph<T>::Element(size_t row, size_t col) const {
-    ValidateIndexes(row, col);
-
-    if (row == col) {
-        return 0;
-    }
-
-    return _matrix[Index(row, col)];
-}
-
-template <typename T>
 template <typename... Args>
-void SimpleGraph<T>::ValidateIndexes(Args... indexes) const {
+void SimpleGraph::ValidateIndexes(Args... indexes) const {
     for (size_t index : {indexes...}) {
         if (index >= _nodesNum) {
             throw std::out_of_range("Index out of range " + std::to_string(index) + " >= " + std::to_string(_nodesNum) +
@@ -344,10 +328,19 @@ void SimpleGraph<T>::ValidateIndexes(Args... indexes) const {
     }
 }
 
-template <typename T>
-void SimpleGraph<T>::ValidateEdge(size_t row, size_t col) const {
-    if (row == col) {
-        throw std::invalid_argument("No self-edges allowed " + std::to_string(row) + " == " + std::to_string(col));
+template <typename... Args>
+void SimpleGraph::ValidateEdges(const Args&... edges) const {
+    for (const auto& e : {edges...}) {
+        ValidateIndexes(e.first, e.second);
+        if (e.first == e.second) {
+            throw std::invalid_argument("No self-edges allowed " + std::to_string(e.first) + " == " + std::to_string(e.second));
+        }
+    }
+}
+
+void SimpleGraph::NormalizeEdges(Edge& edge) const {
+    if (edge.first > edge.second) {
+        std::swap(edge.first, edge.second);
     }
 }
 
