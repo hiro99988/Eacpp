@@ -1,6 +1,14 @@
 #pragma once
 
+#include <eigen3/Eigen/Core>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Algorithms/MoeadInitializer.h"
@@ -11,70 +19,79 @@
 namespace Eacpp {
 
 class NetworkTopologySearch {
+   private:
+    using Node = SimpleGraph::Node;
+
    public:
-    NetworkTopologySearch(int objectivesNum, int neighborhoodSize, int divisionsNumOfWeightVector, int nodesNum,
-                          int idealPathLengthBetweenNeighbors, int idealPathLengthBetweenExtremesAndAnyNode, int repeats,
-                          double initialTemperature, double minTemperature, double coolingRate)
+    struct Evaluation {
+        Evaluation() {}
+        Evaluation(double objective, double asplNeighbors, double asplExtremes,
+                   const std::unordered_map<Node, std::vector<std::pair<Node, Node>>>& nodeViolationsNeighbors,
+                   const std::unordered_map<Node, std::vector<std::pair<Node, Node>>>& nodeViolationsExtremes)
+            : objective(objective),
+              asplNeighbors(asplNeighbors),
+              asplExtremes(asplExtremes),
+              nodeViolationsNeighbors(nodeViolationsNeighbors),
+              nodeViolationsExtremes(nodeViolationsExtremes) {}
+
+        double objective = 0.0;
+        double asplNeighbors = 0.0;
+        double asplExtremes = 0.0;
+        std::unordered_map<Node, std::vector<std::pair<Node, Node>>> nodeViolationsNeighbors;
+        std::unordered_map<Node, std::vector<std::pair<Node, Node>>> nodeViolationsExtremes;
+
+        bool operator<(const Evaluation& other) const;
+        bool operator>(const Evaluation& other) const;
+        friend std::ostream& operator<<(std::ostream& os, const Evaluation& eval);
+        int Penalty() const;
+        int ViolationsNeighbors() const;
+        int ViolationsExtremes() const;
+    };
+
+   public:
+    NetworkTopologySearch(int objectivesNum, int neighborhoodSize, int divisionsNumOfWeightVector, int nodesNum, int degree,
+                          int idealPathLengthBetweenNeighbors, int idealPathLengthBetweenExtremesAndAnyNode)
         : _objectivesNum(objectivesNum),
           _neighborhoodSize(neighborhoodSize),
           _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
           _nodesNum(nodesNum),
+          _degree(degree),
           _idealPathLengthBetweenNeighbors(idealPathLengthBetweenNeighbors),
           _idealPathLengthBetweenExtremesAndAnyNode(idealPathLengthBetweenExtremesAndAnyNode),
-          _repeats(repeats),
-          _initialTemperature(initialTemperature),
-          _minTemperature(minTemperature),
-          _coolingRate(coolingRate),
-          _moeadInitializer(MoeadInitializer()),
           _rng(std::make_unique<Rng>()) {}
 
-    // NetworkTopologySearch(int objectivesNum, int neighborhoodSize, int divisionsNumOfWeightVector, int nodesNum,
-    //                       int idealPathLengthBetweenNeighbors, int idealPathLengthBetweenExtremesAndAnyNode, int repeats,
-    //                       double initialTemperature, double minTemperature, double coolingRate, SimpleGraph<int>
-    //                       initialGraph)
-    //     : _objectivesNum(objectivesNum),
-    //       _neighborhoodSize(neighborhoodSize),
-    //       _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-    //       _nodesNum(nodesNum),
-    //       _idealPathLengthBetweenNeighbors(idealPathLengthBetweenNeighbors),
-    //       _idealPathLengthBetweenExtremesAndAnyNode(idealPathLengthBetweenExtremesAndAnyNode),
-    //       _repeats(repeats),
-    //       _initialTemperature(initialTemperature),
-    //       _minTemperature(minTemperature),
-    //       _coolingRate(coolingRate),
-    //       _moeadInitializer(MoeadInitializer()),
-    //       _rng(std::make_unique<Rng>()),
-    //       _bestSoFarGraph(initialGraph) {
-    //     _bestSoFarObjective = ComputeObjective(initialGraph);
-    // }
-
-    void Run();
+    void Run(int repeats, double initialTemperature, double minTemperature, double coolingRate);
     void Initialize();
-    void Search();
-    void WriteAdjacencyListToCsv(const std::ofstream&) const;
+    void Search(int repeats, double initialTemperature, double minTemperature, double coolingRate);
+    void Analyze(std::map<Node, int>& outNeighborFrequency, std::map<Node, int>& outExtremeFrequency) const;
+    void Write(const std::map<Node, int>& neighborFrequency, const std::map<Node, int>& extremeFrequency) const;
+    void WriteAdjacencyListToCsv(std::ofstream&) const;
+    Evaluation BestSoFarEvaluation() const;
+    SimpleGraph BestSoFarGraph() const;
+    Evaluation Evaluate(const SimpleGraph& graph) const;
 
    private:
     int _objectivesNum;
     int _neighborhoodSize;
     int _divisionsNumOfWeightVector;
     int _nodesNum;
+    int _degree;
     int _idealPathLengthBetweenNeighbors;
     int _idealPathLengthBetweenExtremesAndAnyNode;
-    int _repeats;
-    double _initialTemperature;
-    double _minTemperature;
-    double _coolingRate;
-    std::vector<std::vector<int>> _neighborhood;
+    std::vector<Eigen::ArrayXd> _weightVectors;
+    std::vector<std::vector<int>> _individualNeighborhoods;
+    std::vector<std::vector<int>> _allNodeIndexes;
+    std::vector<std::vector<int>> _nodeNeighbors;
     std::vector<int> _extremeNodes;
     MoeadInitializer _moeadInitializer;
     std::unique_ptr<IRng> _rng;
-    double _bestSoFarObjective;
-    SimpleGraph<int> _bestSoFarGraph;
+    Evaluation _bestSoFarEvaluation;
+    SimpleGraph _bestSoFarGraph;
 
-    void InitializeNeighborhood();
-    double ComputeObjective(const SimpleGraph<int>& graph) const;
+    void InitializeNodes();
+
     bool AcceptanceCriterion(double newObjective, double oldObjective, double temperature) const;
-    void UpdateTemperature(double& temperature) const;
+    void UpdateTemperature(double& temperature, double minTemperature, double coolingRate) const;
 };
 
 }  // namespace Eacpp
