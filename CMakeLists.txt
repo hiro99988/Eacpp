@@ -32,7 +32,7 @@ add_library(Eacpp STATIC "${SRC_FILES}")
 target_compile_features(Eacpp PUBLIC cxx_std_20)
 
 find_package(MPI REQUIRED)
-target_link_libraries(Eacpp MPI::MPI_CXX gtest_main gmock_main)
+target_link_libraries(Eacpp MPI::MPI_CXX gtest_main gmock_main nlohmann_json::nlohmann_json)
 
 target_include_directories(Eacpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
