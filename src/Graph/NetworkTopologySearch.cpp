@@ -4,7 +4,6 @@
 #include <array>
 #include <eigen3/Eigen/Core>
 #include <filesystem>
-#include <format>
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
@@ -186,10 +185,12 @@ void NetworkTopologySearch::Analyze(std::map<Node, int>& outNeighborFrequency, s
 
 void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
                                   const std::map<Node, int>& extremeFrequency) const {
-    std::string parameterPath =
-        std::format("{}_{}_{}_{}_{}_{}_{}", _objectivesNum, _neighborhoodSize, _divisionsNumOfWeightVector, _nodesNum, _degree,
-                    _idealPathLengthBetweenNeighbors, _idealPathLengthBetweenExtremesAndAnyNode);
-    std::filesystem::path directoryPath = std::format("data/graph/{}", parameterPath);
+    std::ostringstream oss;
+    oss << _objectivesNum << "_" << _neighborhoodSize << "_" << _divisionsNumOfWeightVector << "_" << _nodesNum << "_"
+        << _degree << "_" << _idealPathLengthBetweenNeighbors << "_" << _idealPathLengthBetweenExtremesAndAnyNode;
+    std::string parameterPath = oss.str();
+
+    std::filesystem::path directoryPath = "data/graph/" + parameterPath;
 
     if (std::filesystem::exists(directoryPath)) {
         std::ifstream evalFile(directoryPath / "evaluation.json");
