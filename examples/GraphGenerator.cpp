@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <set>
@@ -21,7 +22,8 @@ int main() {
     double minTemperature;
     double coolingRate;
 
-    nlohmann::json json = nlohmann::json::parse("data/inputs/graphParameters.json");
+    std::ifstream file("data/inputs/graphParameter.json");
+    nlohmann::json json = nlohmann::json::parse(file);
 
     objectivesNum = json["objectivesNum"];
     neighborhoodSize = json["neighborhoodSize"];
