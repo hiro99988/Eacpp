@@ -199,10 +199,9 @@ void NtMoead<DecisionVariableType>::Update() {
     currentGeneration++;
 
     if (currentGeneration % migrationInterval == 0) {
-        std::vector<std::vector<double>> messages;
         SendMessages();
 
-        messages = ReceiveMessages();
+        auto messages = ReceiveMessages();
 
         updatedSolutionIndexes.clear();
         isIdealPointUpdated = false;
@@ -484,7 +483,8 @@ void NtMoead<DecisionVariableType>::InitializePopulation() {
 template <typename DecisionVariableType>
 void NtMoead<DecisionVariableType>::InitializeExternalPopulation(std::vector<std::vector<double>>& receivedIndividuals) {
     for (auto&& receive : receivedIndividuals) {
-        for (int i = 0; i < receive.size(); i += singleMessageSize) {
+        int limit = idealPointMigration ? receive.size() - objectivesNum : receive.size();
+        for (int i = 0; i < limit; i += singleMessageSize) {
             int index = receive[i];
             if (!IsExternal(index)) {
                 continue;
