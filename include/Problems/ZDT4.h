@@ -13,6 +13,7 @@ namespace Eacpp {
 class ZDT4 : public ZDTBase {
    public:
     ZDT4() : ZDTBase(10, {{0.0, 1.0}, {-5.0, 5.0}}) {}
+    ZDT4(int decisionVariablesNum) : ZDTBase(decisionVariablesNum, {{0.0, 1.0}, {-5.0, 5.0}}) {}
 
    private:
     double F1(double x1) const override;
