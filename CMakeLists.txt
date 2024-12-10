@@ -37,5 +37,10 @@ target_link_libraries(Eacpp MPI::MPI_CXX gtest_main gmock_main nlohmann_json::nl
 target_include_directories(Eacpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_subdirectory(examples)
-add_subdirectory(tests)
 add_subdirectory(benchmarks)
+
+option(ENABLE_TESTS "Enable building of tests" ON)
+
+if (ENABLE_TESTS)
+    add_subdirectory(tests)
+endif()
