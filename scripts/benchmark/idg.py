@@ -6,10 +6,6 @@ import pandas as pd
 from scipy.spatial import distance
 
 
-def load_csv(file_path):
-    return pd.read_csv(file_path, header=None).values
-
-
 def calculate_igd(pareto_front, solutions):
     igd = 0
     for pf_point in pareto_front:
@@ -18,55 +14,38 @@ def calculate_igd(pareto_front, solutions):
     return igd / len(pareto_front)
 
 
-def is_dominated(sol, solutions):
-    for other in solutions:
-        if all(other <= sol) and any(other < sol):
-            return True
-    return False
-
-
-def filter_non_dominated(solutions):
-    non_dominated = []
-    for sol in solutions:
-        if not is_dominated(sol, solutions):
-            non_dominated.append(sol)
-    return np.array(non_dominated)
-
-
 def main(directory_path, option):
     results = {}
     for subdir in os.listdir(directory_path):
         subdir_path = os.path.join(directory_path, subdir)
         if os.path.isdir(subdir_path):
-            pareto_front_path = os.path.join(
-                "data", "ground_truth", "pareto_fronts", f"{subdir}_300.csv"
-            )
+            pareto_front_path = os.path.join("data", "ground_truth", "pareto_fronts", f"{subdir}_300.csv")
             if not os.path.exists(pareto_front_path):
                 continue
-            pareto_front = load_csv(pareto_front_path)
+            pareto_front = pd.read_csv(pareto_front_path, header=None).values
             igd_values = []
             for sub_sub in os.listdir(os.path.join(subdir_path, "objective")):
                 solutions = []
-                if option == "-seq":
-                    file_path = os.path.join(subdir_path, "objective", sub_sub)
-                    if sub_sub.endswith(".csv"):
-                        solutions = load_csv(file_path)
-                elif option == "-par":
-                    sub_subdir_path = os.path.join(subdir_path, "objective", sub_sub)
-                    if os.path.isdir(sub_subdir_path):
-                        for file in os.listdir(sub_subdir_path):
-                            file_path = os.path.join(sub_subdir_path, file)
-                            if file.endswith(".csv"):
-                                loaded_solutions = load_csv(file_path)
-                                solutions.extend(loaded_solutions)
+                file_path = os.path.join(subdir_path, "objective", sub_sub)
+                if sub_sub.endswith(".csv"):
+                    solutions = pd.read_csv(file_path).values
+                if option == "-par":
+                    solutions = solutions[:, 1:]
                 solutions = np.array(solutions)
-                non_dominated_solutions = filter_non_dominated(solutions)
-                igd = calculate_igd(pareto_front, non_dominated_solutions)
+                igd = calculate_igd(pareto_front, solutions)
                 igd_values.append((sub_sub, igd))
             igd_values.sort(key=lambda x: x[1])
             avg_igd = np.mean([igd for _, igd in igd_values])
+            min = igd_values[0]
+            max = igd_values[-1]
+            median = igd_values[(len(igd_values) // 2 if len(igd_values) % 2 == 0 else len(igd_values) // 2 + 1)]
+            std = np.std([igd for _, igd in igd_values])
             results[subdir] = {
                 "averageIgd": avg_igd,
+                "standardDeviation": std,
+                "min": min,
+                "max": max,
+                "median": median,
                 "igdValues": igd_values,
             }
     with open(os.path.join(directory_path, "igd.json"), "w") as f:

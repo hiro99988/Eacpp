@@ -5,8 +5,8 @@ import pandas as pd
 import sys
 
 
-def main(problem="ZDT1"):
-    data_file = "out/data/tmp/ZDT1.csv"
+def main(problem="ZDT1", option="-par"):
+    data_file = "out/data/NtMoead/241210-130616/ZDT3/objective/trial_28.csv"
 
     pareto_front = pd.read_csv(f"data/ground_truth/pareto_fronts/{problem}_300.csv", header=None).values
     plt.plot(
@@ -18,7 +18,9 @@ def main(problem="ZDT1"):
         zorder=1,
     )
 
-    data = pd.read_csv(data_file, header=None).values
+    data = pd.read_csv(data_file).values
+    if option == "-par":
+        data = data[:, 1:]
     plt.scatter(
         data[:, 0],
         data[:, 1],
@@ -43,4 +45,8 @@ if __name__ == "__main__":
         problem = sys.argv[1]
     else:
         problem = "ZDT1"
-    main(problem=problem)
+    if len(sys.argv) > 2:
+        option = sys.argv[2]
+    else:
+        option = "-par"
+    main(problem=problem, option=option)
