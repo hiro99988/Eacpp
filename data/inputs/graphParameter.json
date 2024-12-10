@@ -3,10 +3,10 @@
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 299,
     "nodesNum": 50,
-    "degree": 4,
+    "degree": 3,
     "idealPathLengthBetweenNeighbors": 2,
-    "idealPathLengthBetweenExtremesAndAnyNode": 3,
-    "repeats": 1000000,
+    "idealPathLengthBetweenExtremesAndAnyNode": 5,
+    "repeats": 10000000,
     "initialTemperature": 1000,
     "minTemperature": 0.001,
     "coolingRate": 0.995

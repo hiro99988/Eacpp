@@ -1,0 +1,41 @@
+{
+    "asplExtremes": 1.8571428571428572,
+    "asplNeighbors": 1.030612244897959,
+    "nodeViolationsExtremes": null,
+    "nodeViolationsNeighbors": {
+        "0": [
+            {
+                "dest": 1,
+                "spl": 2
+            },
+            {
+                "dest": 3,
+                "spl": 2
+            }
+        ],
+        "1": [
+            {
+                "dest": 0,
+                "spl": 2
+            }
+        ],
+        "48": [
+            {
+                "dest": 49,
+                "spl": 2
+            }
+        ],
+        "49": [
+            {
+                "dest": 46,
+                "spl": 2
+            },
+            {
+                "dest": 48,
+                "spl": 2
+            }
+        ]
+    },
+    "objective": 2.887755102040816,
+    "penalty": 6
+}
