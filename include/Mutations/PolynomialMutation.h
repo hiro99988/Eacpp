@@ -30,8 +30,7 @@ class PolynomialMutation : public MutationBase<double> {
     double distributionIndex;
     std::vector<std::pair<double, double>> variableBounds;
 
-    void PerformMutation(int index, Individuald& individual, double sigma) const;
-    double Sigma() const;
+    double PerformMutation(double y, double lower, double upper) const;
 
 #ifdef _TEST_
    public:
