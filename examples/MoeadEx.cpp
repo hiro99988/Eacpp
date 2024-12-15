@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     int generationNum = 500;
     int H = 299;
     int neighborNum = 21;
-    std::string problemName = "ZDT1";
+    std::string problemName = "zdt1";
 
     if (argc == 2) {
         generationNum = std::stoi(argv[1]);
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "Execution time: " << duration << "ms" << std::endl;
 
-    std::filesystem::path objectiveFilePath = "out/data/tmp/ZDT1.csv";
+    std::filesystem::path objectiveFilePath = "out/data/tmp/zdt1.csv";
     std::ofstream objectiveFile(objectiveFilePath);
     for (const auto& objectives : moead.GetObjectivesList()) {
         for (size_t j = 0; j < objectives.size(); j++) {

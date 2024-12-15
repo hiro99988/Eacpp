@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     int neighborhoodSize = 7;
     int migrationInterval = 1;
     int H = 299;
-    std::string problemName = "ZDT1";
+    std::string problemName = "zdt1";
     bool idealPointMigration = false;
 
     if (argc == 7) {

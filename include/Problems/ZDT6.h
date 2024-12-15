@@ -25,7 +25,7 @@ class ZDT6 : public ZDTBase {
 #endif
 };
 
-REGISTER_REFLECTION(IBenchmark, ZDT6)
-REGISTER_TEMPLATE_REFLECTION(IProblem, double, ZDT6)
+REGISTER_REFLECTION(IBenchmark, ZDT6, zdt6)
+REGISTER_TEMPLATE_REFLECTION(IProblem, double, ZDT6, zdt6)
 
 }  // namespace Eacpp

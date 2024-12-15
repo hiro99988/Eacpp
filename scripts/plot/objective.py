@@ -5,8 +5,8 @@ import pandas as pd
 import sys
 
 
-def main(problem="ZDT1", option="-par"):
-    data_file = "out/data/NtMoead/241210-130616/ZDT3/objective/trial_28.csv"
+def main(problem="zdt1", option="-par"):
+    data_file = "out/data/NtMoead/241210-130616/zdt3/objective/trial_28.csv"
 
     pareto_front = pd.read_csv(f"data/ground_truth/pareto_fronts/{problem}_300.csv", header=None).values
     plt.plot(

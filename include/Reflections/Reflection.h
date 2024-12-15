@@ -41,14 +41,14 @@ class ReflectionRegister {
     }
 };
 
-#define REGISTER_REFLECTION(interface, type)                          \
-    namespace type##Reflection {                                      \
-        static ReflectionRegister<interface, type> reflection(#type); \
+#define REGISTER_REFLECTION(interface, type, str)                    \
+    namespace type##Reflection {                                     \
+        static ReflectionRegister<interface, type> reflection(#str); \
     }
 
-#define REGISTER_TEMPLATE_REFLECTION(interface, interfaceType, type)                 \
-    namespace interface##type##Reflection {                                          \
-        static ReflectionRegister<interface<interfaceType>, type> reflection(#type); \
+#define REGISTER_TEMPLATE_REFLECTION(interface, interfaceType, type, str)           \
+    namespace interface##type##Reflection {                                         \
+        static ReflectionRegister<interface<interfaceType>, type> reflection(#str); \
     }
 
 }  // namespace Eacpp

@@ -5,13 +5,13 @@
     "divisionsNumOfWeightVector": 299,
     "migrationInterval": 1,
     "crossoverRate": 0.9,
-    "idealPointMigration": false,
+    "idealPointMigration": true,
     "problems": [
-        "ZDT1",
-        "ZDT2",
-        "ZDT3",
-        "ZDT4",
-        "ZDT6"
+        "zdt1",
+        "zdt2",
+        "zdt3",
+        "zdt4",
+        "zdt6"
     ],
     "adjacencyListFileName": "data/graph/hoffmanSingletonGraphAdjacencyList.csv"
 }
