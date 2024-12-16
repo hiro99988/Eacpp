@@ -1,6 +1,10 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace Eacpp {
 
@@ -47,8 +51,8 @@ void WriteCsvLine(std::ofstream& file, const T& data, CsvLineEnd lineEnding = Cs
     }
 }
 
-template <std::ranges::range T>
-void WriteCsv(std::ofstream& file, const std::vector<T>& data, std::vector<std::string> header = {}) {
+template <std::ranges::range T, std::ranges::range U>
+void WriteCsv(std::ofstream& file, const std::vector<T>& data, const U& header = {}) {
     if (!header.empty()) {
         WriteCsvLine(file, header);
     }
@@ -58,8 +62,20 @@ void WriteCsv(std::ofstream& file, const std::vector<T>& data, std::vector<std::
     }
 }
 
-template <typename T, std::ranges::range U>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, std::vector<std::string> header = {}) {
+template <typename T, typename U, std::ranges::range V>
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
+    if (!header.empty()) {
+        WriteCsvLine(file, header);
+    }
+
+    for (const auto& [key, row] : data) {
+        file << key << ",";
+        file << row << std::endl;
+    }
+}
+
+template <typename T, std::ranges::range U, std::ranges::range V>
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
     if (!header.empty()) {
         WriteCsvLine(file, header);
     }
@@ -70,8 +86,8 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, std
     }
 }
 
-template <std::ranges::range T, std::ranges::range U>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, std::vector<std::string> header = {}) {
+template <std::ranges::range T, std::ranges::range U, std::ranges::range V>
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
     if (!header.empty()) {
         WriteCsvLine(file, header);
     }
@@ -82,25 +98,53 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, std
     }
 }
 
-template <std::ranges::range T>
-void WriteCsv(std::ofstream& file, const T& data, int step, std::vector<std::string> header = {}) {
+template <std::ranges::range T, std::ranges::range U>
+void WriteCsv(std::ofstream& file, const T& data, int step, const U& header = {}) {
     if (!header.empty()) {
         WriteCsvLine(file, header);
     }
 
     int count = 0;
+    std::vector<std::vector<decltype(*std::begin(data))>> data2d;
+    std::vector<decltype(*std::begin(data))> currentRow;
+
     for (const auto& elem : data) {
-        file << elem;
+        currentRow.emplace_back(elem);
         count++;
         if (count % step == 0) {
-            file << std::endl;
-        } else {
-            file << ",";
+            data2d.emplace_back(currentRow);
+            currentRow.clear();
         }
     }
-    if (count % step != 0) {
-        file << std::endl;
+    if (!currentRow.empty()) {
+        data2d.emplace_back(currentRow);
     }
+
+    for (const auto& row : data2d) {
+        WriteCsvLine(file, row);
+    }
+}
+
+template <typename T>
+std::vector<std::vector<T>> ReadCsv(std::ifstream& file, bool hasHeader = false) {
+    std::vector<std::vector<T>> data;
+    std::string line;
+    if (hasHeader) {
+        std::getline(file, line);
+    }
+
+    while (std::getline(file, line)) {
+        std::vector<T> row;
+        std::istringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, ',')) {
+            row.push_back(static_cast<T>(std::stod(cell)));
+        }
+
+        data.push_back(row);
+    }
+
+    return data;
 }
 
 }  // namespace Eacpp
