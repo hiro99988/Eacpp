@@ -147,4 +147,8 @@ std::vector<std::vector<T>> ReadCsv(std::ifstream& file, bool hasHeader = false)
     return data;
 }
 
+inline void SetSignificantDigits(std::ofstream& file, int significantDigits = 17) {
+    file << std::setprecision(significantDigits);
+}
+
 }  // namespace Eacpp
