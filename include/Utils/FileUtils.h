@@ -8,6 +8,8 @@
 
 namespace Eacpp {
 
+using DefaultHeaderType = std::vector<std::string>;
+
 enum class CsvLineEnd { None, Comma, Newline };
 
 inline std::ifstream OpenInputFile(const std::filesystem::path& filePath, std::ios_base::openmode mode = std::ios_base::in) {
@@ -51,9 +53,9 @@ void WriteCsvLine(std::ofstream& file, const T& data, CsvLineEnd lineEnding = Cs
     }
 }
 
-template <std::ranges::range T, std::ranges::range U>
+template <std::ranges::range T, std::ranges::range U = DefaultHeaderType>
 void WriteCsv(std::ofstream& file, const std::vector<T>& data, const U& header = {}) {
-    if (!header.empty()) {
+    if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
 
@@ -62,9 +64,9 @@ void WriteCsv(std::ofstream& file, const std::vector<T>& data, const U& header =
     }
 }
 
-template <typename T, typename U, std::ranges::range V>
+template <typename T, typename U, std::ranges::range V = DefaultHeaderType>
 void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
-    if (!header.empty()) {
+    if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
 
@@ -74,9 +76,9 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, con
     }
 }
 
-template <typename T, std::ranges::range U, std::ranges::range V>
+template <typename T, std::ranges::range U, std::ranges::range V = DefaultHeaderType>
 void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
-    if (!header.empty()) {
+    if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
 
@@ -86,9 +88,9 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, con
     }
 }
 
-template <std::ranges::range T, std::ranges::range U, std::ranges::range V>
+template <std::ranges::range T, std::ranges::range U, std::ranges::range V = DefaultHeaderType>
 void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
-    if (!header.empty()) {
+    if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
 
@@ -98,9 +100,9 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, con
     }
 }
 
-template <std::ranges::range T, std::ranges::range U>
+template <std::ranges::range T, std::ranges::range U = DefaultHeaderType>
 void WriteCsv(std::ofstream& file, const T& data, int step, const U& header = {}) {
-    if (!header.empty()) {
+    if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
 
