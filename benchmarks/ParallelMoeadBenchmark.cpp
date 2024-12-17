@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "Algorithms/MpMoead.h"
+#include "Algorithms/MpMoeadIdealTopology.h"
 #include "Algorithms/NewMoead.hpp"
 #include "Algorithms/NtMoead.h"
 #include "Crossovers/SimulatedBinaryCrossover.h"
@@ -34,7 +35,7 @@ namespace Eacpp {
 class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath = "data/inputs/benchmarks/parameter.json";
-    constexpr static std::array<const char*, 3> MoeadNames = {"MpMoead", "NtMoead", "NewMoead"};
+    constexpr static std::array<const char*, 4> MoeadNames = {"MpMoead", "NtMoead", "NewMoead", "MpMoeadIdealTopology"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {"trial", "time(s)"};
     constexpr static std::array<const char*, 2> IgdHeader = {"generation", "igd"};
 
@@ -273,6 +274,11 @@ class ParallelMoeadBenchmark {
                         generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval,
                         "data/graph/new/neighboringMigration.csv", "data/graph/new/idealPointMigration.csv", crossover,
                         decomposition, mutation, problem, repair, sampling, selection, idealPointMigration);
+                } else if (moeadName == MoeadNames[3]) {
+                    moead = std::make_unique<MpMoeadIdealTopology<double>>(
+                        generationNum, neighborhoodSize, divisionsNumOfWeightVector, migrationInterval,
+                        "data/graph/2_13_29_10_3_100_100/adjacencyList.csv", crossover, decomposition, mutation, problem,
+                        repair, sampling, selection, idealPointMigration);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }
