@@ -140,6 +140,7 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
             auto messages = ReceiveMessages();
 
             updatedSolutionIndexes.clear();
+            updatedExternalIndexes.clear();
             isIdealPointUpdated = false;
 
             for (auto&& message : messages) {
