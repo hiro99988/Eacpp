@@ -327,7 +327,7 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
         for (auto&& i : externalIndexes) {
             int rank = GetRankFromIndex(totalPopulationSize, i, parallelSize);
             ranksToReceive.insert(rank);
-            if (neighboringRanks.find(rank) != neighboringRanks.end()) {
+            if (neighboringRanks.find(rank) == neighboringRanks.end()) {
                 continue;
             }
 
