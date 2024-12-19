@@ -50,7 +50,8 @@ class NetworkTopologySearch {
 
    public:
     NetworkTopologySearch(int objectivesNum, int neighborhoodSize, int divisionsNumOfWeightVector, int nodesNum, int degree,
-                          int idealPathLengthBetweenNeighbors, int idealPathLengthBetweenExtremesAndAnyNode)
+                          int idealPathLengthBetweenNeighbors, int idealPathLengthBetweenExtremesAndAnyNode,
+                          double weightOfAsplNeighborsInObjective, double weightOfAsplExtremesInObjective, bool isOutput = true)
         : _objectivesNum(objectivesNum),
           _neighborhoodSize(neighborhoodSize),
           _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
@@ -58,6 +59,9 @@ class NetworkTopologySearch {
           _degree(degree),
           _idealPathLengthBetweenNeighbors(idealPathLengthBetweenNeighbors),
           _idealPathLengthBetweenExtremesAndAnyNode(idealPathLengthBetweenExtremesAndAnyNode),
+          _weightOfAsplNeighborsInObjective(weightOfAsplNeighborsInObjective),
+          _weightOfAsplExtremesInObjective(weightOfAsplExtremesInObjective),
+          _isOutput(isOutput),
           _rng(std::make_unique<Rng>()) {}
 
     void Run(int repeats, double initialTemperature, double minTemperature, double coolingRate);
@@ -78,6 +82,9 @@ class NetworkTopologySearch {
     int _degree;
     int _idealPathLengthBetweenNeighbors;
     int _idealPathLengthBetweenExtremesAndAnyNode;
+    double _weightOfAsplNeighborsInObjective;
+    double _weightOfAsplExtremesInObjective;
+    bool _isOutput;
     std::vector<Eigen::ArrayXd> _weightVectors;
     std::vector<std::vector<int>> _individualNeighborhoods;
     std::vector<std::vector<int>> _allNodeIndexes;

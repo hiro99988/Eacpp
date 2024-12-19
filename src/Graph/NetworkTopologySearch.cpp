@@ -84,7 +84,9 @@ void NetworkTopologySearch::Run(int repeats, double initialTemperature, double m
     std::map<Node, int> neighborFrequency;
     std::map<Node, int> extremeFrequency;
     Analyze(neighborFrequency, extremeFrequency);
-    Write(neighborFrequency, extremeFrequency);
+    if (_isOutput) {
+        Write(neighborFrequency, extremeFrequency);
+    }
 }
 
 void NetworkTopologySearch::Initialize() {
@@ -309,7 +311,7 @@ NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(const SimpleGr
 
     double asplNeighbors = sumSplNeighbors / countSplNeighbors;
     double asplExtremes = sumSplExtremes / countSplExtremes;
-    double objective = asplNeighbors + asplExtremes;
+    double objective = asplNeighbors * _weightOfAsplNeighborsInObjective + asplExtremes * _weightOfAsplExtremesInObjective;
 
     return Evaluation(objective, asplNeighbors, asplExtremes, nodeViolationsNeighbors, nodeViolationsExtremes);
 }

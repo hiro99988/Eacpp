@@ -10,35 +10,27 @@
 using namespace Eacpp;
 
 int main() {
-    int objectivesNum;
-    int neighborhoodSize;
-    int divisionsNumOfWeightVector;
-    int nodesNum;
-    int degree;
-    int idealPathLengthBetweenNeighbors;
-    int idealPathLengthBetweenExtremesAndAnyNode;
-    int repeats;
-    double initialTemperature;
-    double minTemperature;
-    double coolingRate;
-
     std::ifstream file("data/inputs/graphParameter.json");
     nlohmann::json json = nlohmann::json::parse(file);
 
-    objectivesNum = json["objectivesNum"];
-    neighborhoodSize = json["neighborhoodSize"];
-    divisionsNumOfWeightVector = json["divisionsNumOfWeightVector"];
-    nodesNum = json["nodesNum"];
-    degree = json["degree"];
-    idealPathLengthBetweenNeighbors = json["idealPathLengthBetweenNeighbors"];
-    idealPathLengthBetweenExtremesAndAnyNode = json["idealPathLengthBetweenExtremesAndAnyNode"];
-    repeats = json["repeats"];
-    initialTemperature = json["initialTemperature"];
-    minTemperature = json["minTemperature"];
-    coolingRate = json["coolingRate"];
+    int objectivesNum = json["objectivesNum"];
+    int neighborhoodSize = json["neighborhoodSize"];
+    int divisionsNumOfWeightVector = json["divisionsNumOfWeightVector"];
+    int nodesNum = json["nodesNum"];
+    int degree = json["degree"];
+    int idealPathLengthBetweenNeighbors = json["idealPathLengthBetweenNeighbors"];
+    int idealPathLengthBetweenExtremesAndAnyNode = json["idealPathLengthBetweenExtremesAndAnyNode"];
+    int repeats = json["repeats"];
+    double initialTemperature = json["initialTemperature"];
+    double minTemperature = json["minTemperature"];
+    double coolingRate = json["coolingRate"];
+    double weightOfAsplNeighborsInObjective = json["weightOfAsplNeighborsInObjective"];
+    double weightOfAsplExtremesInObjective = json["weightOfAsplExtremesInObjective"];
+    bool isOutput = json["isOutput"];
 
     NetworkTopologySearch search(objectivesNum, neighborhoodSize, divisionsNumOfWeightVector, nodesNum, degree,
-                                 idealPathLengthBetweenNeighbors, idealPathLengthBetweenExtremesAndAnyNode);
+                                 idealPathLengthBetweenNeighbors, idealPathLengthBetweenExtremesAndAnyNode,
+                                 weightOfAsplNeighborsInObjective, weightOfAsplExtremesInObjective);
 
     search.Run(repeats, initialTemperature, minTemperature, coolingRate);
 

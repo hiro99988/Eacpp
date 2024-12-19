@@ -9,5 +9,8 @@
     "repeats": 1000000,
     "initialTemperature": 1000,
     "minTemperature": 0.001,
-    "coolingRate": 0.995
+    "coolingRate": 0.995,
+    "weightOfAsplNeighborsInObjective": 30,
+    "weightOfAsplExtremesInObjective": 1,
+    "isOutput": false
 }
