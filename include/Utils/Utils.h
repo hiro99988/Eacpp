@@ -9,6 +9,7 @@
 #include <numeric>
 #include <ranges>
 #include <stdexcept>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -171,6 +172,17 @@ inline std::string GetTimestamp(const char *format = "%y%m%d-%H%M%S") {
     std::stringstream ss;
     ss << std::put_time(std::localtime(&nowTime), format);
     return ss.str();
+}
+inline std::string ConvertDoubleToStringByDividingIntoIntegersAndDecimals(double value, char delimiter = '-') {
+    long long integer_part = static_cast<long long>(value);
+    double decimal_part = value - integer_part;
+    if (decimal_part == 0.0) {
+        return std::to_string(integer_part);
+    }
+
+    std::string str = std::to_string(value);
+    std::replace(str.begin(), str.end(), '.', delimiter);
+    return str;
 }
 
 }  // namespace Eacpp
