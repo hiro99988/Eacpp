@@ -8,9 +8,10 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <set>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <tuple>
-#include <unordered_map>
 #include <vector>
 
 #include "Algorithms/MoeadInitializer.h"
@@ -18,18 +19,11 @@
 #include "Rng/IRng.h"
 #include "Utils/FileUtils.h"
 #include "Utils/MpiUtils.h"
+#include "Utils/Utils.h"
 
 namespace Eacpp {
 
 bool NetworkTopologySearch::Evaluation::operator<(const Evaluation& other) const {
-    int penalty = Penalty();
-    int otherPenalty = other.Penalty();
-    if (penalty == 0 && otherPenalty != 0) {
-        return true;
-    } else if (penalty != 0 && otherPenalty == 0) {
-        return false;
-    }
-
     return objective < other.objective;
 }
 
@@ -39,43 +33,9 @@ bool NetworkTopologySearch::Evaluation::operator>(const Evaluation& other) const
 
 std::ostream& operator<<(std::ostream& os, const NetworkTopologySearch::Evaluation& eval) {
     os << "Objective: " << eval.objective << ", ASPL Neighbors: " << eval.asplNeighbors
-       << ", ASPL Extremes: " << eval.asplExtremes << ", Node Violations Neighbors(" << eval.ViolationsNeighbors() << "): ";
-    for (const auto& [key, value] : eval.nodeViolationsNeighbors) {
-        os << key << ": ";
-        for (const auto& [k, v] : value) {
-            os << "(" << k << ", " << v << ") ";
-        }
-    }
-    os << ", Node Violations Extremes(" << eval.ViolationsExtremes() << "): ";
-    for (const auto& [key, value] : eval.nodeViolationsExtremes) {
-        os << key << ": ";
-        for (const auto& [k, v] : value) {
-            os << "(" << k << ", " << v << ") ";
-        }
-    }
+       << ", ASPL Extremes: " << eval.asplExtremes;
+
     return os;
-}
-
-int NetworkTopologySearch::Evaluation::Penalty() const {
-    return ViolationsNeighbors() + ViolationsExtremes();
-}
-
-int NetworkTopologySearch::Evaluation::ViolationsNeighbors() const {
-    int violations = 0;
-    for (const auto& [_, value] : nodeViolationsNeighbors) {
-        violations += value.size();
-    }
-
-    return violations;
-}
-
-int NetworkTopologySearch::Evaluation::ViolationsExtremes() const {
-    int violations = 0;
-    for (const auto& [_, value] : nodeViolationsExtremes) {
-        violations += value.size();
-    }
-
-    return violations;
 }
 
 void NetworkTopologySearch::Run(int repeats, double initialTemperature, double minTemperature, double coolingRate) {
@@ -187,32 +147,26 @@ void NetworkTopologySearch::Analyze(std::map<Node, int>& outNeighborFrequency, s
 
 void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
                                   const std::map<Node, int>& extremeFrequency) const {
+    // Create directory path
     std::ostringstream oss;
+    std::string weightOfAsplNeighborsInObjectiveStr =
+        ConvertDoubleToStringByDividingIntoIntegersAndDecimals(_weightOfAsplNeighborsInObjective);
+    std::string weightOfAsplExtremesInObjectiveStr =
+        ConvertDoubleToStringByDividingIntoIntegersAndDecimals(_weightOfAsplExtremesInObjective);
     oss << _objectivesNum << "_" << _neighborhoodSize << "_" << _divisionsNumOfWeightVector << "_" << _nodesNum << "_"
-        << _degree << "_" << _idealPathLengthBetweenNeighbors << "_" << _idealPathLengthBetweenExtremesAndAnyNode;
+        << _degree << "_" << weightOfAsplNeighborsInObjectiveStr << "_" << weightOfAsplExtremesInObjectiveStr;
     std::string parameterPath = oss.str();
-
     std::filesystem::path directoryPath = "data/graph/" + parameterPath;
 
+    // if the known graph is better than the discovered graph, skip writing resultsS else create directory
     if (std::filesystem::exists(directoryPath)) {
         std::ifstream evalFile(directoryPath / "evaluation.json");
         if (evalFile.is_open()) {
             nlohmann::json json;
             evalFile >> json;
             double objective = json["objective"];
-            double penalty = json["penalty"];
 
-            bool isBetter = false;
-            int bestSoFarGraphPenalty = _bestSoFarEvaluation.Penalty();
-            if (bestSoFarGraphPenalty == 0 && penalty != 0) {
-                isBetter = true;
-            } else if (bestSoFarGraphPenalty != 0 && penalty == 0) {
-                isBetter = false;
-            } else {
-                isBetter = _bestSoFarEvaluation.objective < objective;
-            }
-
-            if (!isBetter) {
+            if (!(_bestSoFarEvaluation.objective < objective)) {
                 std::cout << "Known graph is better than the discovered graph. Skipping writing results." << std::endl;
                 return;
             }
@@ -223,8 +177,30 @@ void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
 
     // Write adjacencyList
     auto adjacencyList = _bestSoFarGraph.AdjacencyList();
+    std::vector<std::vector<int>> binaryAdjacencyList;
+    binaryAdjacencyList.reserve(adjacencyList.size());
+
+    // Convert adjacencyList to binaryAdjacencyList
+    // 1. If the neighbor is in _nodeNeighbors, push 1 and the neighbor
+    // 2. If the neighbor is not in _nodeNeighbors, push 0 and the neighbor
+    for (std::size_t i = 0; i < adjacencyList.size(); i++) {
+        std::vector<int> binaryNeighbors;
+        binaryNeighbors.reserve(adjacencyList[i].size() * 2);
+        for (auto&& neighbor : adjacencyList[i]) {
+            if (std::find(_nodeNeighbors[i].begin(), _nodeNeighbors[i].end(), neighbor) != _nodeNeighbors[i].end()) {
+                binaryNeighbors.push_back(1);
+            } else {
+                binaryNeighbors.push_back(0);
+            }
+
+            binaryNeighbors.push_back(neighbor);
+        }
+
+        binaryAdjacencyList.push_back(std::move(binaryNeighbors));
+    }
+
     std::ofstream adjacencyListFile(directoryPath / "adjacencyList.csv");
-    WriteCsv(adjacencyListFile, adjacencyList);
+    WriteCsv(adjacencyListFile, binaryAdjacencyList);
 
     // Write evaluation
     nlohmann::json evalJson;
@@ -232,25 +208,21 @@ void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
     evalJson["asplNeighbors"] = _bestSoFarEvaluation.asplNeighbors;
     evalJson["asplExtremes"] = _bestSoFarEvaluation.asplExtremes;
 
-    nlohmann::json violationsNeighborsJson;
-    for (const auto& [node, violations] : _bestSoFarEvaluation.nodeViolationsNeighbors) {
-        for (const auto& [k, v] : violations) {
-            violationsNeighborsJson[std::to_string(node)].push_back({{"dest", k}, {"spl", v}});
-        }
-    }
-    evalJson["nodeViolationsNeighbors"] = violationsNeighborsJson;
-
-    nlohmann::json violationsExtremesJson;
-    for (const auto& [node, violations] : _bestSoFarEvaluation.nodeViolationsExtremes) {
-        for (const auto& [k, v] : violations) {
-            violationsExtremesJson[std::to_string(node)].push_back({{"dest", k}, {"spl", v}});
-        }
-    }
-    evalJson["nodeViolationsExtremes"] = violationsExtremesJson;
-    evalJson["penalty"] = _bestSoFarEvaluation.Penalty();
-
     std::ofstream evalFile(directoryPath / "evaluation.json");
     evalFile << evalJson.dump(4);
+
+    // Write SqlNeighbors and splExtremes
+    std::vector<std::vector<Node>> splNeighbors;
+    std::vector<std::vector<Node>> splExtremes;
+    EvaluateSqls(_bestSoFarGraph, splNeighbors, splExtremes);
+
+    constexpr std::array<const char*, 3> SplFileHeader = {"node", "neighbor", "spl"};
+    std::ofstream splNeighborsFile(directoryPath / "splNeighbors.csv");
+    WriteCsv(splNeighborsFile, splNeighbors, SplFileHeader);
+
+    constexpr std::array<const char*, 3> SplExtremesFileHeader = {"node", "extreme", "spl"};
+    std::ofstream splExtremesFile(directoryPath / "splExtremes.csv");
+    WriteCsv(splExtremesFile, splExtremes, SplExtremesFileHeader);
 
     // Write frequency
     constexpr std::array<const char*, 2> FrequencyFileHeader = {"distance", "frequency"};
@@ -282,17 +254,12 @@ NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(const SimpleGr
     int countSplNeighbors = 0;
     double sumSplExtremes = 0.0;
     int countSplExtremes = 0;
-    std::unordered_map<Node, std::vector<std::pair<Node, Node>>> nodeViolationsNeighbors;
-    std::unordered_map<Node, std::vector<std::pair<Node, Node>>> nodeViolationsExtremes;
 
     for (Node i = 0; i < graph.NodesNum(); i++) {
         for (auto&& j : _nodeNeighbors[i]) {
             auto spl = graph.ShortestPathLength(i, j);
             sumSplNeighbors += spl;
             ++countSplNeighbors;
-            if (spl > _idealPathLengthBetweenNeighbors) {
-                nodeViolationsNeighbors[i].push_back({j, spl});
-            }
         }
 
         for (auto&& j : _extremeNodes) {
@@ -303,9 +270,6 @@ NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(const SimpleGr
             auto spl = graph.ShortestPathLength(i, j);
             sumSplExtremes += spl;
             ++countSplExtremes;
-            if (spl > _idealPathLengthBetweenExtremesAndAnyNode) {
-                nodeViolationsExtremes[i].push_back({j, spl});
-            }
         }
     }
 
@@ -313,7 +277,29 @@ NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(const SimpleGr
     double asplExtremes = sumSplExtremes / countSplExtremes;
     double objective = asplNeighbors * _weightOfAsplNeighborsInObjective + asplExtremes * _weightOfAsplExtremesInObjective;
 
-    return Evaluation(objective, asplNeighbors, asplExtremes, nodeViolationsNeighbors, nodeViolationsExtremes);
+    return Evaluation(objective, asplNeighbors, asplExtremes);
+}
+
+void NetworkTopologySearch::EvaluateSqls(const SimpleGraph& graph, std::vector<std::vector<Node>>& outSplNeighbors,
+                                         std::vector<std::vector<Node>>& outSplExtremes) const {
+    outSplNeighbors.reserve(graph.NodesNum());
+    outSplExtremes.reserve(graph.NodesNum());
+
+    for (Node i = 0; i < graph.NodesNum(); i++) {
+        for (auto&& j : _nodeNeighbors[i]) {
+            auto spl = graph.ShortestPathLength(i, j);
+            outSplNeighbors.push_back({i, static_cast<Node>(j), spl});
+        }
+
+        for (auto&& j : _extremeNodes) {
+            if (i == j) {
+                continue;
+            }
+
+            auto spl = graph.ShortestPathLength(i, j);
+            outSplExtremes.push_back({i, static_cast<Node>(j), spl});
+        }
+    }
 }
 
 void NetworkTopologySearch::InitializeNodes() {

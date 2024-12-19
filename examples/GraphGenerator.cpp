@@ -18,8 +18,6 @@ int main() {
     int divisionsNumOfWeightVector = json["divisionsNumOfWeightVector"];
     int nodesNum = json["nodesNum"];
     int degree = json["degree"];
-    int idealPathLengthBetweenNeighbors = json["idealPathLengthBetweenNeighbors"];
-    int idealPathLengthBetweenExtremesAndAnyNode = json["idealPathLengthBetweenExtremesAndAnyNode"];
     int repeats = json["repeats"];
     double initialTemperature = json["initialTemperature"];
     double minTemperature = json["minTemperature"];
@@ -29,8 +27,7 @@ int main() {
     bool isOutput = json["isOutput"];
 
     NetworkTopologySearch search(objectivesNum, neighborhoodSize, divisionsNumOfWeightVector, nodesNum, degree,
-                                 idealPathLengthBetweenNeighbors, idealPathLengthBetweenExtremesAndAnyNode,
-                                 weightOfAsplNeighborsInObjective, weightOfAsplExtremesInObjective);
+                                 weightOfAsplNeighborsInObjective, weightOfAsplExtremesInObjective, isOutput);
 
     search.Run(repeats, initialTemperature, minTemperature, coolingRate);
 

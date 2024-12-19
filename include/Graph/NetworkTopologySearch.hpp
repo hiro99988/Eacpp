@@ -25,40 +25,26 @@ class NetworkTopologySearch {
    public:
     struct Evaluation {
         Evaluation() {}
-        Evaluation(double objective, double asplNeighbors, double asplExtremes,
-                   const std::unordered_map<Node, std::vector<std::pair<Node, Node>>>& nodeViolationsNeighbors,
-                   const std::unordered_map<Node, std::vector<std::pair<Node, Node>>>& nodeViolationsExtremes)
-            : objective(objective),
-              asplNeighbors(asplNeighbors),
-              asplExtremes(asplExtremes),
-              nodeViolationsNeighbors(nodeViolationsNeighbors),
-              nodeViolationsExtremes(nodeViolationsExtremes) {}
+        Evaluation(double objective, double asplNeighbors, double asplExtremes)
+            : objective(objective), asplNeighbors(asplNeighbors), asplExtremes(asplExtremes) {}
 
         double objective = 0.0;
         double asplNeighbors = 0.0;
         double asplExtremes = 0.0;
-        std::unordered_map<Node, std::vector<std::pair<Node, Node>>> nodeViolationsNeighbors;
-        std::unordered_map<Node, std::vector<std::pair<Node, Node>>> nodeViolationsExtremes;
 
         bool operator<(const Evaluation& other) const;
         bool operator>(const Evaluation& other) const;
         friend std::ostream& operator<<(std::ostream& os, const Evaluation& eval);
-        int Penalty() const;
-        int ViolationsNeighbors() const;
-        int ViolationsExtremes() const;
     };
 
    public:
     NetworkTopologySearch(int objectivesNum, int neighborhoodSize, int divisionsNumOfWeightVector, int nodesNum, int degree,
-                          int idealPathLengthBetweenNeighbors, int idealPathLengthBetweenExtremesAndAnyNode,
                           double weightOfAsplNeighborsInObjective, double weightOfAsplExtremesInObjective, bool isOutput = true)
         : _objectivesNum(objectivesNum),
           _neighborhoodSize(neighborhoodSize),
           _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
           _nodesNum(nodesNum),
           _degree(degree),
-          _idealPathLengthBetweenNeighbors(idealPathLengthBetweenNeighbors),
-          _idealPathLengthBetweenExtremesAndAnyNode(idealPathLengthBetweenExtremesAndAnyNode),
           _weightOfAsplNeighborsInObjective(weightOfAsplNeighborsInObjective),
           _weightOfAsplExtremesInObjective(weightOfAsplExtremesInObjective),
           _isOutput(isOutput),
@@ -73,6 +59,8 @@ class NetworkTopologySearch {
     Evaluation BestSoFarEvaluation() const;
     SimpleGraph BestSoFarGraph() const;
     Evaluation Evaluate(const SimpleGraph& graph) const;
+    void EvaluateSqls(const SimpleGraph& graph, std::vector<std::vector<Node>>& outSplNeighbors,
+                      std::vector<std::vector<Node>>& outSplExtremes) const;
 
    private:
     int _objectivesNum;
@@ -80,8 +68,6 @@ class NetworkTopologySearch {
     int _divisionsNumOfWeightVector;
     int _nodesNum;
     int _degree;
-    int _idealPathLengthBetweenNeighbors;
-    int _idealPathLengthBetweenExtremesAndAnyNode;
     double _weightOfAsplNeighborsInObjective;
     double _weightOfAsplExtremesInObjective;
     bool _isOutput;

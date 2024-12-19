@@ -1,16 +1,14 @@
 {
     "objectivesNum": 2,
-    "neighborhoodSize": 13,
-    "divisionsNumOfWeightVector": 29,
-    "nodesNum": 10,
-    "degree": 2,
-    "idealPathLengthBetweenNeighbors": 100,
-    "idealPathLengthBetweenExtremesAndAnyNode": 100,
-    "repeats": 1000000,
+    "neighborhoodSize": 21,
+    "divisionsNumOfWeightVector": 199,
+    "nodesNum": 50,
+    "degree": 4,
+    "repeats": 10000000,
     "initialTemperature": 1000,
     "minTemperature": 0.001,
     "coolingRate": 0.995,
     "weightOfAsplNeighborsInObjective": 30,
     "weightOfAsplExtremesInObjective": 1,
-    "isOutput": false
+    "isOutput": true
 }
