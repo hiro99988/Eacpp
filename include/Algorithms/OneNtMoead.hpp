@@ -520,8 +520,11 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
         }
 
         for (auto&& rank : neighboringRanks) {
-            dataToSend[rank].insert(dataToSend[rank].end(), updatedInternalIndividuals.begin(),
-                                    updatedInternalIndividuals.end());
+            if ((this->rank == 0 && rank <= 3) || (this->rank == 49 && rank >= 46) ||
+                (this->rank - 2 <= rank && rank <= this->rank + 2)) {
+                dataToSend[rank].insert(dataToSend[rank].end(), updatedInternalIndividuals.begin(),
+                                        updatedInternalIndividuals.end());
+            }
             if (idealPointMigration && isIdealPointUpdated) {
                 dataToSend[rank].insert(dataToSend[rank].end(), decomposition->IdealPoint().begin(),
                                         decomposition->IdealPoint().end());
@@ -578,8 +581,8 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
 
         for (int i = 0; i < limit; i += singleMessageSize) {
             int index = message[i];
-            bool isInternal = IsInternal(index);
-            if (!(isInternal || IsExternal(index))) {
+            bool isExternal = IsExternal(index);
+            if (!(IsInternal(index) || isExternal)) {
                 continue;
             }
 
@@ -589,15 +592,16 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
                 Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1 + decisionVariablesNum, objectivesNum);
             Individual<DecisionVariableType> newIndividual(std::move(newSolution), std::move(newObjectives));
 
-            double newSubObjective = decomposition->ComputeObjective(individuals[index].weightVector, newIndividual.objectives);
-            double oldSubObjective =
-                decomposition->ComputeObjective(individuals[index].weightVector, individuals[index].objectives);
-            if (newSubObjective < oldSubObjective) {
+            if (isExternal) {
                 individuals[index].UpdateFrom(newIndividual);
-                if (isInternal) {
+            } else {
+                double newSubObjective =
+                    decomposition->ComputeObjective(individuals[index].weightVector, newIndividual.objectives);
+                double oldSubObjective =
+                    decomposition->ComputeObjective(individuals[index].weightVector, individuals[index].objectives);
+                if (newSubObjective < oldSubObjective) {
+                    individuals[index].UpdateFrom(newIndividual);
                     updatedSolutionIndexes.insert(index);
-                } else {
-                    updatedExternalIndexes.insert(index);
                 }
             }
 
