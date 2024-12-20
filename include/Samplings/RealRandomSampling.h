@@ -18,22 +18,30 @@ class RealRandomSampling : public RandomSamplingBase<double> {
         swapIfMaxLessThanMin(min, max);
         variableBounds = {{min, max}};
     }
-    RealRandomSampling(double min, double max, const std::shared_ptr<IRng>& rng) : RandomSamplingBase(rng) {
+    RealRandomSampling(double min, double max, const std::shared_ptr<IRng>& rng)
+        : RandomSamplingBase(rng) {
         swapIfMaxLessThanMin(min, max);
         variableBounds = {{min, max}};
     }
-    RealRandomSampling(const std::pair<double, double>& variableBound) : variableBounds({variableBound}) {}
-    RealRandomSampling(const std::pair<double, double>& variableBound, const std::shared_ptr<IRng>& rng)
+    RealRandomSampling(const std::pair<double, double>& variableBound)
+        : variableBounds({variableBound}) {}
+    RealRandomSampling(const std::pair<double, double>& variableBound,
+                       const std::shared_ptr<IRng>& rng)
         : RandomSamplingBase(rng), variableBounds({variableBound}) {}
-    RealRandomSampling(const std::vector<std::pair<double, double>>& variableBounds) : variableBounds(variableBounds) {}
-    RealRandomSampling(const std::vector<std::pair<double, double>>& variableBounds, const std::shared_ptr<IRng>& rng)
+    RealRandomSampling(
+        const std::vector<std::pair<double, double>>& variableBounds)
+        : variableBounds(variableBounds) {}
+    RealRandomSampling(
+        const std::vector<std::pair<double, double>>& variableBounds,
+        const std::shared_ptr<IRng>& rng)
         : RandomSamplingBase(rng), variableBounds(variableBounds) {}
 
     const std::vector<std::pair<double, double>>& VariableBounds() const {
         return variableBounds;
     }
 
-    std::vector<Individuald> Sample(const int sampleNum, const int variableNum) const override;
+    std::vector<Individuald> Sample(const int sampleNum,
+                                    const int variableNum) const override;
 
    private:
     std::vector<std::pair<double, double>> variableBounds;

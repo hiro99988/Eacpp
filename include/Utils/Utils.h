@@ -32,11 +32,13 @@ inline std::vector<int> Rangei(const int start, const int end, const int step) {
 
 inline Eigen::ArrayXi Rangeea(const int start, const int end, const int step) {
     int size = (end - start) / step + 1;
-    Eigen::ArrayXi tmp = Eigen::ArrayXi::LinSpaced(size, start, start + step * (size - 1));
+    Eigen::ArrayXi tmp =
+        Eigen::ArrayXi::LinSpaced(size, start, start + step * (size - 1));
     return tmp;
 }
 
-inline std::vector<double> Ranged(const double start, const double end, const double step) {
+inline std::vector<double> Ranged(const double start, const double end,
+                                  const double step) {
     std::vector<double> tmp;
     tmp.reserve((end - start) / step + 1);
     for (double i = start; i <= end; i += step) {
@@ -48,8 +50,9 @@ inline std::vector<double> Ranged(const double start, const double end, const do
 namespace Utils {
 
 template <typename T>
-std::vector<std::vector<T>> ProductRecurse(const std::vector<T> &choices, const int repeat,
-                                           const std::vector<std::vector<T>> &result) {
+std::vector<std::vector<T>> ProductRecurse(
+    const std::vector<T> &choices, const int repeat,
+    const std::vector<std::vector<T>> &result) {
     if (repeat == 0) {
         return result;
     }
@@ -69,12 +72,15 @@ std::vector<std::vector<T>> ProductRecurse(const std::vector<T> &choices, const 
 }  // namespace Utils
 
 template <typename T>
-std::vector<std::vector<T>> Product(const std::vector<T> &choices, const int repeat) {
-    return Utils::ProductRecurse(choices, repeat, std::vector<std::vector<T>>(1, std::vector<T>()));
+std::vector<std::vector<T>> Product(const std::vector<T> &choices,
+                                    const int repeat) {
+    return Utils::ProductRecurse(
+        choices, repeat, std::vector<std::vector<T>>(1, std::vector<T>()));
 }
 
 inline long long Combination(int n, int r) {
-    std::vector<std::vector<long long>> v(n + 1, std::vector<long long>(n + 1, 0));
+    std::vector<std::vector<long long>> v(n + 1,
+                                          std::vector<long long>(n + 1, 0));
     for (int i = 0; i < v.size(); i++) {
         v[i][0] = 1;
         v[i][i] = 1;
@@ -97,32 +103,39 @@ std::vector<T> TransformTo1d(const std::vector<std::vector<T>> &v) {
 }
 
 template <typename T>
-std::vector<std::vector<T>> TransformTo2d(std::vector<T> &vec1d, int separation) {
+std::vector<std::vector<T>> TransformTo2d(std::vector<T> &vec1d,
+                                          int separation) {
     if (vec1d.size() % separation != 0) {
-        throw std::invalid_argument("Vector size is not a multiple of separation");
+        throw std::invalid_argument(
+            "Vector size is not a multiple of separation");
     }
     int size = vec1d.size() / separation;
     std::vector<std::vector<T>> transformed(size);
     for (int i = 0; i < size; i++) {
-        transformed[i] = std::vector<T>(vec1d.begin() + i * separation, vec1d.begin() + (i + 1) * separation);
+        transformed[i] = std::vector<T>(vec1d.begin() + i * separation,
+                                        vec1d.begin() + (i + 1) * separation);
     }
     return transformed;
 }
 
 template <typename T>
-std::vector<Eigen::ArrayX<T>> TransformToEigenArrayX2d(std::vector<T> &vec1d, int separation) {
+std::vector<Eigen::ArrayX<T>> TransformToEigenArrayX2d(std::vector<T> &vec1d,
+                                                       int separation) {
     if (vec1d.size() % separation != 0) {
-        throw std::invalid_argument("Vector size is not a multiple of separation");
+        throw std::invalid_argument(
+            "Vector size is not a multiple of separation");
     }
     int size = vec1d.size() / separation;
     std::vector<Eigen::ArrayX<T>> transformed(size);
     for (int i = 0; i < size; i++) {
-        transformed[i] = Eigen::Map<Eigen::ArrayX<T>>(vec1d.data() + i * separation, separation);
+        transformed[i] = Eigen::Map<Eigen::ArrayX<T>>(
+            vec1d.data() + i * separation, separation);
     }
     return transformed;
 }
 
-inline void CalculateMeanAndVariance(const std::vector<Eigen::ArrayXd> &data, double &mean, double &variance) {
+inline void CalculateMeanAndVariance(const std::vector<Eigen::ArrayXd> &data,
+                                     double &mean, double &variance) {
     double sum = 0.0;
     double sumSquared = 0.0;
     int totalElements = 0;
@@ -147,7 +160,8 @@ std::vector<size_t> ArgSort(const Range &range) {
     std::iota(indexes.begin(), indexes.end(), 0);
 
     std::sort(indexes.begin(), indexes.end(), [&](size_t i, size_t j) {
-        return *std::ranges::next(std::ranges::begin(range), i) < *std::ranges::next(std::ranges::begin(range), j);
+        return *std::ranges::next(std::ranges::begin(range), i) <
+               *std::ranges::next(std::ranges::begin(range), j);
     });
 
     return indexes;
@@ -173,7 +187,8 @@ inline std::string GetTimestamp(const char *format = "%y%m%d-%H%M%S") {
     ss << std::put_time(std::localtime(&nowTime), format);
     return ss.str();
 }
-inline std::string ConvertDoubleToStringByDividingIntoIntegersAndDecimals(double value, char delimiter = '-') {
+inline std::string ConvertDoubleToStringByDividingIntoIntegersAndDecimals(
+    double value, char delimiter = '-') {
     long long integer_part = static_cast<long long>(value);
     double decimal_part = value - integer_part;
     if (decimal_part == 0.0) {

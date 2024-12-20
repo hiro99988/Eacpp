@@ -12,8 +12,10 @@ class CrossoverBaseTest : public ::testing::Test {
 
     class CrossoverBaseTmp : public CrossoverBase<int> {
        public:
-        CrossoverBaseTmp(int parentNum, double crossoverRate) : CrossoverBase<int>(parentNum, crossoverRate) {}
-        Individuali performCrossover(const std::vector<Individuali>& parents) const override {
+        CrossoverBaseTmp(int parentNum, double crossoverRate)
+            : CrossoverBase<int>(parentNum, crossoverRate) {}
+        Individuali performCrossover(
+            const std::vector<Individuali>& parents) const override {
             return parents[0];
         }
     };

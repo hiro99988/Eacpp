@@ -14,14 +14,17 @@ namespace Eacpp {
 
 class RealRandomRepair : public IRepair<double> {
    public:
-    RealRandomRepair(const std::shared_ptr<IProblem<double>>& problem) : _problem(problem) {
+    RealRandomRepair(const std::shared_ptr<IProblem<double>>& problem)
+        : _problem(problem) {
         _rng = std::make_shared<Rng>();
     }
-    RealRandomRepair(const std::shared_ptr<IProblem<double>>& problem, const std::shared_ptr<IRng>& rng)
+    RealRandomRepair(const std::shared_ptr<IProblem<double>>& problem,
+                     const std::shared_ptr<IRng>& rng)
         : _problem(problem), _rng(rng) {}
 
     void Repair(Individuald& individual) override {
-        std::vector<bool> evaluation = _problem->EvaluateConstraints(individual);
+        std::vector<bool> evaluation =
+            _problem->EvaluateConstraints(individual);
         int variableBoundsSize = _problem->VariableBounds().size();
         for (int i = 0; i < evaluation.size(); i++) {
             if (evaluation[i]) {
@@ -30,10 +33,12 @@ class RealRandomRepair : public IRepair<double> {
 
             if (i < variableBoundsSize) {
                 individual.solution(i) =
-                    _rng->Uniform(_problem->VariableBounds()[i].first, _problem->VariableBounds()[i].second);
+                    _rng->Uniform(_problem->VariableBounds()[i].first,
+                                  _problem->VariableBounds()[i].second);
             } else {
                 individual.solution(i) =
-                    _rng->Uniform(_problem->VariableBounds().back().first, _problem->VariableBounds().back().second);
+                    _rng->Uniform(_problem->VariableBounds().back().first,
+                                  _problem->VariableBounds().back().second);
             }
         }
     }

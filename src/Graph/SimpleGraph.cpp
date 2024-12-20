@@ -53,11 +53,13 @@ SimpleGraph SimpleGraph::GnpRandomGraph(Node nodesNum, double probability) {
 
 SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
     if (nodesNum * degree % 2 != 0) {
-        throw std::invalid_argument("The value of (nodesNum * degree) must be even");
+        throw std::invalid_argument(
+            "The value of (nodesNum * degree) must be even");
     }
 
     if (degree < 0 || degree >= nodesNum) {
-        throw std::invalid_argument("Degree must be in the range [0, nodesNum)");
+        throw std::invalid_argument(
+            "Degree must be in the range [0, nodesNum)");
     }
 
     if (degree == 0) {
@@ -79,7 +81,8 @@ SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
             while (!stubs.empty()) {
                 // store the number of potential edges for each node
                 std::map<int, int> potentialEdges;
-                std::shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
+                std::shuffle(stubs.begin(), stubs.end(),
+                             std::mt19937(std::random_device()()));
                 auto stubIter = stubs.begin();
                 while (stubIter != stubs.end()) {
                     int s1 = *stubIter++;
@@ -91,7 +94,8 @@ SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
                     if (s1 != s2 && edges.find({s1, s2}) == edges.end()) {
                         edges.insert({s1, s2});
                     } else {
-                        // Need to record nodes that need to be reconnected to the edge because the edge could not be connected
+                        // Need to record nodes that need to be reconnected to
+                        // the edge because the edge could not be connected
                         potentialEdges[s1]++;
                         potentialEdges[s2]++;
                     }
@@ -112,8 +116,10 @@ SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
         }
 
         /// @brief Check if there are suitable edges remaining.
-        /// @return true if there are suitable edges remaining, false if the generation of the graph has failed.
-        bool Suitable(const std::set<Edge>& edges, const std::map<int, int>& potentialEdges) {
+        /// @return true if there are suitable edges remaining, false if the
+        /// generation of the graph has failed.
+        bool Suitable(const std::set<Edge>& edges,
+                      const std::map<int, int>& potentialEdges) {
             if (potentialEdges.empty()) {
                 return true;
             }
@@ -131,7 +137,8 @@ SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
                     }
 
                     // if suitable edge found, return true
-                    if (edges.find({std::min(s1, s2), std::max(s1, s2)}) == edges.end()) {
+                    if (edges.find({std::min(s1, s2), std::max(s1, s2)}) ==
+                        edges.end()) {
                         return true;
                     }
                 }
@@ -150,7 +157,8 @@ SimpleGraph SimpleGraph::RandomRegularGraph(Node nodesNum, Node degree) {
 }
 
 bool SimpleGraph::operator==(const SimpleGraph& other) const {
-    return _nodesNum == other._nodesNum && _edges == other._edges && _adjacencyList == other._adjacencyList;
+    return _nodesNum == other._nodesNum && _edges == other._edges &&
+           _adjacencyList == other._adjacencyList;
 }
 
 bool SimpleGraph::operator!=(const SimpleGraph& other) const {
@@ -165,7 +173,8 @@ const std::set<SimpleGraph::Edge>& SimpleGraph::Edges() const {
     return _edges;
 }
 
-const std::vector<std::set<SimpleGraph::Node>>& SimpleGraph::AdjacencyList() const {
+const std::vector<std::set<SimpleGraph::Node>>& SimpleGraph::AdjacencyList()
+    const {
     return _adjacencyList;
 }
 
@@ -297,8 +306,8 @@ double SimpleGraph::AverageShortestPathLength() const {
 bool SimpleGraph::TwoOpt(Edge edge1, Edge edge2) {
     ValidateEdges(edge1, edge2);
 
-    if (edge1.first == edge2.first || edge1.first == edge2.second || edge1.second == edge2.first ||
-        edge1.second == edge2.second) {
+    if (edge1.first == edge2.first || edge1.first == edge2.second ||
+        edge1.second == edge2.first || edge1.second == edge2.second) {
         return false;
     }
 
@@ -322,8 +331,9 @@ template <typename... Args>
 void SimpleGraph::ValidateIndexes(Args... indexes) const {
     for (size_t index : {indexes...}) {
         if (index >= _nodesNum) {
-            throw std::out_of_range("Index out of range " + std::to_string(index) + " >= " + std::to_string(_nodesNum) +
-                                    " nodesNum");
+            throw std::out_of_range(
+                "Index out of range " + std::to_string(index) +
+                " >= " + std::to_string(_nodesNum) + " nodesNum");
         }
     }
 }
@@ -333,7 +343,9 @@ void SimpleGraph::ValidateEdges(const Args&... edges) const {
     for (const auto& e : {edges...}) {
         ValidateIndexes(e.first, e.second);
         if (e.first == e.second) {
-            throw std::invalid_argument("No self-edges allowed " + std::to_string(e.first) + " == " + std::to_string(e.second));
+            throw std::invalid_argument("No self-edges allowed " +
+                                        std::to_string(e.first) +
+                                        " == " + std::to_string(e.second));
         }
     }
 }

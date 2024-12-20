@@ -19,13 +19,17 @@ class MockRng : public IRng {
 
     MOCK_METHOD2(Uniform, double(double, double));
     MOCK_METHOD3(Uniform, Eigen::ArrayXd(double, double, const int));
-    MOCK_METHOD3(Uniform, std::vector<Eigen::ArrayXd>(double, double, const std::pair<int, int>));
+    MOCK_METHOD3(Uniform,
+                 std::vector<Eigen::ArrayXd>(double, double,
+                                             const std::pair<int, int>));
 
     MOCK_METHOD0(Random, double());
     MOCK_METHOD1(Random, Eigen::ArrayXd(const int));
-    MOCK_METHOD1(Random, std::vector<Eigen::ArrayXd>(const std::pair<int, int>));
+    MOCK_METHOD1(Random,
+                 std::vector<Eigen::ArrayXd>(const std::pair<int, int>));
 
-    MOCK_METHOD3(Choice, std::vector<int>(const std::vector<int>&, const int, const bool));
+    MOCK_METHOD3(Choice, std::vector<int>(const std::vector<int>&, const int,
+                                          const bool));
 };
 
 }  // namespace Eacpp

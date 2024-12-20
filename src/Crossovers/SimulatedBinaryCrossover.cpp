@@ -11,7 +11,8 @@
 
 namespace Eacpp {
 
-Individuald SimulatedBinaryCrossover::performCrossover(const std::vector<Individuald>& parents) const {
+Individuald SimulatedBinaryCrossover::performCrossover(
+    const std::vector<Individuald>& parents) const {
     constexpr double epsilon = 1e-14;
 
     const Eigen::ArrayXd& parent1 = parents[0].solution;
@@ -21,7 +22,8 @@ Individuald SimulatedBinaryCrossover::performCrossover(const std::vector<Individ
     for (int i = 0; i < child.size(); i++) {
         double x1 = parent1(i);
         double x2 = parent2(i);
-        if (_rng->Random() > crossoverRate || x1 == x2 || std::abs(x1 - x2) <= epsilon) {
+        if (_rng->Random() > crossoverRate || x1 == x2 ||
+            std::abs(x1 - x2) <= epsilon) {
             if (_rng->Random() < 0.5) {
                 child(i) = x1;
             } else {
@@ -65,7 +67,8 @@ double SimulatedBinaryCrossover::Betaq(double alpha) const {
     if (random <= 1.0 / alpha) {
         betaq = std::pow(random * alpha, 1.0 / (distributionIndex + 1.0));
     } else {
-        betaq = std::pow(1.0 / (2.0 - random * alpha), 1.0 / (distributionIndex + 1.0));
+        betaq = std::pow(1.0 / (2.0 - random * alpha),
+                         1.0 / (distributionIndex + 1.0));
     }
 
     return betaq;
@@ -75,11 +78,13 @@ double SimulatedBinaryCrossover::Alpha(double beta) const {
     return 2.0 - std::pow(beta, -(distributionIndex + 1.0));
 }
 
-double SimulatedBinaryCrossover::Beta1(double x1, double x2, double lowerBound) const {
+double SimulatedBinaryCrossover::Beta1(double x1, double x2,
+                                       double lowerBound) const {
     return 1.0 + 2.0 * (x1 - lowerBound) / (x2 - x1);
 }
 
-double SimulatedBinaryCrossover::Beta2(double x1, double x2, double upperBound) const {
+double SimulatedBinaryCrossover::Beta2(double x1, double x2,
+                                       double upperBound) const {
     return 1.0 + 2.0 * (upperBound - x2) / (x2 - x1);
 }
 

@@ -46,9 +46,10 @@ class ReflectionRegister {
         static ReflectionRegister<interface, type> reflection(#str); \
     }
 
-#define REGISTER_TEMPLATE_REFLECTION(interface, interfaceType, type, str)           \
-    namespace interface##type##Reflection {                                         \
-        static ReflectionRegister<interface<interfaceType>, type> reflection(#str); \
+#define REGISTER_TEMPLATE_REFLECTION(interface, interfaceType, type, str)     \
+    namespace interface##type##Reflection {                                   \
+        static ReflectionRegister<interface<interfaceType>, type> reflection( \
+            #str);                                                            \
     }
 
 }  // namespace Eacpp

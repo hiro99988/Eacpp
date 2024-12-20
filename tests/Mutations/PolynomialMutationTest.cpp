@@ -26,14 +26,15 @@ namespace Eacpp {
 //     void SetUp() override {
 //         distributionIndex = 20.0;
 //         expectedSigma = {
-//             {0.0, -1.0}, {0.2, std::pow(0.4, 1.0 / (distributionIndex + 1.0)) - 1.0},
-//             {0.5, 0.0},  {0.8, 1.0 - std::pow(0.4, 1.0 / (distributionIndex + 1.0))},
-//             {1.0, 1.0},
+//             {0.0, -1.0}, {0.2, std::pow(0.4, 1.0 / (distributionIndex + 1.0))
+//             - 1.0}, {0.5, 0.0},  {0.8, 1.0 - std::pow(0.4, 1.0 /
+//             (distributionIndex + 1.0))}, {1.0, 1.0},
 //         };
 //         variableBounds = {{{0.0, 1.0}}, {{0.0, 1.0}, {0.0, 2.0}}};
 //     }
 
-//     void PerformMutation(PolynomialMutation& mutation, int index, Individuald& individual, double sigma) {
+//     void PerformMutation(PolynomialMutation& mutation, int index,
+//     Individuald& individual, double sigma) {
 //         mutation.PerformMutation(index, individual, sigma);
 //     }
 // };
@@ -69,9 +70,9 @@ namespace Eacpp {
 
 // TEST_F(PolynomialMutationTest, Mutate) {
 //     std::shared_ptr<MockRng> rng = std::make_shared<MockRng>();
-//     Eacpp::PolynomialMutation mutation(0.5, distributionIndex, variableBounds[0], rng);
-//     Individuald individual(Eigen::ArrayXd::Zero(10));
-//     Individuald copy = individual;
+//     Eacpp::PolynomialMutation mutation(0.5, distributionIndex,
+//     variableBounds[0], rng); Individuald
+//     individual(Eigen::ArrayXd::Zero(10)); Individuald copy = individual;
 
 //     EXPECT_CALL(*rng, Random()).WillRepeatedly(Return(1.0)).Times(10);
 //     mutation.Mutate(individual);

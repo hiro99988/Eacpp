@@ -12,7 +12,8 @@ struct ICrossover {
     virtual ~ICrossover() {}
 
     virtual int GetParentNum() const = 0;
-    virtual Individual<T> Cross(const std::vector<Individual<T>>& parents) const = 0;
+    virtual Individual<T> Cross(
+        const std::vector<Individual<T>>& parents) const = 0;
 };
 
 }  // namespace Eacpp

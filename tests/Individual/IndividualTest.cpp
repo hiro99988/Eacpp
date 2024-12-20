@@ -87,7 +87,8 @@ TEST(IndividualTest, OutputOperator) {
     ss << individual;
 
     std::string expected =
-        "Individual: { solution: { 0 1 2 }, objectives: { 0 1 2 }, weightVector: { 0.1 0.2 0.3 }, neighborhood: { 1 2 3 } }\n";
+        "Individual: { solution: { 0 1 2 }, objectives: { 0 1 2 }, "
+        "weightVector: { 0.1 0.2 0.3 }, neighborhood: { 1 2 3 } }\n";
     EXPECT_EQ(ss.str(), expected);
 }
 
@@ -121,7 +122,8 @@ TEST(IndividualTest, CalculateSquaredEuclideanDistanceOfWeightVector) {
     individual2.weightVector = Eigen::ArrayXd::LinSpaced(3, 1.0, 3.0);
     double expected = 11.34;
 
-    double actual = individual1.CalculateSquaredEuclideanDistanceOfWeightVector(individual2);
+    double actual = individual1.CalculateSquaredEuclideanDistanceOfWeightVector(
+        individual2);
 
     EXPECT_DOUBLE_EQ(expected, actual);
 }

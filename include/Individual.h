@@ -20,19 +20,30 @@ struct Individual {
 
     explicit Individual(const int solutionSize) : solution(solutionSize) {}
 
-    Individual(const int solutionSize, const int objectivesSize) : solution(solutionSize), objectives(objectivesSize) {}
+    Individual(const int solutionSize, const int objectivesSize)
+        : solution(solutionSize), objectives(objectivesSize) {}
 
     Individual(const Eigen::ArrayX<T>& solution) : solution(solution) {}
 
-    Individual(const Eigen::ArrayX<T>& solution, const Eigen::ArrayXd& objectives)
+    Individual(const Eigen::ArrayX<T>& solution,
+               const Eigen::ArrayXd& objectives)
         : solution(solution), objectives(objectives) {}
 
-    Individual(const Eigen::ArrayX<T>& solution, const Eigen::ArrayXd& objectives, const Eigen::ArrayXd& weightVector)
-        : solution(solution), objectives(objectives), weightVector(weightVector) {}
+    Individual(const Eigen::ArrayX<T>& solution,
+               const Eigen::ArrayXd& objectives,
+               const Eigen::ArrayXd& weightVector)
+        : solution(solution),
+          objectives(objectives),
+          weightVector(weightVector) {}
 
-    Individual(const Eigen::ArrayX<T>& solution, const Eigen::ArrayXd& objectives, const Eigen::ArrayXd& weightVector,
+    Individual(const Eigen::ArrayX<T>& solution,
+               const Eigen::ArrayXd& objectives,
+               const Eigen::ArrayXd& weightVector,
                const std::vector<int>& neighborhood)
-        : solution(solution), objectives(objectives), weightVector(weightVector), neighborhood(neighborhood) {}
+        : solution(solution),
+          objectives(objectives),
+          weightVector(weightVector),
+          neighborhood(neighborhood) {}
 
     Individual(const Individual& other)
         : solution(other.solution),
@@ -51,19 +62,23 @@ struct Individual {
     }
 
     bool operator==(const Individual& other) const {
-        return AreEqual(solution, other.solution) && AreEqual(objectives, other.objectives) &&
-               AreEqual(weightVector, other.weightVector) && neighborhood == other.neighborhood;
+        return AreEqual(solution, other.solution) &&
+               AreEqual(objectives, other.objectives) &&
+               AreEqual(weightVector, other.weightVector) &&
+               neighborhood == other.neighborhood;
     }
 
     bool operator!=(const Individual& other) const {
         return !(*this == other);
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const Individual& individual) {
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const Individual& individual) {
         os << "Individual: { ";
         os << "solution: { " << individual.solution.transpose() << " }, ";
         os << "objectives: { " << individual.objectives.transpose() << " }, ";
-        os << "weightVector: { " << individual.weightVector.transpose() << " }, ";
+        os << "weightVector: { " << individual.weightVector.transpose()
+           << " }, ";
         os << "neighborhood: { ";
         for (const auto& neighbor : individual.neighborhood) {
             os << neighbor << " ";
@@ -82,7 +97,8 @@ struct Individual {
         return AreEqual(weightVector, other.weightVector);
     }
 
-    double CalculateSquaredEuclideanDistanceOfWeightVector(const Individual& other) const {
+    double CalculateSquaredEuclideanDistanceOfWeightVector(
+        const Individual& other) const {
         return (weightVector - other.weightVector).matrix().squaredNorm();
     }
 };

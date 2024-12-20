@@ -42,25 +42,30 @@ int main(int argc, char* argv[]) {
         problemName = argv[4];
     }
 
-    std::shared_ptr<IProblem<double>> problem = Reflection<IProblem<double>>::Create(problemName);
+    std::shared_ptr<IProblem<double>> problem =
+        Reflection<IProblem<double>>::Create(problemName);
 
-    auto crossover = std::make_shared<SimulatedBinaryCrossover>(0.9, problem->VariableBounds());
+    auto crossover = std::make_shared<SimulatedBinaryCrossover>(
+        0.9, problem->VariableBounds());
     auto decomposition = std::make_shared<Tchebycheff>();
-    auto mutation =
-        std::make_shared<PolynomialMutation>(1.0 / problem->DecisionVariablesNum(), 20.0, problem->VariableBounds());
-    auto sampling = std::make_shared<RealRandomSampling>(problem->VariableBounds());
+    auto mutation = std::make_shared<PolynomialMutation>(
+        1.0 / problem->DecisionVariablesNum(), 20.0, problem->VariableBounds());
+    auto sampling =
+        std::make_shared<RealRandomSampling>(problem->VariableBounds());
     auto repair = std::make_shared<RealRandomRepair>(problem);
     auto selection = std::make_shared<RandomSelection>();
 
-    Moead<double> moead(generationNum, neighborNum, H, crossover, decomposition, mutation, problem, repair, sampling,
-                        selection);
+    Moead<double> moead(generationNum, neighborNum, H, crossover, decomposition,
+                        mutation, problem, repair, sampling, selection);
 
     auto start = std::chrono::system_clock::now();
 
     moead.Run();
 
     auto end = std::chrono::system_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
     std::cout << "Execution time: " << duration << "ms" << std::endl;
 
     std::filesystem::path objectiveFilePath = "out/data/tmp/zdt1.csv";

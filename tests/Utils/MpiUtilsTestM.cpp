@@ -9,9 +9,13 @@ namespace Eacpp::Test {
 
 class MpiUtilsTestM : public ::testing::Test {
    protected:
-    static void SetUpTestSuite() { MPI_Init(nullptr, nullptr); }
+    static void SetUpTestSuite() {
+        MPI_Init(nullptr, nullptr);
+    }
 
-    static void TearDownTestSuite() { MPI_Finalize(); }
+    static void TearDownTestSuite() {
+        MPI_Finalize();
+    }
 };
 
 TEST_F(MpiUtilsTestM, Scatterv) {
@@ -19,8 +23,10 @@ TEST_F(MpiUtilsTestM, Scatterv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
     std::vector<int> send = {0, 1, 2, 3, 4};
-    std::vector<int> nodeWorkloads = CalculateNodeWorkloads(send.size(), parallelSize);
-    std::vector<int> received = Scatterv(send, nodeWorkloads, 1, rank, parallelSize);
+    std::vector<int> nodeWorkloads =
+        CalculateNodeWorkloads(send.size(), parallelSize);
+    std::vector<int> received =
+        Scatterv(send, nodeWorkloads, 1, rank, parallelSize);
 
     if (rank == 0) {
         ASSERT_EQ(received.size(), 2);

@@ -11,10 +11,13 @@ namespace Eacpp {
 
 class RandomSelection : public ISelection {
    public:
-    RandomSelection() { _rng = std::make_shared<Rng>(); }
+    RandomSelection() {
+        _rng = std::make_shared<Rng>();
+    }
     explicit RandomSelection(std::shared_ptr<IRng> rng) : _rng(rng) {}
 
-    std::vector<int> Select(int parentNum, const std::vector<int>& population) const override {
+    std::vector<int> Select(int parentNum,
+                            const std::vector<int>& population) const override {
         return _rng->Choice(population, parentNum, false);
     };
 

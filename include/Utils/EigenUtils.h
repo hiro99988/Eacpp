@@ -17,21 +17,25 @@ bool AreNotEqual(const Eigen::ArrayX<T>& lhs, const Eigen::ArrayX<T>& rhs) {
     return lhs.size() != rhs.size() || (lhs != rhs).any();
 }
 
-inline bool AreClose(const Eigen::ArrayXd& lhs, const Eigen::ArrayXd& rhs, double epsilon = EpsilonD) {
+inline bool AreClose(const Eigen::ArrayXd& lhs, const Eigen::ArrayXd& rhs,
+                     double epsilon = EpsilonD) {
     return lhs.size() == rhs.size() && (lhs - rhs).isZero(epsilon);
 }
 
-inline bool AreClose(const Eigen::ArrayXf& lhs, const Eigen::ArrayXf& rhs, float epsilon = EpsilonF) {
+inline bool AreClose(const Eigen::ArrayXf& lhs, const Eigen::ArrayXf& rhs,
+                     float epsilon = EpsilonF) {
     return lhs.size() == rhs.size() && (lhs - rhs).isZero(epsilon);
 }
 
 template <typename T>
-T CalculateSquaredEuclideanDistance(const Eigen::ArrayX<T>& lhs, const Eigen::ArrayX<T>& rhs) {
+T CalculateSquaredEuclideanDistance(const Eigen::ArrayX<T>& lhs,
+                                    const Eigen::ArrayX<T>& rhs) {
     return (lhs - rhs).matrix().squaredNorm();
 }
 
 template <typename T>
-T CalculateEuclideanDistance(const Eigen::ArrayX<T>& lhs, const Eigen::ArrayX<T>& rhs) {
+T CalculateEuclideanDistance(const Eigen::ArrayX<T>& lhs,
+                             const Eigen::ArrayX<T>& rhs) {
     return (lhs - rhs).matrix().norm();
 }
 

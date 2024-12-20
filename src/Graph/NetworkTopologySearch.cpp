@@ -23,22 +23,27 @@
 
 namespace Eacpp {
 
-bool NetworkTopologySearch::Evaluation::operator<(const Evaluation& other) const {
+bool NetworkTopologySearch::Evaluation::operator<(
+    const Evaluation& other) const {
     return objective < other.objective;
 }
 
-bool NetworkTopologySearch::Evaluation::operator>(const Evaluation& other) const {
+bool NetworkTopologySearch::Evaluation::operator>(
+    const Evaluation& other) const {
     return other < *this;
 }
 
-std::ostream& operator<<(std::ostream& os, const NetworkTopologySearch::Evaluation& eval) {
-    os << "Objective: " << eval.objective << ", ASPL Neighbors: " << eval.asplNeighbors
+std::ostream& operator<<(std::ostream& os,
+                         const NetworkTopologySearch::Evaluation& eval) {
+    os << "Objective: " << eval.objective
+       << ", ASPL Neighbors: " << eval.asplNeighbors
        << ", ASPL Extremes: " << eval.asplExtremes;
 
     return os;
 }
 
-void NetworkTopologySearch::Run(int repeats, double initialTemperature, double minTemperature, double coolingRate) {
+void NetworkTopologySearch::Run(int repeats, double initialTemperature,
+                                double minTemperature, double coolingRate) {
     Initialize();
     Search(repeats, initialTemperature, minTemperature, coolingRate);
     std::map<Node, int> neighborFrequency;
@@ -56,7 +61,8 @@ void NetworkTopologySearch::Initialize() {
     _bestSoFarGraph = std::move(initialGraph);
 }
 
-void NetworkTopologySearch::Search(int repeats, double initialTemperature, double minTemperature, double coolingRate) {
+void NetworkTopologySearch::Search(int repeats, double initialTemperature,
+                                   double minTemperature, double coolingRate) {
     double bestObjective = _bestSoFarEvaluation.objective;
     auto bestNeighbor = _bestSoFarGraph;
     double temperature = initialTemperature;
@@ -66,18 +72,22 @@ void NetworkTopologySearch::Search(int repeats, double initialTemperature, doubl
 
         while (true) {
             auto parents = _rng->Integers(0, neighbor.NodesNum() - 1, 2, false);
-            std::array<std::set<Node>, 2> parentsNeighbors = {neighbor.Neighbors(parents[0]), neighbor.Neighbors(parents[1])};
+            std::array<std::set<Node>, 2> parentsNeighbors = {
+                neighbor.Neighbors(parents[0]), neighbor.Neighbors(parents[1])};
 
             std::array<std::vector<Node>, 2> childrenCandidates;
             for (int j = 0; j < 2; j++) {
                 for (auto&& k : parentsNeighbors[j]) {
-                    if (k != parents[1 - j] && parentsNeighbors[1 - j].find(k) == parentsNeighbors[1 - j].end()) {
+                    if (k != parents[1 - j] &&
+                        parentsNeighbors[1 - j].find(k) ==
+                            parentsNeighbors[1 - j].end()) {
                         childrenCandidates[j].push_back(k);
                     }
                 }
             }
 
-            if (childrenCandidates[0].empty() || childrenCandidates[1].empty()) {
+            if (childrenCandidates[0].empty() ||
+                childrenCandidates[1].empty()) {
                 continue;
             }
 
@@ -92,7 +102,8 @@ void NetworkTopologySearch::Search(int repeats, double initialTemperature, doubl
         }
 
         auto evaluation = Evaluate(neighbor);
-        if (AcceptanceCriterion(evaluation.objective, bestObjective, temperature)) {
+        if (AcceptanceCriterion(evaluation.objective, bestObjective,
+                                temperature)) {
             bestObjective = evaluation.objective;
             bestNeighbor = neighbor;
             if (evaluation < _bestSoFarEvaluation) {
@@ -105,7 +116,8 @@ void NetworkTopologySearch::Search(int repeats, double initialTemperature, doubl
         UpdateTemperature(temperature, minTemperature, coolingRate);
     }
 
-    std::cout << "Best So Far Evaluation: " << _bestSoFarEvaluation << std::endl;
+    std::cout << "Best So Far Evaluation: " << _bestSoFarEvaluation
+              << std::endl;
     std::cout << "Best So Far Graph: " << std::endl;
     auto adjacencyList = _bestSoFarGraph.AdjacencyList();
     for (int i = 0; i < adjacencyList.size(); i++) {
@@ -117,7 +129,9 @@ void NetworkTopologySearch::Search(int repeats, double initialTemperature, doubl
     }
 }
 
-void NetworkTopologySearch::Analyze(std::map<Node, int>& outNeighborFrequency, std::map<Node, int>& outExtremeFrequency) const {
+void NetworkTopologySearch::Analyze(
+    std::map<Node, int>& outNeighborFrequency,
+    std::map<Node, int>& outExtremeFrequency) const {
     for (Node node = 0; node < _bestSoFarGraph.NodesNum(); node++) {
         for (const auto& neighbor : _nodeNeighbors[node]) {
             auto distance = _bestSoFarGraph.ShortestPathLength(node, neighbor);
@@ -128,7 +142,8 @@ void NetworkTopologySearch::Analyze(std::map<Node, int>& outNeighborFrequency, s
     for (Node node = 0; node < _bestSoFarGraph.NodesNum(); node++) {
         for (const auto& extreme : _extremeNodes) {
             if (node != extreme) {
-                double distance = _bestSoFarGraph.ShortestPathLength(node, extreme);
+                double distance =
+                    _bestSoFarGraph.ShortestPathLength(node, extreme);
                 outExtremeFrequency[distance]++;
             }
         }
@@ -145,20 +160,26 @@ void NetworkTopologySearch::Analyze(std::map<Node, int>& outNeighborFrequency, s
     }
 }
 
-void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
-                                  const std::map<Node, int>& extremeFrequency) const {
+void NetworkTopologySearch::Write(
+    const std::map<Node, int>& neighborFrequency,
+    const std::map<Node, int>& extremeFrequency) const {
     // Create directory path
     std::ostringstream oss;
     std::string weightOfAsplNeighborsInObjectiveStr =
-        ConvertDoubleToStringByDividingIntoIntegersAndDecimals(_weightOfAsplNeighborsInObjective);
+        ConvertDoubleToStringByDividingIntoIntegersAndDecimals(
+            _weightOfAsplNeighborsInObjective);
     std::string weightOfAsplExtremesInObjectiveStr =
-        ConvertDoubleToStringByDividingIntoIntegersAndDecimals(_weightOfAsplExtremesInObjective);
-    oss << _objectivesNum << "_" << _neighborhoodSize << "_" << _divisionsNumOfWeightVector << "_" << _nodesNum << "_"
-        << _degree << "_" << weightOfAsplNeighborsInObjectiveStr << "_" << weightOfAsplExtremesInObjectiveStr;
+        ConvertDoubleToStringByDividingIntoIntegersAndDecimals(
+            _weightOfAsplExtremesInObjective);
+    oss << _objectivesNum << "_" << _neighborhoodSize << "_"
+        << _divisionsNumOfWeightVector << "_" << _nodesNum << "_" << _degree
+        << "_" << weightOfAsplNeighborsInObjectiveStr << "_"
+        << weightOfAsplExtremesInObjectiveStr;
     std::string parameterPath = oss.str();
     std::filesystem::path directoryPath = "data/graph/" + parameterPath;
 
-    // if the known graph is better than the discovered graph, skip writing resultsS else create directory
+    // if the known graph is better than the discovered graph, skip writing
+    // resultsS else create directory
     if (std::filesystem::exists(directoryPath)) {
         std::ifstream evalFile(directoryPath / "evaluation.json");
         if (evalFile.is_open()) {
@@ -167,7 +188,9 @@ void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
             double objective = json["objective"];
 
             if (!(_bestSoFarEvaluation.objective < objective)) {
-                std::cout << "Known graph is better than the discovered graph. Skipping writing results." << std::endl;
+                std::cout << "Known graph is better than the discovered graph. "
+                             "Skipping writing results."
+                          << std::endl;
                 return;
             }
         }
@@ -187,7 +210,8 @@ void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
         std::vector<int> binaryNeighbors;
         binaryNeighbors.reserve(adjacencyList[i].size() * 2);
         for (auto&& neighbor : adjacencyList[i]) {
-            if (std::find(_nodeNeighbors[i].begin(), _nodeNeighbors[i].end(), neighbor) != _nodeNeighbors[i].end()) {
+            if (std::find(_nodeNeighbors[i].begin(), _nodeNeighbors[i].end(),
+                          neighbor) != _nodeNeighbors[i].end()) {
                 binaryNeighbors.push_back(1);
             } else {
                 binaryNeighbors.push_back(0);
@@ -216,17 +240,21 @@ void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
     std::vector<std::vector<Node>> splExtremes;
     EvaluateSqls(_bestSoFarGraph, splNeighbors, splExtremes);
 
-    constexpr std::array<const char*, 3> SplFileHeader = {"node", "neighbor", "spl"};
+    constexpr std::array<const char*, 3> SplFileHeader = {"node", "neighbor",
+                                                          "spl"};
     std::ofstream splNeighborsFile(directoryPath / "splNeighbors.csv");
     WriteCsv(splNeighborsFile, splNeighbors, SplFileHeader);
 
-    constexpr std::array<const char*, 3> SplExtremesFileHeader = {"node", "extreme", "spl"};
+    constexpr std::array<const char*, 3> SplExtremesFileHeader = {
+        "node", "extreme", "spl"};
     std::ofstream splExtremesFile(directoryPath / "splExtremes.csv");
     WriteCsv(splExtremesFile, splExtremes, SplExtremesFileHeader);
 
     // Write frequency
-    constexpr std::array<const char*, 2> FrequencyFileHeader = {"distance", "frequency"};
-    std::ofstream neighborFrequencyFile(directoryPath / "neighborFrequency.csv");
+    constexpr std::array<const char*, 2> FrequencyFileHeader = {"distance",
+                                                                "frequency"};
+    std::ofstream neighborFrequencyFile(directoryPath /
+                                        "neighborFrequency.csv");
     WriteCsvLine(neighborFrequencyFile, FrequencyFileHeader);
     for (const auto& [distance, frequency] : neighborFrequency) {
         neighborFrequencyFile << distance << "," << frequency << std::endl;
@@ -241,7 +269,8 @@ void NetworkTopologySearch::Write(const std::map<Node, int>& neighborFrequency,
     std::cout << "Results written to " << directoryPath << std::endl;
 }
 
-NetworkTopologySearch::Evaluation NetworkTopologySearch::BestSoFarEvaluation() const {
+NetworkTopologySearch::Evaluation NetworkTopologySearch::BestSoFarEvaluation()
+    const {
     return _bestSoFarEvaluation;
 }
 
@@ -249,7 +278,8 @@ SimpleGraph NetworkTopologySearch::BestSoFarGraph() const {
     return _bestSoFarGraph;
 }
 
-NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(const SimpleGraph& graph) const {
+NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(
+    const SimpleGraph& graph) const {
     double sumSplNeighbors = 0.0;
     int countSplNeighbors = 0;
     double sumSplExtremes = 0.0;
@@ -275,13 +305,15 @@ NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(const SimpleGr
 
     double asplNeighbors = sumSplNeighbors / countSplNeighbors;
     double asplExtremes = sumSplExtremes / countSplExtremes;
-    double objective = asplNeighbors * _weightOfAsplNeighborsInObjective + asplExtremes * _weightOfAsplExtremesInObjective;
+    double objective = asplNeighbors * _weightOfAsplNeighborsInObjective +
+                       asplExtremes * _weightOfAsplExtremesInObjective;
 
     return Evaluation(objective, asplNeighbors, asplExtremes);
 }
 
-void NetworkTopologySearch::EvaluateSqls(const SimpleGraph& graph, std::vector<std::vector<Node>>& outSplNeighbors,
-                                         std::vector<std::vector<Node>>& outSplExtremes) const {
+void NetworkTopologySearch::EvaluateSqls(
+    const SimpleGraph& graph, std::vector<std::vector<Node>>& outSplNeighbors,
+    std::vector<std::vector<Node>>& outSplExtremes) const {
     outSplNeighbors.reserve(graph.NodesNum());
     outSplExtremes.reserve(graph.NodesNum());
 
@@ -303,9 +335,11 @@ void NetworkTopologySearch::EvaluateSqls(const SimpleGraph& graph, std::vector<s
 }
 
 void NetworkTopologySearch::InitializeNodes() {
-    int populationSize = _moeadInitializer.CalculatePopulationSize(_divisionsNumOfWeightVector, _objectivesNum);
-    _moeadInitializer.GenerateWeightVectorsAndNeighborhoods(_divisionsNumOfWeightVector, _objectivesNum, _neighborhoodSize,
-                                                            _weightVectors, _individualNeighborhoods);
+    int populationSize = _moeadInitializer.CalculatePopulationSize(
+        _divisionsNumOfWeightVector, _objectivesNum);
+    _moeadInitializer.GenerateWeightVectorsAndNeighborhoods(
+        _divisionsNumOfWeightVector, _objectivesNum, _neighborhoodSize,
+        _weightVectors, _individualNeighborhoods);
     _allNodeIndexes = GenerateAllNodeIndexes(populationSize, _nodesNum);
 
     std::vector<std::set<int>> allNeighborsNodeHas;
@@ -313,7 +347,8 @@ void NetworkTopologySearch::InitializeNodes() {
     for (int i = 0; i < _nodesNum; i++) {
         std::set<int> neighbors;
         for (auto&& j : _allNodeIndexes[i]) {
-            neighbors.insert(_individualNeighborhoods[j].begin(), _individualNeighborhoods[j].end());
+            neighbors.insert(_individualNeighborhoods[j].begin(),
+                             _individualNeighborhoods[j].end());
         }
 
         allNeighborsNodeHas.push_back(neighbors);
@@ -329,7 +364,8 @@ void NetworkTopologySearch::InitializeNodes() {
             }
         }
 
-        _nodeNeighbors.push_back(std::vector<int>(neighbors.begin(), neighbors.end()));
+        _nodeNeighbors.push_back(
+            std::vector<int>(neighbors.begin(), neighbors.end()));
     }
 
     _extremeNodes.reserve(_objectivesNum);
@@ -361,12 +397,16 @@ void NetworkTopologySearch::InitializeNodes() {
     // std::cout << std::endl;
 }
 
-bool NetworkTopologySearch::AcceptanceCriterion(double newObjective, double oldObjective, double temperature) const {
+bool NetworkTopologySearch::AcceptanceCriterion(double newObjective,
+                                                double oldObjective,
+                                                double temperature) const {
     double delta = newObjective - oldObjective;
     return delta < 0 || _rng->Random() < std::exp(-delta / temperature);
 }
 
-void NetworkTopologySearch::UpdateTemperature(double& temperature, double minTemperature, double coolingRate) const {
+void NetworkTopologySearch::UpdateTemperature(double& temperature,
+                                              double minTemperature,
+                                              double coolingRate) const {
     temperature *= coolingRate;
     temperature = std::max(temperature, minTemperature);
 }

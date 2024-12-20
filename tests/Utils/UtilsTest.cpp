@@ -62,7 +62,8 @@ TEST(UtilsTest, Product) {
     std::vector<int> choices = {1, 2, 3};
     int repeat = 2;
     std::vector<std::vector<int>> actual = Product(choices, repeat);
-    std::vector<std::vector<int>> expected = {{1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3}, {3, 1}, {3, 2}, {3, 3}};
+    std::vector<std::vector<int>> expected = {
+        {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3}, {3, 1}, {3, 2}, {3, 3}};
     ASSERT_EQ(std::pow(choices.size(), repeat), actual.size());
     ASSERT_TRUE(expected == actual);
 }
@@ -99,7 +100,8 @@ TEST(UtilsTest, TransformTo2d) {
 
 TEST(UtilsTest, TransformToEigenArrayX2d) {
     std::vector<int> v1d = {1, 2, 3, 4, 5, 6};
-    std::vector<Eigen::ArrayXi> expected = {Eigen::ArrayXi::LinSpaced(3, 1, 3), Eigen::ArrayXi::LinSpaced(3, 4, 6)};
+    std::vector<Eigen::ArrayXi> expected = {Eigen::ArrayXi::LinSpaced(3, 1, 3),
+                                            Eigen::ArrayXi::LinSpaced(3, 4, 6)};
     ASSERT_NO_THROW(TransformToEigenArrayX2d(v1d, 3));
     std::vector<Eigen::ArrayXi> actual = TransformToEigenArrayX2d(v1d, 3);
     for (int i = 0; i < expected.size(); ++i) {
@@ -110,7 +112,8 @@ TEST(UtilsTest, TransformToEigenArrayX2d) {
 }
 
 TEST(UtilsTest, CalculateMeanAndVariance) {
-    std::vector<Eigen::ArrayXd> data = {Eigen::ArrayXd::LinSpaced(3, 1, 3), Eigen::ArrayXd::LinSpaced(3, 4, 6)};
+    std::vector<Eigen::ArrayXd> data = {Eigen::ArrayXd::LinSpaced(3, 1, 3),
+                                        Eigen::ArrayXd::LinSpaced(3, 4, 6)};
     double mean = 0.0;
     double variance = 0.0;
     CalculateMeanAndVariance(data, mean, variance);

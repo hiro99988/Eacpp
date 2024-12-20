@@ -17,7 +17,8 @@ class MutationBase : public IMutation<T> {
     explicit MutationBase(double mutationRate) : mutationRate(mutationRate) {
         _rng = std::make_shared<Rng>();
     }
-    MutationBase(double mutationRate, std::shared_ptr<IRng> rng) : mutationRate(mutationRate), _rng(rng) {}
+    MutationBase(double mutationRate, std::shared_ptr<IRng> rng)
+        : mutationRate(mutationRate), _rng(rng) {}
     virtual ~MutationBase() {}
 
    protected:

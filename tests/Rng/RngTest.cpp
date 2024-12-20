@@ -78,7 +78,8 @@ TEST(RngTest, IntegersReplaceTrue) {
     int expectedMin = 0;
     int expectedMax = 2;
     int size = 10;
-    std::vector<int> actual = rng.Integers(expectedMin, expectedMax, size, true);
+    std::vector<int> actual =
+        rng.Integers(expectedMin, expectedMax, size, true);
     ASSERT_EQ(size, actual.size());
     for (int i = 0; i < size; i++) {
         ASSERT_LE(expectedMin, actual[i]);
@@ -91,7 +92,8 @@ TEST(RngTest, IntergersMinMaxLessThanSizeReplaceFalseException) {
     int expectedMin = 0;
     int expectedMax = 2;
     int size = 10;
-    ASSERT_THROW(rng.Integers(expectedMin, expectedMax, size, false), std::invalid_argument);
+    ASSERT_THROW(rng.Integers(expectedMin, expectedMax, size, false),
+                 std::invalid_argument);
 }
 
 TEST(RngTest, IntegersReplaceFalse) {
@@ -99,7 +101,8 @@ TEST(RngTest, IntegersReplaceFalse) {
     int expectedMin = 1;
     int expectedMax = 100;
     int size = 100;
-    std::vector<int> actual = rng.Integers(expectedMin, expectedMax, size, false);
+    std::vector<int> actual =
+        rng.Integers(expectedMin, expectedMax, size, false);
     ASSERT_EQ(size, actual.size());
     std::unordered_set<int> uniqueElements(actual.begin(), actual.end());
     ASSERT_EQ(size, uniqueElements.size());
@@ -169,9 +172,11 @@ TEST(RngTest, UniformSize10x10) {
 TEST(RngTest, ChoiceInt) {
     std::vector<int> vector = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     Rng rngWithDuplicates(0);
-    auto expectedIndexWithDuplicates = rngWithDuplicates.Integers(0, vector.size() - 1, 2, true);
+    auto expectedIndexWithDuplicates =
+        rngWithDuplicates.Integers(0, vector.size() - 1, 2, true);
     Rng noduplicateRng(0);
-    auto expectedNoduplicateIndex = noduplicateRng.Integers(0, vector.size() - 1, 5, false);
+    auto expectedNoduplicateIndex =
+        noduplicateRng.Integers(0, vector.size() - 1, 5, false);
 
     int size = 2;
     Rng rng1(0);

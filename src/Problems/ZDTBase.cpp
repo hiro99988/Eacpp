@@ -22,20 +22,25 @@ void ZDTBase::ComputeObjectiveSet(Individuald& individual) const {
 
 bool ZDTBase::IsFeasible(const Individuald& individual) const {
     auto evaluation = EvaluateConstraints(individual);
-    return std::all_of(evaluation.begin(), evaluation.end(), [](bool e) { return e == true; });
+    return std::all_of(evaluation.begin(), evaluation.end(),
+                       [](bool e) { return e == true; });
 }
 
-std::vector<bool> ZDTBase::EvaluateConstraints(const Individuald& individual) const {
+std::vector<bool> ZDTBase::EvaluateConstraints(
+    const Individuald& individual) const {
     std::vector<bool> evaluation(individual.solution.size());
     for (int i = 0; i < individual.solution.size(); i++) {
-        evaluation[i] = individual.solution(i) >= variableBounds[0].first && individual.solution(i) <= variableBounds[0].second;
+        evaluation[i] = individual.solution(i) >= variableBounds[0].first &&
+                        individual.solution(i) <= variableBounds[0].second;
     }
     return evaluation;
 }
 
 std::vector<Eigen::ArrayXd> ZDTBase::GenerateParetoFront(int pointsNum) const {
-    std::vector<double> x = LinSpace(variableBounds[0].first, variableBounds[0].second, pointsNum);
-    std::vector<Eigen::ArrayXd> result(pointsNum, Eigen::ArrayXd(objectivesNum));
+    std::vector<double> x =
+        LinSpace(variableBounds[0].first, variableBounds[0].second, pointsNum);
+    std::vector<Eigen::ArrayXd> result(pointsNum,
+                                       Eigen::ArrayXd(objectivesNum));
     for (int i = 0; i < pointsNum; i++) {
         double h = H(x[i], gOfParetoFront);
         double f2 = gOfParetoFront * h;

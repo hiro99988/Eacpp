@@ -13,7 +13,8 @@ namespace Eacpp {
 IGD::IGD(const std::vector<std::vector<double>>& paretoFront) {
     _paretoFront.reserve(paretoFront.size());
     for (const auto& point : paretoFront) {
-        _paretoFront.push_back(Eigen::Map<const Eigen::ArrayXd>(point.data(), point.size()));
+        _paretoFront.push_back(
+            Eigen::Map<const Eigen::ArrayXd>(point.data(), point.size()));
     }
 }
 
@@ -22,7 +23,8 @@ double IGD::Calculate(const std::vector<Eigen::ArrayXd>& objectives) {
     for (const auto& paretoPoint : _paretoFront) {
         double minDistance = std::numeric_limits<double>::max();
         for (const auto& objective : objectives) {
-            double distance = CalculateEuclideanDistance(objective, paretoPoint);
+            double distance =
+                CalculateEuclideanDistance(objective, paretoPoint);
             minDistance = std::min(minDistance, distance);
         }
 
@@ -35,7 +37,8 @@ double IGD::Calculate(const std::vector<Eigen::ArrayXd>& objectives) {
 double IGD::Calculate(const std::vector<std::vector<double>>& objectives) {
     std::vector<Eigen::ArrayXd> objectivesEigen;
     for (const auto& point : objectives) {
-        objectivesEigen.push_back(Eigen::Map<const Eigen::ArrayXd>(point.data(), point.size()));
+        objectivesEigen.push_back(
+            Eigen::Map<const Eigen::ArrayXd>(point.data(), point.size()));
     }
 
     return Calculate(objectivesEigen);

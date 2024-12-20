@@ -93,7 +93,8 @@ inline int CalculateNodeWorkload(int totalTasks, int rank, int parallelSize) {
  * @param parallelSize ノードの総数。
  * @return std::vector<int> すべてのノードのワークロード。
  */
-inline std::vector<int> CalculateNodeWorkloads(int totalTasks, int parallelSize) {
+inline std::vector<int> CalculateNodeWorkloads(int totalTasks,
+                                               int parallelSize) {
     std::vector<int> nodeWorkloads(parallelSize);
     for (int i = 0; i < parallelSize; i++) {
         nodeWorkloads[i] = CalculateNodeWorkload(totalTasks, i, parallelSize);
@@ -126,7 +127,8 @@ inline int CalculateNodeStartIndex(int totalTasks, int rank, int parallelSize) {
  * @param parallelSize ノードの総数。
  * @return std::vector<int> ノードのインデックス範囲。
  */
-inline std::vector<int> GenerateNodeIndexes(int totalTasks, int rank, int parallelSize) {
+inline std::vector<int> GenerateNodeIndexes(int totalTasks, int rank,
+                                            int parallelSize) {
     int start = CalculateNodeStartIndex(totalTasks, rank, parallelSize);
     int workload = CalculateNodeWorkload(totalTasks, rank, parallelSize);
     std::vector<int> indexes = Rangei(start, start + workload - 1, 1);
@@ -138,22 +140,27 @@ inline std::vector<int> GenerateNodeIndexes(int totalTasks, int rank, int parall
  *
  * @param totalTasks 全タスクの数。
  * @param parallelSize ノードの総数。
- * @return std::vector<std::vector<int>> すべてのランクに関するノードインデックス。
+ * @return std::vector<std::vector<int>>
+ * すべてのランクに関するノードインデックス。
  */
-inline std::vector<std::vector<int>> GenerateAllNodeIndexes(int totalTasks, int parallelSize) {
+inline std::vector<std::vector<int>> GenerateAllNodeIndexes(int totalTasks,
+                                                            int parallelSize) {
     std::vector<std::vector<int>> allNodeIndexes;
     allNodeIndexes.reserve(parallelSize);
     for (int rank = 0; rank < parallelSize; rank++) {
-        allNodeIndexes.push_back(GenerateNodeIndexes(totalTasks, rank, parallelSize));
+        allNodeIndexes.push_back(
+            GenerateNodeIndexes(totalTasks, rank, parallelSize));
     }
 
     return allNodeIndexes;
 }
 
-inline std::vector<int> GenerateDisplacements(const std::vector<int>& dataCounts) {
+inline std::vector<int> GenerateDisplacements(
+    const std::vector<int>& dataCounts) {
     std::vector<int> displacements(dataCounts.size());
     for (int i = 0; i < dataCounts.size(); i++) {
-        displacements[i] = i == 0 ? 0 : displacements[i - 1] + dataCounts[i - 1];
+        displacements[i] =
+            i == 0 ? 0 : displacements[i - 1] + dataCounts[i - 1];
     }
 
     return displacements;
@@ -166,10 +173,12 @@ inline std::vector<int> GenerateDisplacements(const std::vector<int>& dataCounts
  * @param nodeWorkloads すべてのノードのワークロード。
  * @param dataSize 各データ要素のサイズ。
  * @param parallelSize ノードの総数。
- * @return std::pair<std::vector<int>, std::vector<int>> データカウントとディスプレースメント。
+ * @return std::pair<std::vector<int>, std::vector<int>>
+ * データカウントとディスプレースメント。
  */
-inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDisplacements(const std::vector<int>& nodeWorkloads,
-                                                                                        int dataSize, int parallelSize) {
+inline std::pair<std::vector<int>, std::vector<int>>
+GenerateDataCountsAndDisplacements(const std::vector<int>& nodeWorkloads,
+                                   int dataSize, int parallelSize) {
     std::vector<int> dataCounts(parallelSize);
     for (int i = 0; i < parallelSize; i++) {
         dataCounts[i] = nodeWorkloads[i] * dataSize;
@@ -180,7 +189,8 @@ inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDispla
 }
 
 /**
- * @brief scatterv操作を使用して、送信ベクトルからすべてのノードにデータを分散します。
+ * @brief
+ * scatterv操作を使用して、送信ベクトルからすべてのノードにデータを分散します。
  *
  * @tparam T データの型。
  * @param send ルートノードから送信されるデータ。
@@ -191,29 +201,35 @@ inline std::pair<std::vector<int>, std::vector<int>> GenerateDataCountsAndDispla
  * @return std::vector<T> 現在のノードで受信されたデータ。
  */
 template <typename T>
-std::vector<T> Scatterv(const std::vector<T>& send, const std::vector<int>& nodeWorkloads, int dataSize, int rank,
-                        int parallelSize) {
+std::vector<T> Scatterv(const std::vector<T>& send,
+                        const std::vector<int>& nodeWorkloads, int dataSize,
+                        int rank, int parallelSize) {
     std::vector<int> dataCounts;
     std::vector<int> displacements;
     if (rank == 0) {
-        std::tie(dataCounts, displacements) = GenerateDataCountsAndDisplacements(nodeWorkloads, dataSize, parallelSize);
+        std::tie(dataCounts, displacements) =
+            GenerateDataCountsAndDisplacements(nodeWorkloads, dataSize,
+                                               parallelSize);
     }
     int receivedDataCount;
-    MPI_Scatter(dataCounts.data(), 1, MPI_INT, &receivedDataCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(dataCounts.data(), 1, MPI_INT, &receivedDataCount, 1, MPI_INT,
+                0, MPI_COMM_WORLD);
     std::vector<T> received(receivedDataCount);
-    MPI_Scatterv(send.data(), dataCounts.data(), displacements.data(), GetMpiDataType(send), received.data(), receivedDataCount,
+    MPI_Scatterv(send.data(), dataCounts.data(), displacements.data(),
+                 GetMpiDataType(send), received.data(), receivedDataCount,
                  GetMpiDataType(received), 0, MPI_COMM_WORLD);
     return received;
 }
 
 template <typename T>
-void Gatherv(const std::vector<T>& send, int rank, int parallelSize, std::vector<T>& outReceiveBuffer,
-             std::vector<int>& outSizes) {
+void Gatherv(const std::vector<T>& send, int rank, int parallelSize,
+             std::vector<T>& outReceiveBuffer, std::vector<int>& outSizes) {
     int localSize = send.size();
     if (rank == 0) {
         outSizes.resize(parallelSize);
     }
-    MPI_Gather(&localSize, 1, MPI_INT, outSizes.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&localSize, 1, MPI_INT, outSizes.data(), 1, MPI_INT, 0,
+               MPI_COMM_WORLD);
 
     std::vector<int> displacements;
     if (rank == 0) {
@@ -224,7 +240,8 @@ void Gatherv(const std::vector<T>& send, int rank, int parallelSize, std::vector
         outReceiveBuffer.resize(outSizes.back() + displacements.back());
     }
 
-    MPI_Gatherv(send.data(), send.size(), GetMpiDataType(send), outReceiveBuffer.data(), outSizes.data(), displacements.data(),
+    MPI_Gatherv(send.data(), send.size(), GetMpiDataType(send),
+                outReceiveBuffer.data(), outSizes.data(), displacements.data(),
                 GetMpiDataType(send), 0, MPI_COMM_WORLD);
 }
 
@@ -235,7 +252,8 @@ std::vector<T> Gatherv(const std::vector<T>& send, int rank, int parallelSize) {
     if (rank == 0) {
         sizes.resize(parallelSize);
     }
-    MPI_Gather(&localSize, 1, MPI_INT, sizes.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&localSize, 1, MPI_INT, sizes.data(), 1, MPI_INT, 0,
+               MPI_COMM_WORLD);
 
     std::vector<int> displacements;
     if (rank == 0) {
@@ -247,7 +265,8 @@ std::vector<T> Gatherv(const std::vector<T>& send, int rank, int parallelSize) {
         receiveBuffer.resize(sizes.back() + displacements.back());
     }
 
-    MPI_Gatherv(send.data(), send.size(), GetMpiDataType(send), receiveBuffer.data(), sizes.data(), displacements.data(),
+    MPI_Gatherv(send.data(), send.size(), GetMpiDataType(send),
+                receiveBuffer.data(), sizes.data(), displacements.data(),
                 GetMpiDataType(send), 0, MPI_COMM_WORLD);
 
     return receiveBuffer;
@@ -287,7 +306,8 @@ inline void ReleaseIsend(int parallelSize, MPI_Datatype dataType) {
             int dataSize;
             MPI_Get_count(&status, dataType, &dataSize);
             std::vector<double> tempData(dataSize);
-            MPI_Recv(tempData.data(), dataSize, dataType, i, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(tempData.data(), dataSize, dataType, i, tag,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
     }
 }

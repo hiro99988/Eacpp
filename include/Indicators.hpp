@@ -7,7 +7,8 @@ namespace Eacpp {
 
 class IGD {
    public:
-    IGD(const std::vector<Eigen::ArrayXd>& paretoFront) : _paretoFront(paretoFront) {}
+    IGD(const std::vector<Eigen::ArrayXd>& paretoFront)
+        : _paretoFront(paretoFront) {}
     IGD(const std::vector<std::vector<double>>& paretoFront);
 
     double Calculate(const std::vector<Eigen::ArrayXd>& objectives);

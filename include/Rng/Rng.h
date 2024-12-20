@@ -18,17 +18,20 @@ class Rng : public IRng {
 
     int Integer(const int max) override;
     int Integer(int min, int max) override;
-    std::vector<int> Integers(int min, int max, const int size, bool replace = true) override;
+    std::vector<int> Integers(int min, int max, const int size,
+                              bool replace = true) override;
 
     double Uniform(double min, double max) override;
     Eigen::ArrayXd Uniform(double min, double max, const int size) override;
-    std::vector<Eigen::ArrayXd> Uniform(double min, double max, const std::pair<int, int> size) override;
+    std::vector<Eigen::ArrayXd> Uniform(
+        double min, double max, const std::pair<int, int> size) override;
 
     double Random() override;
     Eigen::ArrayXd Random(const int size) override;
     std::vector<Eigen::ArrayXd> Random(const std::pair<int, int> size) override;
 
-    std::vector<int> Choice(const std::vector<int>& array, const int size, const bool replace = true) override;
+    std::vector<int> Choice(const std::vector<int>& array, const int size,
+                            const bool replace = true) override;
 
    private:
     std::mt19937 _mt;

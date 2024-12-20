@@ -24,28 +24,32 @@ const std::vector<std::pair<double, double>>& DTLZBase::VariableBounds() const {
 
 void DTLZBase::ComputeObjectiveSet(Individuald& individual) const {
     auto X_ = individual.solution.head(_objectivesNum - 1);
-    auto XM = individual.solution.tail(individual.solution.size() - (_objectivesNum - 1));
+    auto XM = individual.solution.tail(individual.solution.size() -
+                                       (_objectivesNum - 1));
 
     double g = G(XM);
     individual.objectives = Objectives(X_, g);
 }
 
 bool DTLZBase::IsFeasible(const Individuald& individual) const {
-    return (individual.solution >= _variableBounds[0].first).all() && (individual.solution <= _variableBounds[0].second).all();
+    return (individual.solution >= _variableBounds[0].first).all() &&
+           (individual.solution <= _variableBounds[0].second).all();
 }
 
-std::vector<bool> DTLZBase::EvaluateConstraints(const Individuald& individual) const {
+std::vector<bool> DTLZBase::EvaluateConstraints(
+    const Individuald& individual) const {
     std::vector<bool> evaluation(individual.solution.size());
     for (int i = 0; i < individual.solution.size(); i++) {
-        evaluation[i] =
-            individual.solution(i) >= _variableBounds[0].first && individual.solution(i) <= _variableBounds[0].second;
+        evaluation[i] = individual.solution(i) >= _variableBounds[0].first &&
+                        individual.solution(i) <= _variableBounds[0].second;
     }
 
     return evaluation;
 }
 
 double DTLZBase::G13(const Eigen::ArrayXd& XM) const {
-    double y = (XM - 0.5).square().sum() - (20.0 * std::numbers::pi * (XM - 0.5)).cos().sum();
+    double y = (XM - 0.5).square().sum() -
+               (20.0 * std::numbers::pi * (XM - 0.5)).cos().sum();
     return 100.0 * (static_cast<double>(XM.size()) + y);
 }
 
@@ -53,14 +57,18 @@ double DTLZBase::G245(const Eigen::ArrayXd& XM) const {
     return (XM - 0.5).square().sum();
 }
 
-Eigen::ArrayXd DTLZBase::Objectives234(const Eigen::ArrayXd& X_, double g, double alpha) const {
+Eigen::ArrayXd DTLZBase::Objectives234(const Eigen::ArrayXd& X_, double g,
+                                       double alpha) const {
     Eigen::ArrayXd objectives(_objectivesNum);
 
     for (std::size_t i = 0; i < _objectivesNum; ++i) {
         double f = 1.0 + g;
-        f *= (X_.head(X_.size() - i).pow(alpha) * std::numbers::pi / 2.0).cos().prod();
+        f *= (X_.head(X_.size() - i).pow(alpha) * std::numbers::pi / 2.0)
+                 .cos()
+                 .prod();
         if (i > 0) {
-            f *= std::sin(std::pow(X_(X_.size() - i), alpha) * std::numbers::pi / 2.0);
+            f *= std::sin(std::pow(X_(X_.size() - i), alpha) *
+                          std::numbers::pi / 2.0);
         }
 
         objectives(i) = f;
@@ -69,7 +77,8 @@ Eigen::ArrayXd DTLZBase::Objectives234(const Eigen::ArrayXd& X_, double g, doubl
     return objectives;
 }
 
-Eigen::ArrayXd DTLZBase::Objectives56(const Eigen::ArrayXd& X_, double g) const {
+Eigen::ArrayXd DTLZBase::Objectives56(const Eigen::ArrayXd& X_,
+                                      double g) const {
     auto theta = theta56(X_, g);
     return Objectives234(theta, g);
 }
@@ -118,7 +127,9 @@ Eigen::ArrayXd DTLZ7::Objectives(const Eigen::ArrayXd& X_, double g) const {
 }
 
 double DTLZ7::H(const Eigen::ArrayXd& F_, double g) const {
-    return static_cast<double>(ObjectivesNum()) - ((F_ / (1.0 + g)) * (1.0 + (3.0 * std::numbers::pi * F_).sin())).sum();
+    return static_cast<double>(ObjectivesNum()) -
+           ((F_ / (1.0 + g)) * (1.0 + (3.0 * std::numbers::pi * F_).sin()))
+               .sum();
 }
 
 }  // namespace Eacpp

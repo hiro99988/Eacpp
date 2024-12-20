@@ -14,7 +14,9 @@ using DefaultHeaderType = std::vector<std::string>;
 
 enum class CsvLineEnd { None, Comma, Newline };
 
-inline std::ifstream OpenInputFile(const std::filesystem::path& filePath, std::ios_base::openmode mode = std::ios_base::in) {
+inline std::ifstream OpenInputFile(
+    const std::filesystem::path& filePath,
+    std::ios_base::openmode mode = std::ios_base::in) {
     std::ifstream fileStream(filePath, mode);
     if (!fileStream) {
         std::cerr << "Error: Could not open " << filePath << std::endl;
@@ -23,17 +25,21 @@ inline std::ifstream OpenInputFile(const std::filesystem::path& filePath, std::i
     return fileStream;
 }
 
-inline std::ofstream OpenOutputFile(const std::filesystem::path& filePath, std::ios_base::openmode mode = std::ios_base::out) {
+inline std::ofstream OpenOutputFile(
+    const std::filesystem::path& filePath,
+    std::ios_base::openmode mode = std::ios_base::out) {
     std::ofstream fileStream(filePath, mode);
     if (!fileStream) {
-        std::cerr << "Error: Could not create or open " << filePath << std::endl;
+        std::cerr << "Error: Could not create or open " << filePath
+                  << std::endl;
         std::exit(1);
     }
     return fileStream;
 }
 
 template <std::ranges::range T>
-void WriteCsvLine(std::ofstream& file, const T& data, CsvLineEnd lineEnding = CsvLineEnd::Newline) {
+void WriteCsvLine(std::ofstream& file, const T& data,
+                  CsvLineEnd lineEnding = CsvLineEnd::Newline) {
     bool first = true;
     for (const auto& item : data) {
         if (!first) {
@@ -56,7 +62,8 @@ void WriteCsvLine(std::ofstream& file, const T& data, CsvLineEnd lineEnding = Cs
 }
 
 template <std::ranges::range T, std::ranges::range U = DefaultHeaderType>
-void WriteCsv(std::ofstream& file, const std::vector<T>& data, const U& header = {}) {
+void WriteCsv(std::ofstream& file, const std::vector<T>& data,
+              const U& header = {}) {
     if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
@@ -67,7 +74,8 @@ void WriteCsv(std::ofstream& file, const std::vector<T>& data, const U& header =
 }
 
 template <typename T, typename U, std::ranges::range V = DefaultHeaderType>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data,
+              const V& header = {}) {
     if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
@@ -78,8 +86,10 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, con
     }
 }
 
-template <typename T, std::ranges::range U, std::ranges::range V = DefaultHeaderType>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
+template <typename T, std::ranges::range U,
+          std::ranges::range V = DefaultHeaderType>
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data,
+              const V& header = {}) {
     if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
@@ -90,8 +100,10 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, con
     }
 }
 
-template <std::ranges::range T, std::ranges::range U, std::ranges::range V = DefaultHeaderType>
-void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, const V& header = {}) {
+template <std::ranges::range T, std::ranges::range U,
+          std::ranges::range V = DefaultHeaderType>
+void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data,
+              const V& header = {}) {
     if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
@@ -103,7 +115,8 @@ void WriteCsv(std::ofstream& file, const std::vector<std::pair<T, U>>& data, con
 }
 
 template <std::ranges::range T, std::ranges::range U = DefaultHeaderType>
-void WriteCsv(std::ofstream& file, const T& data, int step, const U& header = {}) {
+void WriteCsv(std::ofstream& file, const T& data, int step,
+              const U& header = {}) {
     if (!std::ranges::empty(header)) {
         WriteCsvLine(file, header);
     }
@@ -130,7 +143,8 @@ void WriteCsv(std::ofstream& file, const T& data, int step, const U& header = {}
 }
 
 template <typename T>
-std::vector<std::vector<T>> ReadCsv(std::ifstream& file, bool hasHeader = false) {
+std::vector<std::vector<T>> ReadCsv(std::ifstream& file,
+                                    bool hasHeader = false) {
     std::vector<std::vector<T>> data;
     std::string line;
     if (hasHeader) {
@@ -151,7 +165,8 @@ std::vector<std::vector<T>> ReadCsv(std::ifstream& file, bool hasHeader = false)
     return data;
 }
 
-inline void SetSignificantDigits(std::ofstream& file, int significantDigits = 17) {
+inline void SetSignificantDigits(std::ofstream& file,
+                                 int significantDigits = 17) {
     file << std::setprecision(significantDigits);
 }
 

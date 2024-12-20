@@ -13,13 +13,20 @@ namespace Eacpp {
 class ZDTBase : public IProblem<double>, public IBenchmark {
    public:
     ZDTBase() {}
-    ZDTBase(int decisionVariablesNum) : decisionVariablesNum(decisionVariablesNum) {}
+    ZDTBase(int decisionVariablesNum)
+        : decisionVariablesNum(decisionVariablesNum) {}
     ZDTBase(int decisionVariablesNum, double gOfParetoFront)
-        : decisionVariablesNum(decisionVariablesNum), gOfParetoFront(gOfParetoFront) {}
-    ZDTBase(int decisionVariablesNum, const std::vector<std::pair<double, double>>& variableBounds)
-        : decisionVariablesNum(decisionVariablesNum), variableBounds(variableBounds) {}
-    ZDTBase(int decisionVariablesNum, double gOfParetoFront, const std::vector<std::pair<double, double>>& variableBounds)
-        : decisionVariablesNum(decisionVariablesNum), gOfParetoFront(gOfParetoFront), variableBounds(variableBounds) {}
+        : decisionVariablesNum(decisionVariablesNum),
+          gOfParetoFront(gOfParetoFront) {}
+    ZDTBase(int decisionVariablesNum,
+            const std::vector<std::pair<double, double>>& variableBounds)
+        : decisionVariablesNum(decisionVariablesNum),
+          variableBounds(variableBounds) {}
+    ZDTBase(int decisionVariablesNum, double gOfParetoFront,
+            const std::vector<std::pair<double, double>>& variableBounds)
+        : decisionVariablesNum(decisionVariablesNum),
+          gOfParetoFront(gOfParetoFront),
+          variableBounds(variableBounds) {}
     virtual ~ZDTBase() {}
 
     int DecisionVariablesNum() const override {
@@ -28,7 +35,8 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     int ObjectivesNum() const override {
         return objectivesNum;
     }
-    const std::vector<std::pair<double, double>>& VariableBounds() const override {
+    const std::vector<std::pair<double, double>>& VariableBounds()
+        const override {
         return variableBounds;
     }
     double GOfParetoFront() const {
@@ -36,9 +44,11 @@ class ZDTBase : public IProblem<double>, public IBenchmark {
     }
     void ComputeObjectiveSet(Individuald& individual) const override;
     bool IsFeasible(const Individuald& individual) const override;
-    std::vector<bool> EvaluateConstraints(const Individuald& individual) const override;
+    std::vector<bool> EvaluateConstraints(
+        const Individuald& individual) const override;
 
-    std::vector<Eigen::ArrayXd> GenerateParetoFront(int pointsNum) const override;
+    std::vector<Eigen::ArrayXd> GenerateParetoFront(
+        int pointsNum) const override;
 
    protected:
     virtual double F1(double x1) const = 0;

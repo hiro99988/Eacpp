@@ -54,14 +54,20 @@ TEST(UniformRandomSamplingTest, Sample) {
     EXPECT_EQ(actual.size(), sampleNum);
     EXPECT_TRUE(AreEqual(actual[0].solution, sample));
 
-    std::vector<std::pair<double, double>> variableBounds = {{0.0, 1.0}, {1.0, 2.0}};
+    std::vector<std::pair<double, double>> variableBounds = {{0.0, 1.0},
+                                                             {1.0, 2.0}};
     sampling = RealRandomSampling(variableBounds, rng);
     sampleNum = 2;
     variableNum = 3;
     sample = Eigen::ArrayXd(3);
-    sample << variableBounds[0].first, variableBounds[1].first, variableBounds[1].first;
-    EXPECT_CALL(*rng, Uniform(variableBounds[0].first, variableBounds[0].second)).Times(sampleNum).WillRepeatedly(Return(0.0));
-    EXPECT_CALL(*rng, Uniform(variableBounds[1].first, variableBounds[1].second))
+    sample << variableBounds[0].first, variableBounds[1].first,
+        variableBounds[1].first;
+    EXPECT_CALL(*rng,
+                Uniform(variableBounds[0].first, variableBounds[0].second))
+        .Times(sampleNum)
+        .WillRepeatedly(Return(0.0));
+    EXPECT_CALL(*rng,
+                Uniform(variableBounds[1].first, variableBounds[1].second))
         .Times((variableNum - 1) * sampleNum)
         .WillRepeatedly(Return(1.0));
 

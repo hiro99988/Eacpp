@@ -16,7 +16,8 @@ class DecompositionBase : public IDecomposition {
     }
 
     void InitializeIdealPoint(int objectivesNum) override {
-        _idealPoint = Eigen::ArrayXd::Constant(objectivesNum, std::numeric_limits<double>::max());
+        _idealPoint = Eigen::ArrayXd::Constant(
+            objectivesNum, std::numeric_limits<double>::max());
     }
 
     void UpdateIdealPoint(const Eigen::ArrayXd& objectiveSet) override {

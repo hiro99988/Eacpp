@@ -11,7 +11,8 @@ namespace Eacpp {
 template <typename T>
 class SamplingRepair : public IRepair<T> {
    public:
-    SamplingRepair(std::shared_ptr<ISampling<T>> sampling) : sampling(sampling) {}
+    SamplingRepair(std::shared_ptr<ISampling<T>> sampling)
+        : sampling(sampling) {}
 
     void Repair(Individual<T>& individual) override {
         individual = sampling->Sample(1, individual.solution.size())[0];

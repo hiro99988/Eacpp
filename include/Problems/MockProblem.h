@@ -19,7 +19,8 @@ class MockProblem : public IProblem<T> {
     MOCK_CONST_METHOD0_T(VariableBounds, const std::vector<std::pair<T, T>>());
     MOCK_CONST_METHOD1_T(ComputeObjectiveSet, void(Individual<T>&));
     MOCK_CONST_METHOD1_T(IsFeasible, bool(const Individual<T>&));
-    MOCK_CONST_METHOD1_T(EvaluateConstraints, std::vector<bool>(const Individual<T>&));
+    MOCK_CONST_METHOD1_T(EvaluateConstraints,
+                         std::vector<bool>(const Individual<T>&));
 };
 
 }  // namespace Eacpp

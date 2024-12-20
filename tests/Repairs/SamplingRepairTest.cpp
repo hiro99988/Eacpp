@@ -11,7 +11,8 @@ TEST(SamplingRepairTest, Repair) {
     Individuali Individual(Eigen::ArrayXi::Zero(3));
 
     auto mockSampling = std::make_shared<MockSampling<int>>();
-    EXPECT_CALL(*mockSampling, Sample(1, 3)).WillOnce(testing::Return(std::vector<Individuali>{expected}));
+    EXPECT_CALL(*mockSampling, Sample(1, 3))
+        .WillOnce(testing::Return(std::vector<Individuali>{expected}));
 
     SamplingRepair<int> repair(mockSampling);
 

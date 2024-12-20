@@ -22,11 +22,13 @@ void PolynomialMutation::Mutate(Individuald& individual) const {
             yu = variableBounds.back().second;
         }
 
-        individual.solution(i) = PerformMutation(individual.solution(i), yl, yu);
+        individual.solution(i) =
+            PerformMutation(individual.solution(i), yl, yu);
     }
 }
 
-double PolynomialMutation::PerformMutation(double y, double lower, double upper) const {
+double PolynomialMutation::PerformMutation(double y, double lower,
+                                           double upper) const {
     double delta1 = (y - lower) / (upper - lower);
     double delta2 = (upper - y) / (upper - lower);
     double mut_pow = 1.0 / (distributionIndex + 1.0);
@@ -35,11 +37,13 @@ double PolynomialMutation::PerformMutation(double y, double lower, double upper)
     double deltaq;
     if (rand <= 0.5) {
         double xy = 1.0 - delta1;
-        double val = 2.0 * rand + (1.0 - 2.0 * rand) * std::pow(xy, distributionIndex + 1.0);
+        double val = 2.0 * rand +
+                     (1.0 - 2.0 * rand) * std::pow(xy, distributionIndex + 1.0);
         deltaq = std::pow(val, mut_pow) - 1.0;
     } else {
         double xy = 1.0 - delta2;
-        double val = 2.0 * (1.0 - rand) + 2.0 * (rand - 0.5) * std::pow(xy, distributionIndex + 1.0);
+        double val = 2.0 * (1.0 - rand) +
+                     2.0 * (rand - 0.5) * std::pow(xy, distributionIndex + 1.0);
         deltaq = 1.0 - std::pow(val, mut_pow);
     }
 

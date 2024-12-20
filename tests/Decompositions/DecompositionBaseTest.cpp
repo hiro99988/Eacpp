@@ -11,7 +11,9 @@ class DecompositionBaseTest : public ::testing::Test {
     class DecompositionBaseTmp : public DecompositionBase {
        public:
         DecompositionBaseTmp() {}
-        double ComputeObjective(const Eigen::ArrayXd& weight, const Eigen::ArrayXd& objectiveSet) const override {
+        double ComputeObjective(
+            const Eigen::ArrayXd& weight,
+            const Eigen::ArrayXd& objectiveSet) const override {
             return 0.0;
         }
     };
@@ -28,7 +30,8 @@ TEST_F(DecompositionBaseTest, IdealPoint) {
 TEST_F(DecompositionBaseTest, InitializeIdealPoint) {
     int objectivesNum = 2;
     decompositionBase.InitializeIdealPoint(objectivesNum);
-    Eigen::ArrayXd expected = Eigen::ArrayXd::Constant(objectivesNum, std::numeric_limits<double>::max());
+    Eigen::ArrayXd expected = Eigen::ArrayXd::Constant(
+        objectivesNum, std::numeric_limits<double>::max());
     ASSERT_TRUE((decompositionBase.IdealPoint() == expected).all());
 }
 

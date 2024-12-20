@@ -17,16 +17,22 @@ class BinomialCrossover : public CrossoverBase<double> {
     double scalingFactor;
 
     explicit BinomialCrossover(double crossoverRate)
-        : CrossoverBase(ParentNum, crossoverRate), scalingFactor(DefaultScalingFactor) {}
+        : CrossoverBase(ParentNum, crossoverRate),
+          scalingFactor(DefaultScalingFactor) {}
     BinomialCrossover(double crossoverRate, double scalingFactor)
-        : CrossoverBase(ParentNum, crossoverRate), scalingFactor(scalingFactor) {}
+        : CrossoverBase(ParentNum, crossoverRate),
+          scalingFactor(scalingFactor) {}
     BinomialCrossover(double crossoverRate, std::shared_ptr<IRng> rng)
-        : CrossoverBase(ParentNum, crossoverRate, rng), scalingFactor(DefaultScalingFactor) {}
-    BinomialCrossover(double crossoverRate, double scalingFactor, std::shared_ptr<IRng> rng)
-        : CrossoverBase(ParentNum, crossoverRate, rng), scalingFactor(scalingFactor) {}
+        : CrossoverBase(ParentNum, crossoverRate, rng),
+          scalingFactor(DefaultScalingFactor) {}
+    BinomialCrossover(double crossoverRate, double scalingFactor,
+                      std::shared_ptr<IRng> rng)
+        : CrossoverBase(ParentNum, crossoverRate, rng),
+          scalingFactor(scalingFactor) {}
 
    private:
-    Individuald performCrossover(const std::vector<Individuald>& parents) const override;
+    Individuald performCrossover(
+        const std::vector<Individuald>& parents) const override;
 };
 
 }  // namespace Eacpp

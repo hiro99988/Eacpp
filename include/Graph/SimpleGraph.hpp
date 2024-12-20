@@ -12,7 +12,8 @@ class SimpleGraph {
 
    public:
     SimpleGraph() : _nodesNum(0), _edges(), _adjacencyList() {}
-    SimpleGraph(Node nodesNum) : _nodesNum(nodesNum), _edges(), _adjacencyList(nodesNum) {}
+    SimpleGraph(Node nodesNum)
+        : _nodesNum(nodesNum), _edges(), _adjacencyList(nodesNum) {}
 
     static SimpleGraph FromEdges(Node nodesNum, const std::set<Edge>& edges);
     static SimpleGraph EmptyGraph(Node nodesNum);
@@ -22,11 +23,14 @@ class SimpleGraph {
     bool operator!=(const SimpleGraph& other) const;
 
     /// @brief Returns a random degree-regular graph on nodesNum.
-    /// @param nodesNum The number of nodes. The value of (nodesNum * degree) must be even.
+    /// @param nodesNum The number of nodes. The value of (nodesNum * degree)
+    /// must be even.
     /// @param degree The degree of each node.
     /// @return a random degree-regular graph on nodesNum.
-    /// @throw std::invalid_argument if the value of (nodesNum * degree) is odd or degree is not in the range [0, nodesNum).
-    /// @details A regular graph is a graph where each node has the same number of neighbors.
+    /// @throw std::invalid_argument if the value of (nodesNum * degree) is odd
+    /// or degree is not in the range [0, nodesNum).
+    /// @details A regular graph is a graph where each node has the same number
+    /// of neighbors.
     static SimpleGraph RandomRegularGraph(Node nodesNum, Node degree);
 
     Node NodesNum() const;
@@ -44,10 +48,12 @@ class SimpleGraph {
     Node MaxDegree() const;
     void Resize(Node nodesNum);
 
-    /// @brief Calculate the length of the shortest path from the specified start node to the end node.
+    /// @brief Calculate the length of the shortest path from the specified
+    /// start node to the end node.
     /// @param start The index of the start node.
     /// @param end The index of the end node.
-    /// @return The length of the path from the start node to the end node. If there is no path, -1 is returned.
+    /// @return The length of the path from the start node to the end node. If
+    /// there is no path, -1 is returned.
     Node ShortestPathLength(Node start, Node end) const;
 
     double AverageShortestPathLength() const;

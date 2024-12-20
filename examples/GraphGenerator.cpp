@@ -22,12 +22,16 @@ int main() {
     double initialTemperature = json["initialTemperature"];
     double minTemperature = json["minTemperature"];
     double coolingRate = json["coolingRate"];
-    double weightOfAsplNeighborsInObjective = json["weightOfAsplNeighborsInObjective"];
-    double weightOfAsplExtremesInObjective = json["weightOfAsplExtremesInObjective"];
+    double weightOfAsplNeighborsInObjective =
+        json["weightOfAsplNeighborsInObjective"];
+    double weightOfAsplExtremesInObjective =
+        json["weightOfAsplExtremesInObjective"];
     bool isOutput = json["isOutput"];
 
-    NetworkTopologySearch search(objectivesNum, neighborhoodSize, divisionsNumOfWeightVector, nodesNum, degree,
-                                 weightOfAsplNeighborsInObjective, weightOfAsplExtremesInObjective, isOutput);
+    NetworkTopologySearch search(objectivesNum, neighborhoodSize,
+                                 divisionsNumOfWeightVector, nodesNum, degree,
+                                 weightOfAsplNeighborsInObjective,
+                                 weightOfAsplExtremesInObjective, isOutput);
 
     search.Run(repeats, initialTemperature, minTemperature, coolingRate);
 

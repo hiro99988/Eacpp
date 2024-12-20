@@ -16,7 +16,11 @@ namespace Eacpp::Test {
 TEST(OnePointCrossoverTest, PerformCrossover) {
     std::shared_ptr<MockRng> mockRng = std::make_shared<MockRng>();
     EXPECT_CALL(*mockRng, Random()).WillRepeatedly(testing::Return(0.1));
-    EXPECT_CALL(*mockRng, Integer(_, _)).Times(3).WillOnce(Return(1)).WillOnce(Return(3)).WillOnce(Return(4));
+    EXPECT_CALL(*mockRng, Integer(_, _))
+        .Times(3)
+        .WillOnce(Return(1))
+        .WillOnce(Return(3))
+        .WillOnce(Return(4));
 
     OnePointCrossover<int> onePointCrossover(1.0, mockRng);
 

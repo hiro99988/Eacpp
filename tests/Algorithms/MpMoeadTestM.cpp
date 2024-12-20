@@ -35,19 +35,23 @@ class MpMoeadTestM : public ::testing::Test {
         return moead.externalIndexes;
     }
     template <typename T>
-    std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(MpMoead<T>& moead) {
+    std::unordered_map<int, typename MpMoead<T>::Individual> GetIndividuals(
+        MpMoead<T>& moead) {
         return moead.individuals;
     }
     template <typename T>
-    std::unordered_map<int, Eigen::ArrayXd> GetWeightVectors(MpMoead<T>& moead) {
+    std::unordered_map<int, Eigen::ArrayXd> GetWeightVectors(
+        MpMoead<T>& moead) {
         return moead.weightVectors;
     }
     template <typename T>
-    std::pair<std::vector<int>, std::vector<double>> ScatterExternalNeighborhood(MpMoead<T>& moead,
-                                                                                 std::vector<int>& neighborhoodIndexes,
-                                                                                 std::vector<int>& neighborhoodSizes,
-                                                                                 std::vector<double>& weightVectors) {
-        return moead.ScatterExternalNeighborhood(neighborhoodIndexes, neighborhoodSizes, weightVectors);
+    std::pair<std::vector<int>, std::vector<double>>
+    ScatterExternalNeighborhood(MpMoead<T>& moead,
+                                std::vector<int>& neighborhoodIndexes,
+                                std::vector<int>& neighborhoodSizes,
+                                std::vector<double>& weightVectors) {
+        return moead.ScatterExternalNeighborhood(
+            neighborhoodIndexes, neighborhoodSizes, weightVectors);
     }
 };
 
@@ -59,7 +63,8 @@ TEST_F(MpMoeadTestM, InitializeIsland) {
     int totalPopulationSize = 9;
     int H = 8;
     int neighborhoodSize = 3;
-    MpMoead<int> moead = MpMoead<int>(totalPopulationSize, 0, 0, 2, neighborhoodSize, 0, H);
+    MpMoead<int> moead =
+        MpMoead<int>(totalPopulationSize, 0, 0, 2, neighborhoodSize, 0, H);
     moead.InitializeMpi();
     moead.InitializeIsland();
 
@@ -71,26 +76,31 @@ TEST_F(MpMoeadTestM, InitializeIsland) {
         expectedSolutionIndexes = {0, 1, 2};
         expectedExternalSolutionIndexes = {3};
         EXPECT_TRUE(GetSolutionIndexes(moead) == expectedSolutionIndexes);
-        EXPECT_TRUE(GetExternalSolutionIndexes(moead) == expectedExternalSolutionIndexes);
+        EXPECT_TRUE(GetExternalSolutionIndexes(moead) ==
+                    expectedExternalSolutionIndexes);
     } else if (GetRank(moead) == 1) {
         expectedSolutionIndexes = {3, 4};
         expectedExternalSolutionIndexes = {2, 5};
         EXPECT_TRUE(GetSolutionIndexes(moead) == expectedSolutionIndexes);
-        EXPECT_TRUE(GetExternalSolutionIndexes(moead) == expectedExternalSolutionIndexes);
+        EXPECT_TRUE(GetExternalSolutionIndexes(moead) ==
+                    expectedExternalSolutionIndexes);
     } else if (GetRank(moead) == 2) {
         expectedSolutionIndexes = {5, 6};
         expectedExternalSolutionIndexes = {4, 7};
         EXPECT_TRUE(GetSolutionIndexes(moead) == expectedSolutionIndexes);
-        EXPECT_TRUE(GetExternalSolutionIndexes(moead) == expectedExternalSolutionIndexes);
+        EXPECT_TRUE(GetExternalSolutionIndexes(moead) ==
+                    expectedExternalSolutionIndexes);
     } else if (GetRank(moead) == 3) {
         expectedSolutionIndexes = {7, 8};
         expectedExternalSolutionIndexes = {6};
         EXPECT_TRUE(GetSolutionIndexes(moead) == expectedSolutionIndexes);
-        EXPECT_TRUE(GetExternalSolutionIndexes(moead) == expectedExternalSolutionIndexes);
+        EXPECT_TRUE(GetExternalSolutionIndexes(moead) ==
+                    expectedExternalSolutionIndexes);
     }
 
     auto individuals = GetIndividuals(moead);
-    EXPECT_EQ(individuals.size(), expectedSolutionIndexes.size() + expectedExternalSolutionIndexes.size());
+    EXPECT_EQ(individuals.size(), expectedSolutionIndexes.size() +
+                                      expectedExternalSolutionIndexes.size());
     for (auto&& i : expectedSolutionIndexes) {
         expectedNeighborhood.clear();
         expectedNeighborhood.push_back(i);
@@ -112,7 +122,8 @@ TEST_F(MpMoeadTestM, InitializeIsland) {
     }
 
     auto weightVectors = GetWeightVectors(moead);
-    EXPECT_EQ(weightVectors.size(), expectedSolutionIndexes.size() + expectedExternalSolutionIndexes.size());
+    EXPECT_EQ(weightVectors.size(), expectedSolutionIndexes.size() +
+                                        expectedExternalSolutionIndexes.size());
     int start = GetRank(moead) * 2;
     for (int i = start; i < start + weightVectors.size(); i++) {
         Eigen::ArrayXd wv(2);
@@ -135,7 +146,8 @@ TEST_F(MpMoeadTestM, ScatterExternalNeighborhood) {
     std::vector<int> receivedNeighborhoodIndexes;
     std::vector<double> receivedWeightVectors;
     std::tie(receivedNeighborhoodIndexes, receivedWeightVectors) =
-        ScatterExternalNeighborhood(moead, neighborhoodIndexes, neighborhoodSizes, weightVectors);
+        ScatterExternalNeighborhood(moead, neighborhoodIndexes,
+                                    neighborhoodSizes, weightVectors);
 
     std::vector<int> expectedNeighborhoodIndexes;
     std::vector<double> expectedWeightVectors;
