@@ -125,9 +125,9 @@ class ParallelMoeadBenchmark {
         auto repair = std::make_shared<RealRandomRepair>(problem);
         auto selection = std::make_shared<RandomSelection>();
 
-        auto moead = MpMoead<double>(1000, 21, 299, 1, crossover, decomposition,
-                                     mutation, problem, repair, sampling,
-                                     selection, true);
+        auto moead = MpMoead<double>(10000, 21, 299, 1, crossover,
+                                     decomposition, mutation, problem, repair,
+                                     sampling, selection, true);
 
         moead.Run();
 
