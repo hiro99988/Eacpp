@@ -328,9 +328,9 @@ class ParallelMoeadBenchmark {
                     moead = std::make_unique<OneNtMoead<double>>(
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
-                        "data/graph/2_21_299_50_3_2_100/adjacencyList.csv",
-                        crossover, decomposition, mutation, problem, repair,
-                        sampling, selection, idealPointMigration);
+                        adjacencyListFileName, crossover, decomposition,
+                        mutation, problem, repair, sampling, selection,
+                        idealPointMigration);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }
