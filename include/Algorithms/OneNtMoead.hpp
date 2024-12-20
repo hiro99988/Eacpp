@@ -38,14 +38,14 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
     constexpr static int messageTag = 0;
 
    private:
-    int totalPopulationSize;
     int generationNum;
-    int currentGeneration;
+    int neighborhoodSize;
+    int divisionsNumOfWeightVector;
+    int migrationInterval;
     int decisionVariablesNum;
     int objectivesNum;
-    int neighborhoodSize;
-    int migrationInterval;
-    int divisionsNumOfWeightVector;
+    int singleMessageSize;
+    bool idealPointMigration;
     std::string adjacencyListFilePath;
     std::shared_ptr<ICrossover<DecisionVariableType>> crossover;
     std::shared_ptr<IDecomposition> decomposition;
@@ -56,6 +56,8 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
     std::shared_ptr<ISelection> selection;
     int rank;
     int parallelSize;
+    int totalPopulationSize;
+    int currentGeneration;
     MoeadInitializer initializer;
     std::vector<int> internalIndexes;
     std::vector<int> externalIndexes;
@@ -63,9 +65,8 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
     std::set<int> updatedExternalIndexes;
     std::unordered_map<int, Individual<DecisionVariableType>> individuals;
     std::unordered_map<int, std::vector<int>> rankAndExternalIndexesToSend;
-    std::set<int> neighboringRanks;
-    int singleMessageSize;
-    bool idealPointMigration;
+    std::set<int> neighboringTopology;
+    std::vector<int> idealTopology;
     bool isIdealPointUpdated;
 
    public:
@@ -264,7 +265,7 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
         updatedExternalIndexes.clear();
         individuals.clear();
         rankAndExternalIndexesToSend.clear();
-        neighboringRanks.clear();
+        neighboringTopology.clear();
     }
 
     void InitializeTopology() {
@@ -276,11 +277,26 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
                     "Not enough lines in adjacencyListFile");
             }
         }
+
         std::stringstream ss(line);
-        std::string item;
-        while (std::getline(ss, item, ',')) {
-            int rank = std::stoi(item);
-            neighboringRanks.insert(rank);
+        std::string flagStr;
+        while (std::getline(ss, flagStr, ',')) {
+            int flag = std::stoi(flagStr);
+            std::string numberStr;
+            if (std::getline(ss, numberStr, ',')) {
+                int number = std::stoi(numberStr);
+                if (flag == 0) {
+                    idealTopology.push_back(number);
+                } else if (flag == 1) {
+                    neighboringTopology.insert(number);
+                } else {
+                    throw std::runtime_error(
+                        "Invalid flag value in adjacency list line.");
+                }
+            } else {
+                throw std::runtime_error(
+                    "Invalid format in adjacency list line.");
+            }
         }
     }
 
@@ -372,7 +388,7 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
         for (auto&& i : externalIndexes) {
             int rank = GetRankFromIndex(totalPopulationSize, i, parallelSize);
             ranksToReceive.insert(rank);
-            if (neighboringRanks.find(rank) == neighboringRanks.end()) {
+            if (neighboringTopology.find(rank) == neighboringTopology.end()) {
                 continue;
             }
 
@@ -601,15 +617,19 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
             }
         }
 
-        for (auto&& rank : neighboringRanks) {
-            if ((this->rank == 0 && rank <= 3) ||
-                (this->rank == 49 && rank >= 46) ||
-                (this->rank - 2 <= rank && rank <= this->rank + 2)) {
-                dataToSend[rank].insert(dataToSend[rank].end(),
-                                        updatedInternalIndividuals.begin(),
-                                        updatedInternalIndividuals.end());
-            }
+        for (auto&& rank : neighboringTopology) {
+            dataToSend[rank].insert(dataToSend[rank].end(),
+                                    updatedInternalIndividuals.begin(),
+                                    updatedInternalIndividuals.end());
             if (idealPointMigration && isIdealPointUpdated) {
+                dataToSend[rank].insert(dataToSend[rank].end(),
+                                        decomposition->IdealPoint().begin(),
+                                        decomposition->IdealPoint().end());
+            }
+        }
+
+        if (idealPointMigration && isIdealPointUpdated) {
+            for (auto&& rank : idealTopology) {
                 dataToSend[rank].insert(dataToSend[rank].end(),
                                         decomposition->IdealPoint().begin(),
                                         decomposition->IdealPoint().end());
@@ -641,7 +661,7 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
 
     std::vector<std::vector<double>> ReceiveMessages() {
         std::vector<std::vector<double>> receiveMessages;
-        for (auto&& source : neighboringRanks) {
+        for (auto&& source : neighboringTopology) {
             while (true) {
                 MPI_Status status;
                 int canReceive;
