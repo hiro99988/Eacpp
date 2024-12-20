@@ -113,6 +113,28 @@ class ParallelMoeadBenchmark {
         }
     }
 
+    void Warmup() {
+        auto problem = std::make_shared<ZDT1>();
+        auto crossover = std::make_shared<SimulatedBinaryCrossover>(
+            0.9, problem->VariableBounds());
+        auto decomposition = std::make_shared<Tchebycheff>();
+        auto mutation = std::make_shared<PolynomialMutation>(
+            1.0 / problem->DecisionVariablesNum(), problem->VariableBounds());
+        auto sampling =
+            std::make_shared<RealRandomSampling>(problem->VariableBounds());
+        auto repair = std::make_shared<RealRandomRepair>(problem);
+        auto selection = std::make_shared<RandomSelection>();
+
+        auto moead = MpMoead<double>(1000, 21, 299, 1, crossover, decomposition,
+                                     mutation, problem, repair, sampling,
+                                     selection, true);
+
+        moead.Run();
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        ReleaseIsend(parallelSize, MPI_DOUBLE);
+    }
+
     void GatherObjectivesListHistory(
         std::vector<std::vector<std::vector<double>>>& outObjectivesListHistory,
         std::vector<std::pair<int, std::vector<double>>>& finalObjectivesList) {
@@ -226,6 +248,10 @@ class ParallelMoeadBenchmark {
                                               "parameter.json");
             parameterOutputFile << parameterString;
         }
+
+        RANK0(std::cout << "Start warmup" << std::endl)
+        Warmup();
+        RANK0(std::cout << "End warmup" << std::endl)
 
         MpiStopwatch stopwatch;
 
