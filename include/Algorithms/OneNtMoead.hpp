@@ -151,7 +151,11 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
             isIdealPointUpdated = false;
 
             for (auto&& message : messages) {
-                UpdateWithMessage(message);
+                if (message.size() == objectivesNum) {
+                    UpdateIdealPointWithMessage(message);
+                } else {
+                    UpdateWithMessage(message);
+                }
             }
         }
     }
@@ -662,6 +666,25 @@ class OneNtMoead : public IMoead<DecisionVariableType> {
     std::vector<std::vector<double>> ReceiveMessages() {
         std::vector<std::vector<double>> receiveMessages;
         for (auto&& source : neighboringTopology) {
+            while (true) {
+                MPI_Status status;
+                int canReceive;
+                MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive,
+                           &status);
+                if (!canReceive) {
+                    break;
+                }
+
+                int receiveDataSize;
+                MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
+                std::vector<double> receive(receiveDataSize);
+                MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source,
+                         messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                receiveMessages.push_back(std::move(receive));
+            }
+        }
+
+        for (auto&& source : idealTopology) {
             while (true) {
                 MPI_Status status;
                 int canReceive;
