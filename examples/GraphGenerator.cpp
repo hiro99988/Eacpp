@@ -13,27 +13,32 @@ int main() {
     std::ifstream file("data/inputs/graphParameter.json");
     nlohmann::json json = nlohmann::json::parse(file);
 
-    int objectivesNum = json["objectivesNum"];
-    int neighborhoodSize = json["neighborhoodSize"];
-    int divisionsNumOfWeightVector = json["divisionsNumOfWeightVector"];
     int nodesNum = json["nodesNum"];
     int degree = json["degree"];
     int repeats = json["repeats"];
     double initialTemperature = json["initialTemperature"];
     double minTemperature = json["minTemperature"];
     double coolingRate = json["coolingRate"];
-    double weightOfAsplNeighborsInObjective =
-        json["weightOfAsplNeighborsInObjective"];
-    double weightOfAsplExtremesInObjective =
-        json["weightOfAsplExtremesInObjective"];
     bool isOutput = json["isOutput"];
 
-    NetworkTopologySearch search(objectivesNum, neighborhoodSize,
-                                 divisionsNumOfWeightVector, nodesNum, degree,
-                                 weightOfAsplNeighborsInObjective,
-                                 weightOfAsplExtremesInObjective, isOutput);
+    // int objectivesNum = json["objectivesNum"];
+    // int neighborhoodSize = json["neighborhoodSize"];
+    // int divisionsNumOfWeightVector = json["divisionsNumOfWeightVector"];
+    // double weightOfAsplNeighborsInObjective =
+    //     json["weightOfAsplNeighborsInObjective"];
+    // double weightOfAsplExtremesInObjective =
+    //     json["weightOfAsplExtremesInObjective"];
 
-    search.Run(repeats, initialTemperature, minTemperature, coolingRate);
+    NetworkTopologySearch search(nodesNum, degree, repeats, initialTemperature,
+                                 minTemperature, coolingRate, isOutput);
+    search.Run();
+
+    // NetworkTopologySearch search(objectivesNum, neighborhoodSize,
+    //                              divisionsNumOfWeightVector, nodesNum,
+    //                              degree, weightOfAsplNeighborsInObjective,
+    //                              weightOfAsplExtremesInObjective, isOutput);
+
+    // search.Run(repeats, initialTemperature, minTemperature, coolingRate);
 
     return 0;
 }
