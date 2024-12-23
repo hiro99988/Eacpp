@@ -174,7 +174,7 @@ void NetworkTopologySearch::Write(
     oss << _objectivesNum << "_" << _neighborhoodSize << "_"
         << _divisionsNumOfWeightVector << "_" << _nodesNum << "_" << _degree
         << "_" << weightOfAsplNeighborsInObjectiveStr << "_"
-        << weightOfAsplExtremesInObjectiveStr;
+        << weightOfAsplExtremesInObjectiveStr << "_aspln_aspl";
     std::string parameterPath = oss.str();
     std::filesystem::path directoryPath = "data/graph/" + parameterPath;
 
@@ -200,6 +200,8 @@ void NetworkTopologySearch::Write(
 
     // Write adjacencyList
     auto adjacencyList = _bestSoFarGraph.AdjacencyList();
+    // std::ofstream adjacencyListFile(directoryPath / "adjacencyList.csv");
+    // WriteCsv(adjacencyListFile, adjacencyList);
     std::vector<std::vector<int>> binaryAdjacencyList;
     binaryAdjacencyList.reserve(adjacencyList.size());
 
@@ -292,23 +294,28 @@ NetworkTopologySearch::Evaluation NetworkTopologySearch::Evaluate(
             ++countSplNeighbors;
         }
 
-        for (auto&& j : _extremeNodes) {
-            if (i == j) {
-                continue;
-            }
+        // for (auto&& j : _extremeNodes) {
+        //     if (i == j) {
+        //         continue;
+        //     }
 
-            auto spl = graph.ShortestPathLength(i, j);
-            sumSplExtremes += spl;
-            ++countSplExtremes;
-        }
+        //     auto spl = graph.ShortestPathLength(i, j);
+        //     sumSplExtremes += spl;
+        //     ++countSplExtremes;
+        // }
     }
 
     double asplNeighbors = sumSplNeighbors / countSplNeighbors;
-    double asplExtremes = sumSplExtremes / countSplExtremes;
+    // double asplExtremes = sumSplExtremes / countSplExtremes;
+    // double objective = asplNeighbors * _weightOfAsplNeighborsInObjective +
+    //                    asplExtremes * _weightOfAsplExtremesInObjective;
+    double aspl = graph.AverageShortestPathLength();
     double objective = asplNeighbors * _weightOfAsplNeighborsInObjective +
-                       asplExtremes * _weightOfAsplExtremesInObjective;
+                       aspl * _weightOfAsplExtremesInObjective;
 
-    return Evaluation(objective, asplNeighbors, asplExtremes);
+    // return Evaluation(objective, asplNeighbors,
+    //   asplExtremes);
+    return Evaluation(objective, asplNeighbors, aspl);
 }
 
 void NetworkTopologySearch::EvaluateSqls(
