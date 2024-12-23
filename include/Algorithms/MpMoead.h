@@ -191,7 +191,9 @@ void MpMoead<DecisionVariableType>::Initialize() {
 
 template <typename DecisionVariableType>
 void MpMoead<DecisionVariableType>::Update() {
-    MakeLocalCopyOfExternalIndividuals();
+    if (currentGeneration % migrationInterval == 0) {
+        MakeLocalCopyOfExternalIndividuals();
+    }
 
     for (auto&& i : internalIndexes) {
         Individual<DecisionVariableType> newIndividual =
