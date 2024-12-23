@@ -38,6 +38,41 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     constexpr static int maxBufferSize = 100;
     constexpr static int messageTag = 0;
 
+   private:
+    int generationNum;
+    int neighborhoodSize;
+    int divisionsNumOfWeightVector;
+    int migrationInterval;
+    int decisionVariablesNum;
+    int objectivesNum;
+    int singleMessageSize;
+    std::shared_ptr<ICrossover<DecisionVariableType>> crossover;
+    std::shared_ptr<IDecomposition> decomposition;
+    std::shared_ptr<IMutation<DecisionVariableType>> mutation;
+    std::shared_ptr<IProblem<DecisionVariableType>> problem;
+    std::shared_ptr<IRepair<DecisionVariableType>> repair;
+    std::shared_ptr<ISampling<DecisionVariableType>> sampling;
+    std::shared_ptr<ISelection> selection;
+    int rank;
+    int parallelSize;
+    int totalPopulationSize;
+    int currentGeneration;
+    MoeadInitializer initializer;
+    std::vector<int> internalIndexes;
+    std::vector<int> externalIndexes;
+    std::set<int> updatedSolutionIndexes;
+    std::unordered_map<int, Individual<DecisionVariableType>> individuals;
+    std::unordered_map<int, Individual<DecisionVariableType>>
+        clonedExternalIndividuals;
+    std::vector<int> ranksForExternalIndividuals;
+    std::set<int> neighboringRanks;
+    std::vector<int> ranksToSend;
+    bool isIdealPointUpdated;
+    std::string idealTopologyFilePath;
+    std::vector<int> idealTopologyToSend;
+    std::vector<int> idealTopologyToReceive;
+
+   public:
     MpMoeadIdealTopology(
         int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector,
         int migrationInterval, std::string idealTopologyFilePath,
@@ -47,8 +82,7 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
         const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
         const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
-        const std::shared_ptr<ISelection>& selection,
-        bool idealPointMigration = false)
+        const std::shared_ptr<ISelection>& selection)
         : generationNum(generationNum),
           neighborhoodSize(neighborhoodSize),
           migrationInterval(migrationInterval),
@@ -66,7 +100,6 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         this->repair = repair;
         this->sampling = sampling;
         this->selection = selection;
-        this->idealPointMigration = idealPointMigration;
         decisionVariablesNum = problem->DecisionVariablesNum();
         objectivesNum = problem->ObjectivesNum();
         currentGeneration = 0;
@@ -90,40 +123,6 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     void InitializeIsland();
 
    private:
-    int totalPopulationSize;
-    int generationNum;
-    int currentGeneration;
-    int decisionVariablesNum;
-    int objectivesNum;
-    int neighborhoodSize;
-    int migrationInterval;
-    int divisionsNumOfWeightVector;
-    std::shared_ptr<ICrossover<DecisionVariableType>> crossover;
-    std::shared_ptr<IDecomposition> decomposition;
-    std::shared_ptr<IMutation<DecisionVariableType>> mutation;
-    std::shared_ptr<IProblem<DecisionVariableType>> problem;
-    std::shared_ptr<IRepair<DecisionVariableType>> repair;
-    std::shared_ptr<ISampling<DecisionVariableType>> sampling;
-    std::shared_ptr<ISelection> selection;
-    int rank;
-    int parallelSize;
-    MoeadInitializer initializer;
-    std::vector<int> internalIndexes;
-    std::vector<int> externalIndexes;
-    std::set<int> updatedSolutionIndexes;
-    std::unordered_map<int, Individual<DecisionVariableType>> individuals;
-    std::unordered_map<int, Individual<DecisionVariableType>>
-        clonedExternalIndividuals;
-    std::vector<int> ranksForExternalIndividuals;
-    std::set<int> neighboringRanks;
-    std::vector<int> ranksToSend;
-    int singleMessageSize;
-    bool idealPointMigration;
-    bool isIdealPointUpdated;
-
-    std::string idealTopologyFilePath;
-    std::vector<int> idealTopology;
-
     void Clear();
     std::pair<std::vector<int>, std::vector<int>> GenerateExternalNeighborhood(
         std::vector<int>& neighborhoodIndexes,
@@ -195,12 +194,15 @@ void MpMoeadIdealTopology<DecisionVariableType>::Initialize() {
         divisionsNumOfWeightVector, objectivesNum);
     decomposition->InitializeIdealPoint(objectivesNum);
     InitializeIsland();
+    InitializeIdealTopology();
     currentGeneration = 0;
 }
 
 template <typename DecisionVariableType>
 void MpMoeadIdealTopology<DecisionVariableType>::Update() {
-    MakeLocalCopyOfExternalIndividuals();
+    if (currentGeneration % migrationInterval == 0) {
+        MakeLocalCopyOfExternalIndividuals();
+    }
 
     for (auto&& i : internalIndexes) {
         Individual<DecisionVariableType> newIndividual =
@@ -346,8 +348,6 @@ void MpMoeadIdealTopology<DecisionVariableType>::InitializeIsland() {
     InitializeExternalPopulation(receivedExternalSolutions);
     InitializeIndividualAndWeightVector(weightVectors, neighborhoodIndexes,
                                         externalNeighboringWeightVectors);
-
-    InitializeIdealTopology();
 }
 
 template <typename DecisionVariableType>
@@ -423,8 +423,7 @@ template <typename DecisionVariableType>
 void MpMoeadIdealTopology<DecisionVariableType>::InitializeExternalPopulation(
     std::vector<std::vector<double>>& receivedIndividuals) {
     for (auto&& receive : receivedIndividuals) {
-        int limit = idealPointMigration ? receive.size() - objectivesNum
-                                        : receive.size();
+        int limit = receive.size() - objectivesNum;
         for (int i = 0; i < limit; i += singleMessageSize) {
             int index = receive[i];
             if (!IsExternal(index)) {
@@ -441,9 +440,7 @@ void MpMoeadIdealTopology<DecisionVariableType>::InitializeExternalPopulation(
             UpdateIdealPoint(clonedExternalIndividuals[index].objectives);
         }
 
-        if (idealPointMigration) {
-            UpdateIdealPointWithMessage(receive);
-        }
+        UpdateIdealPointWithMessage(receive);
     }
 }
 
@@ -489,10 +486,8 @@ template <typename DecisionVariableType>
 std::vector<std::vector<double>>
 MpMoeadIdealTopology<DecisionVariableType>::ScatterPopulation() {
     std::vector<double> individualsToSend;
-    individualsToSend.reserve(idealPointMigration
-                                  ? internalIndexes.size() * singleMessageSize +
-                                        objectivesNum
-                                  : internalIndexes.size() * singleMessageSize);
+    individualsToSend.reserve(internalIndexes.size() * singleMessageSize +
+                              objectivesNum);
     for (auto&& i : internalIndexes) {
         individualsToSend.push_back(i);
         individualsToSend.insert(individualsToSend.end(),
@@ -503,11 +498,9 @@ MpMoeadIdealTopology<DecisionVariableType>::ScatterPopulation() {
                                  individuals[i].objectives.end());
     }
 
-    if (idealPointMigration) {
-        individualsToSend.insert(individualsToSend.end(),
-                                 decomposition->IdealPoint().begin(),
-                                 decomposition->IdealPoint().end());
-    }
+    individualsToSend.insert(individualsToSend.end(),
+                             decomposition->IdealPoint().begin(),
+                             decomposition->IdealPoint().end());
 
     std::vector<MPI_Request> requests;
     requests.reserve(ranksToSend.size());
@@ -566,11 +559,10 @@ void MpMoeadIdealTopology<DecisionVariableType>::InitializeIdealTopology() {
     std::string item;
     while (std::getline(ss, item, ',')) {
         int rank = std::stoi(item);
-        if (neighboringRanks.find(rank) != neighboringRanks.end()) {
-            continue;
+        idealTopologyToSend.push_back(rank);
+        if (neighboringRanks.find(rank) == neighboringRanks.end()) {
+            idealTopologyToReceive.push_back(rank);
         }
-
-        idealTopology.push_back(rank);
     }
 }
 
@@ -700,15 +692,10 @@ MpMoeadIdealTopology<DecisionVariableType>::CreateMessages() {
         dataToSend[rank].insert(dataToSend[rank].end(),
                                 updatedInternalIndividuals.begin(),
                                 updatedInternalIndividuals.end());
-        if (idealPointMigration && isIdealPointUpdated) {
-            dataToSend[rank].insert(dataToSend[rank].end(),
-                                    decomposition->IdealPoint().begin(),
-                                    decomposition->IdealPoint().end());
-        }
     }
 
-    if (idealPointMigration && isIdealPointUpdated) {
-        for (auto&& rank : idealTopology) {
+    if (isIdealPointUpdated) {
+        for (auto&& rank : idealTopologyToSend) {
             dataToSend[rank].insert(dataToSend[rank].end(),
                                     decomposition->IdealPoint().begin(),
                                     decomposition->IdealPoint().end());
@@ -784,7 +771,7 @@ MpMoeadIdealTopology<DecisionVariableType>::ReceiveMessages() {
         }
     }
 
-    for (auto&& source : idealTopology) {
+    for (auto&& source : idealTopologyToReceive) {
         while (true) {
             MPI_Status status;
             int canReceive;
@@ -811,7 +798,6 @@ void MpMoeadIdealTopology<DecisionVariableType>::UpdateWithMessage(
     std::vector<double>& message) {
     int limit = message.size();
     bool containsIdealPoint =
-        idealPointMigration &&
         message.size() % singleMessageSize == objectivesNum;
     if (containsIdealPoint) {
         limit -= objectivesNum;
