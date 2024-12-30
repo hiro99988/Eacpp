@@ -41,6 +41,8 @@ void NetworkTopologySearch::Search() {
     double bestObjective = _bestSoFarObjective;
     auto bestNeighbor = _bestSoFarGraph;
     double temperature = _initialTemperature;
+    double lowerBoundOfAspl = LowerBoundOfAspl(_nodesNum, _degree);
+    double unitOfAspl = UnitOfAspl(_nodesNum);
 
     for (int i = 0; i < _repeats; i++) {
         auto neighbor = bestNeighbor;
@@ -76,15 +78,18 @@ void NetworkTopologySearch::Search() {
             break;
         }
 
-        auto objective = Evaluate(neighbor);
-        if (AcceptanceCriterion(objective, bestObjective, temperature)) {
+        double aspl = Evaluate(neighbor);
+        auto objective = aspl - lowerBoundOfAspl;
+        if (AcceptanceCriterion(objective, bestObjective, lowerBoundOfAspl,
+                                unitOfAspl, temperature)) {
             bestObjective = objective;
             bestNeighbor = neighbor;
             if (objective < _bestSoFarObjective) {
                 _bestSoFarObjective = objective;
                 _bestSoFarGraph = bestNeighbor;
             }
-            std::cout << i << " objective: " << objective << std::endl;
+            std::cout << i << " aspl: " << aspl << " objective: " << objective
+                      << std::endl;
         }
 
         UpdateTemperature(temperature, _minTemperature, _coolingRate);
@@ -164,9 +169,14 @@ double NetworkTopologySearch::Evaluate(const SimpleGraph& graph) const {
 
 bool NetworkTopologySearch::AcceptanceCriterion(double newObjective,
                                                 double oldObjective,
+                                                double lowerBoundOfAspl,
+                                                double unitOfAspl,
                                                 double temperature) const {
+    // double newGap = newObjective - lowerBoundOfAspl;
+    // double oldGap = oldObjective - lowerBoundOfAspl;
+    // double delta = newGap - oldGap;
     double delta = newObjective - oldObjective;
-    return delta < 0 || _rng->Random() < std::exp(-delta / temperature);
+    return delta <= 0 || _rng->Random() < std::exp(-delta / (temperature));
 }
 
 void NetworkTopologySearch::UpdateTemperature(double& temperature,
@@ -174,6 +184,34 @@ void NetworkTopologySearch::UpdateTemperature(double& temperature,
                                               double coolingRate) const {
     temperature *= coolingRate;
     temperature = std::max(temperature, minTemperature);
+}
+
+double NetworkTopologySearch::UnitOfAspl(int nodesNum) const {
+    return 2.0 / (nodesNum * (nodesNum - 1));
+}
+
+double NetworkTopologySearch::LowerBoundOfAspl(int nodesNum, int degree) const {
+    int diameter = -1;
+    double aspl = 0.0;
+    int n = 1;
+    int i = 1;
+    while (true) {
+        double tmp = n + degree * std::pow(degree - 1, i - 1);
+        if (tmp >= nodesNum) {
+            break;
+        }
+
+        n = tmp;
+        aspl += i * degree * std::pow(degree - 1, i - 1);
+        diameter = i;
+        i++;
+    }
+
+    diameter++;
+    aspl += diameter * (nodesNum - n);
+    aspl /= nodesNum - 1;
+
+    return aspl;
 }
 
 }  // namespace Eacpp

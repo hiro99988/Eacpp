@@ -70,9 +70,12 @@ class NetworkTopologySearch {
     SimpleGraph _bestSoFarGraph;
 
     bool AcceptanceCriterion(double newObjective, double oldObjective,
+                             double lowerBoundOfAspl, double unitOfAspl,
                              double temperature) const;
     void UpdateTemperature(double& temperature, double minTemperature,
                            double coolingRate) const;
+    double UnitOfAspl(int nodesNum) const;
+    double LowerBoundOfAspl(int nodesNum, int degree) const;
 };
 
 }  // namespace Eacpp
