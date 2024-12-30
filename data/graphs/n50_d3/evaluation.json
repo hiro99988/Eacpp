@@ -1,0 +1,9 @@
+{
+    "coolingRate": 0.995,
+    "degree": 3,
+    "initialTemperature": 1000.0,
+    "minTemperature": 0.001,
+    "nodesNum": 50,
+    "objective": 3.4179591836734695,
+    "repeats": 5000000
+}
