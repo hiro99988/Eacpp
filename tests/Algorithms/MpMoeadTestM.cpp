@@ -24,7 +24,7 @@ class MpMoeadTestM : public ::testing::Test {
 
     template <typename T>
     int GetRank(MpMoead<T>& moead) {
-        return moead.rank;
+        return moead._rank;
     }
     template <typename T>
     std::vector<int> GetSolutionIndexes(MpMoead<T>& moead) {

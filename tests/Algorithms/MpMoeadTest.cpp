@@ -98,8 +98,8 @@ class MpMoeadTest : public ::testing::Test {
     template <typename T>
     std::vector<int> GenerateSolutionIndexes(MpMoead<T>& moead, int rank,
                                              int parallelSize) {
-        moead.rank = rank;
-        moead.parallelSize = parallelSize;
+        moead._rank = rank;
+        moead._parallelSize = parallelSize;
         return moead.GenerateInternalIndexes();
     }
     template <typename T>

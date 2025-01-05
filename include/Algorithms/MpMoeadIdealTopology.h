@@ -39,38 +39,38 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     constexpr static int messageTag = 0;
 
    private:
-    int generationNum;
-    int neighborhoodSize;
-    int divisionsNumOfWeightVector;
-    int migrationInterval;
-    int decisionVariablesNum;
-    int objectivesNum;
-    int singleMessageSize;
-    std::shared_ptr<ICrossover<DecisionVariableType>> crossover;
-    std::shared_ptr<IDecomposition> decomposition;
-    std::shared_ptr<IMutation<DecisionVariableType>> mutation;
-    std::shared_ptr<IProblem<DecisionVariableType>> problem;
-    std::shared_ptr<IRepair<DecisionVariableType>> repair;
-    std::shared_ptr<ISampling<DecisionVariableType>> sampling;
-    std::shared_ptr<ISelection> selection;
-    int rank;
-    int parallelSize;
-    int totalPopulationSize;
-    int currentGeneration;
-    MoeadInitializer initializer;
-    std::vector<int> internalIndexes;
-    std::vector<int> externalIndexes;
-    std::set<int> updatedSolutionIndexes;
-    std::unordered_map<int, Individual<DecisionVariableType>> individuals;
+    int _generationNum;
+    int _neighborhoodSize;
+    int _divisionsNumOfWeightVector;
+    int _migrationInterval;
+    int _decisionVariablesNum;
+    int _objectivesNum;
+    int _singleMessageSize;
+    std::shared_ptr<ICrossover<DecisionVariableType>> _crossover;
+    std::shared_ptr<IDecomposition> _decomposition;
+    std::shared_ptr<IMutation<DecisionVariableType>> _mutation;
+    std::shared_ptr<IProblem<DecisionVariableType>> _problem;
+    std::shared_ptr<IRepair<DecisionVariableType>> _repair;
+    std::shared_ptr<ISampling<DecisionVariableType>> _sampling;
+    std::shared_ptr<ISelection> _selection;
+    int _rank;
+    int _parallelSize;
+    int _totalPopulationSize;
+    int _currentGeneration;
+    MoeadInitializer _initializer;
+    std::vector<int> _internalIndexes;
+    std::vector<int> _externalIndexes;
+    std::set<int> _updatedSolutionIndexes;
+    std::unordered_map<int, Individual<DecisionVariableType>> _individuals;
     std::unordered_map<int, Individual<DecisionVariableType>>
-        clonedExternalIndividuals;
-    std::vector<int> ranksForExternalIndividuals;
-    std::set<int> neighboringRanks;
-    std::vector<int> ranksToSend;
-    bool isIdealPointUpdated;
-    std::string idealTopologyFilePath;
-    std::vector<int> idealTopologyToSend;
-    std::vector<int> idealTopologyToReceive;
+        _clonedExternalIndividuals;
+    std::vector<int> _ranksForExternalIndividuals;
+    std::set<int> _neighboringRanks;
+    std::vector<int> _ranksToSend;
+    bool _isIdealPointUpdated;
+    std::string _idealTopologyFilePath;
+    std::vector<int> _idealTopologyToSend;
+    std::vector<int> _idealTopologyToReceive;
 
    public:
     MpMoeadIdealTopology(
@@ -83,33 +83,33 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
         const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
         const std::shared_ptr<ISelection>& selection)
-        : generationNum(generationNum),
-          neighborhoodSize(neighborhoodSize),
-          migrationInterval(migrationInterval),
-          divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-          idealTopologyFilePath(idealTopologyFilePath) {
+        : _generationNum(generationNum),
+          _neighborhoodSize(neighborhoodSize),
+          _migrationInterval(migrationInterval),
+          _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
+          _idealTopologyFilePath(idealTopologyFilePath) {
         if (!crossover || !decomposition || !mutation || !problem || !repair ||
             !sampling || !selection) {
             throw std::invalid_argument("Null pointer is passed");
         }
 
-        this->crossover = crossover;
-        this->decomposition = decomposition;
-        this->mutation = mutation;
-        this->problem = problem;
-        this->repair = repair;
-        this->sampling = sampling;
-        this->selection = selection;
-        decisionVariablesNum = problem->DecisionVariablesNum();
-        objectivesNum = problem->ObjectivesNum();
-        currentGeneration = 0;
-        singleMessageSize = decisionVariablesNum + objectivesNum + 1;
-        isIdealPointUpdated = false;
+        this->_crossover = crossover;
+        this->_decomposition = decomposition;
+        this->_mutation = mutation;
+        this->_problem = problem;
+        this->_repair = repair;
+        this->_sampling = sampling;
+        this->_selection = selection;
+        _decisionVariablesNum = problem->DecisionVariablesNum();
+        _objectivesNum = problem->ObjectivesNum();
+        _currentGeneration = 0;
+        _singleMessageSize = _decisionVariablesNum + _objectivesNum + 1;
+        _isIdealPointUpdated = false;
     }
     virtual ~MpMoeadIdealTopology() {}
 
     int CurrentGeneration() const override {
-        return currentGeneration;
+        return _currentGeneration;
     }
 
     void Run() override {
@@ -123,42 +123,43 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     void Initialize() override {
         Clear();
         InitializeMpi();
-        totalPopulationSize = initializer.CalculatePopulationSize(
-            divisionsNumOfWeightVector, objectivesNum);
-        decomposition->InitializeIdealPoint(objectivesNum);
+        _totalPopulationSize = _initializer.CalculatePopulationSize(
+            _divisionsNumOfWeightVector, _objectivesNum);
+        _decomposition->InitializeIdealPoint(_objectivesNum);
         InitializeIsland();
         InitializeIdealTopology();
-        currentGeneration = 0;
+        _currentGeneration = 0;
     }
 
     void Update() override {
-        if (currentGeneration % migrationInterval == 0) {
+        if (_currentGeneration % _migrationInterval == 0) {
             MakeLocalCopyOfExternalIndividuals();
         }
 
-        for (auto&& i : internalIndexes) {
+        for (auto&& i : _internalIndexes) {
             Individual<DecisionVariableType> newIndividual =
                 GenerateNewIndividual(i);
-            repair->Repair(newIndividual);
-            problem->ComputeObjectiveSet(newIndividual);
+            _repair->Repair(newIndividual);
+            _problem->ComputeObjectiveSet(newIndividual);
             UpdateIdealPoint(newIndividual.objectives);
             UpdateNeighboringIndividuals(i, newIndividual);
         }
 
-        currentGeneration++;
+        _currentGeneration++;
 
-        if (currentGeneration % migrationInterval == 0) {
+        if (_currentGeneration % _migrationInterval == 0) {
             SendMessages();
             auto messages = ReceiveMessages();
 
-            updatedSolutionIndexes.clear();
-            isIdealPointUpdated = false;
+            _updatedSolutionIndexes.clear();
+            _isIdealPointUpdated = false;
+
             for (auto&& message : messages) {
                 if (message.empty()) {
                     continue;
                 }
 
-                if (message.size() == objectivesNum) {
+                if (message.size() == _objectivesNum) {
                     UpdateIdealPointWithMessage(message);
                 } else {
                     UpdateWithMessage(message);
@@ -168,13 +169,13 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     }
 
     bool IsEnd() const override {
-        return currentGeneration >= generationNum;
+        return _currentGeneration >= _generationNum;
     }
 
     std::vector<Eigen::ArrayXd> GetObjectivesList() const override {
         std::vector<Eigen::ArrayXd> objectives;
-        for (auto&& i : internalIndexes) {
-            objectives.push_back(individuals.at(i).objectives);
+        for (auto&& i : _internalIndexes) {
+            objectives.push_back(_individuals.at(i).objectives);
         }
 
         return objectives;
@@ -183,8 +184,8 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     std::vector<Eigen::ArrayX<DecisionVariableType>> GetSolutionList()
         const override {
         std::vector<Eigen::ArrayX<DecisionVariableType>> solutions;
-        for (auto&& i : internalIndexes) {
-            solutions.push_back(individuals.at(i).solution);
+        for (auto&& i : _internalIndexes) {
+            solutions.push_back(_individuals.at(i).solution);
         }
 
         return solutions;
@@ -192,14 +193,16 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
 
    private:
     void Clear() {
-        internalIndexes.clear();
-        externalIndexes.clear();
-        updatedSolutionIndexes.clear();
-        individuals.clear();
-        clonedExternalIndividuals.clear();
-        ranksForExternalIndividuals.clear();
-        neighboringRanks.clear();
-        ranksToSend.clear();
+        _internalIndexes.clear();
+        _externalIndexes.clear();
+        _updatedSolutionIndexes.clear();
+        _individuals.clear();
+        _clonedExternalIndividuals.clear();
+        _ranksForExternalIndividuals.clear();
+        _neighboringRanks.clear();
+        _ranksToSend.clear();
+        _idealTopologyToSend.clear();
+        _idealTopologyToReceive.clear();
     }
 
     void InitializeMpi() {
@@ -208,8 +211,8 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         if (!initialized) {
             MPI_Init(nullptr, nullptr);
         }
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
+        MPI_Comm_rank(MPI_COMM_WORLD, &_rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &_parallelSize);
     }
 
     void InitializeIsland() {
@@ -221,22 +224,22 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         std::vector<double> sendExternalNeighboringWeightVectors;
         std::vector<int> sendRanksToSentByRank;
         std::vector<int> ranksToSentByRankSizes;
-        if (rank == 0) {
-            initializer.GenerateWeightVectorsAndNeighborhoods(
-                divisionsNumOfWeightVector, objectivesNum, neighborhoodSize,
+        if (_rank == 0) {
+            _initializer.GenerateWeightVectorsAndNeighborhoods(
+                _divisionsNumOfWeightVector, _objectivesNum, _neighborhoodSize,
                 weightVectors1d, neighborhoodIndexes1d);
             populationSizes =
-                CalculateNodeWorkloads(totalPopulationSize, parallelSize);
+                CalculateNodeWorkloads(_totalPopulationSize, _parallelSize);
         }
 
         std::vector<double> receivedWeightVectors =
-            Scatterv(weightVectors1d, populationSizes, objectivesNum, rank,
-                     parallelSize);
+            Scatterv(weightVectors1d, populationSizes, _objectivesNum, _rank,
+                     _parallelSize);
         std::vector<int> receivedNeighborhoodIndexes =
-            Scatterv(neighborhoodIndexes1d, populationSizes, neighborhoodSize,
-                     rank, parallelSize);
+            Scatterv(neighborhoodIndexes1d, populationSizes, _neighborhoodSize,
+                     _rank, _parallelSize);
 
-        if (rank == 0) {
+        if (_rank == 0) {
             std::tie(noduplicateNeighborhoodIndexes, neighborhoodSizes) =
                 GenerateExternalNeighborhood(neighborhoodIndexes1d,
                                              populationSizes);
@@ -245,29 +248,29 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
                                                 noduplicateNeighborhoodIndexes);
         }
 
-        externalIndexes = Scatterv(noduplicateNeighborhoodIndexes,
-                                   neighborhoodSizes, 1, rank, parallelSize);
+        _externalIndexes = Scatterv(noduplicateNeighborhoodIndexes,
+                                    neighborhoodSizes, 1, _rank, _parallelSize);
         std::vector<double> receivedExternalNeighboringWeightVectors =
             Scatterv(sendExternalNeighboringWeightVectors, neighborhoodSizes,
-                     objectivesNum, rank, parallelSize);
+                     _objectivesNum, _rank, _parallelSize);
 
-        if (rank == 0) {
+        if (_rank == 0) {
             CalculateRanksToSent(neighborhoodIndexes1d, populationSizes,
                                  sendRanksToSentByRank, ranksToSentByRankSizes);
         }
-        ranksToSend = Scatterv(sendRanksToSentByRank, ranksToSentByRankSizes, 1,
-                               rank, parallelSize);
+        _ranksToSend = Scatterv(sendRanksToSentByRank, ranksToSentByRankSizes,
+                                1, _rank, _parallelSize);
 
         std::vector<Eigen::ArrayXd> weightVectors =
-            TransformToEigenArrayX2d(receivedWeightVectors, objectivesNum);
+            TransformToEigenArrayX2d(receivedWeightVectors, _objectivesNum);
         std::vector<std::vector<int>> neighborhoodIndexes =
-            TransformTo2d(receivedNeighborhoodIndexes, neighborhoodSize);
+            TransformTo2d(receivedNeighborhoodIndexes, _neighborhoodSize);
         std::vector<Eigen::ArrayXd> externalNeighboringWeightVectors =
             TransformToEigenArrayX2d(receivedExternalNeighboringWeightVectors,
-                                     objectivesNum);
+                                     _objectivesNum);
 
-        internalIndexes =
-            GenerateNodeIndexes(totalPopulationSize, rank, parallelSize);
+        _internalIndexes =
+            GenerateNodeIndexes(_totalPopulationSize, _rank, _parallelSize);
         CalculateNeighboringRanks();
         InitializePopulation();
 
@@ -289,8 +292,8 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
             int end = start + populationSizes[i];
 
             std::vector<int> indexes(
-                neighborhoodIndexes.begin() + (start * neighborhoodSize),
-                neighborhoodIndexes.begin() + (end * neighborhoodSize));
+                neighborhoodIndexes.begin() + (start * _neighborhoodSize),
+                neighborhoodIndexes.begin() + (end * _neighborhoodSize));
 
             // 重複を削除
             std::sort(indexes.begin(), indexes.end());
@@ -316,18 +319,18 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         for (int i = 0; i < indexes.size(); i++) {
             matchingWeightVectors.insert(
                 matchingWeightVectors.end(),
-                weightVectors.begin() + indexes[i] * objectivesNum,
-                weightVectors.begin() + (indexes[i] + 1) * objectivesNum);
+                weightVectors.begin() + indexes[i] * _objectivesNum,
+                weightVectors.begin() + (indexes[i] + 1) * _objectivesNum);
         }
         return matchingWeightVectors;
     }
 
     void CalculateNeighboringRanks() {
-        ranksForExternalIndividuals.reserve(externalIndexes.size());
-        for (auto&& i : externalIndexes) {
-            int rank = GetRankFromIndex(totalPopulationSize, i, parallelSize);
-            ranksForExternalIndividuals.push_back(rank);
-            neighboringRanks.insert(rank);
+        _ranksForExternalIndividuals.reserve(_externalIndexes.size());
+        for (auto&& i : _externalIndexes) {
+            int rank = GetRankFromIndex(_totalPopulationSize, i, _parallelSize);
+            _ranksForExternalIndividuals.push_back(rank);
+            _neighboringRanks.insert(rank);
         }
     }
 
@@ -335,14 +338,14 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         std::vector<Eigen::ArrayXd>& weightVectors,
         std::vector<std::vector<int>>& neighborhoodIndexes,
         std::vector<Eigen::ArrayXd>& externalNeighboringWeightVectors) {
-        for (int i = 0; i < internalIndexes.size(); i++) {
-            individuals[internalIndexes[i]].weightVector =
+        for (int i = 0; i < _internalIndexes.size(); i++) {
+            _individuals[_internalIndexes[i]].weightVector =
                 std::move(weightVectors[i]);
-            individuals[internalIndexes[i]].neighborhood =
+            _individuals[_internalIndexes[i]].neighborhood =
                 std::move(neighborhoodIndexes[i]);
         }
-        for (int i = 0; i < externalIndexes.size(); i++) {
-            clonedExternalIndividuals[externalIndexes[i]].weightVector =
+        for (int i = 0; i < _externalIndexes.size(); i++) {
+            _clonedExternalIndividuals[_externalIndexes[i]].weightVector =
                 std::move(externalNeighboringWeightVectors[i]);
         }
     }
@@ -351,14 +354,14 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
                               const std::vector<int>& populationSizes,
                               std::vector<int>& outRanksToSentByRank,
                               std::vector<int>& outSizes) {
-        std::vector<std::set<int>> ranksToSentByRank(parallelSize,
+        std::vector<std::set<int>> ranksToSentByRank(_parallelSize,
                                                      std::set<int>());
-        for (int dest = 0, count = 0; dest < parallelSize;
-             count += populationSizes[dest] * neighborhoodSize, ++dest) {
+        for (int dest = 0, count = 0; dest < _parallelSize;
+             count += populationSizes[dest] * _neighborhoodSize, ++dest) {
             std::vector<int> neighborhood;
             std::copy(neighborhoodIndexes.begin() + count,
                       neighborhoodIndexes.begin() + count +
-                          populationSizes[dest] * neighborhoodSize,
+                          populationSizes[dest] * _neighborhoodSize,
                       std::back_inserter(neighborhood));
             std::sort(neighborhood.begin(), neighborhood.end());
             neighborhood.erase(
@@ -367,7 +370,7 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
 
             for (auto&& i : neighborhood) {
                 int source =
-                    GetRankFromIndex(totalPopulationSize, i, parallelSize);
+                    GetRankFromIndex(_totalPopulationSize, i, _parallelSize);
                 if (source != dest) {
                     ranksToSentByRank[source].insert(dest);
                 }
@@ -378,7 +381,7 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
             outSizes.push_back(i.size());
         }
 
-        outRanksToSentByRank.reserve(parallelSize * neighborhoodSize);
+        outRanksToSentByRank.reserve(_parallelSize * _neighborhoodSize);
         for (auto&& i : ranksToSentByRank) {
             for (auto&& j : i) {
                 outRanksToSentByRank.push_back(j);
@@ -388,25 +391,25 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
 
     std::vector<std::vector<double>> ScatterPopulation() {
         std::vector<double> individualsToSend;
-        individualsToSend.reserve(internalIndexes.size() * singleMessageSize +
-                                  objectivesNum);
-        for (auto&& i : internalIndexes) {
+        individualsToSend.reserve(_internalIndexes.size() * _singleMessageSize +
+                                  _objectivesNum);
+        for (auto&& i : _internalIndexes) {
             individualsToSend.push_back(i);
             individualsToSend.insert(individualsToSend.end(),
-                                     individuals[i].solution.begin(),
-                                     individuals[i].solution.end());
+                                     _individuals[i].solution.begin(),
+                                     _individuals[i].solution.end());
             individualsToSend.insert(individualsToSend.end(),
-                                     individuals[i].objectives.begin(),
-                                     individuals[i].objectives.end());
+                                     _individuals[i].objectives.begin(),
+                                     _individuals[i].objectives.end());
         }
 
         individualsToSend.insert(individualsToSend.end(),
-                                 decomposition->IdealPoint().begin(),
-                                 decomposition->IdealPoint().end());
+                                 _decomposition->IdealPoint().begin(),
+                                 _decomposition->IdealPoint().end());
 
         std::vector<MPI_Request> requests;
-        requests.reserve(ranksToSend.size());
-        for (auto&& i : ranksToSend) {
+        requests.reserve(_ranksToSend.size());
+        for (auto&& i : _ranksToSend) {
             requests.emplace_back();
             MPI_Isend(individualsToSend.data(), individualsToSend.size(),
                       MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD,
@@ -414,8 +417,8 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         }
 
         std::vector<std::vector<double>> receivedIndividuals;
-        receivedIndividuals.reserve(neighboringRanks.size());
-        for (auto&& rank : neighboringRanks) {
+        receivedIndividuals.reserve(_neighboringRanks.size());
+        for (auto&& rank : _neighboringRanks) {
             MPI_Status status;
             MPI_Probe(rank, messageTag, MPI_COMM_WORLD, &status);
             int receivedDataSize;
@@ -432,9 +435,9 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     }
 
     void InitializeIdealTopology() {
-        std::ifstream ifs = OpenInputFile(idealTopologyFilePath);
+        std::ifstream ifs = OpenInputFile(_idealTopologyFilePath);
         std::string line;
-        for (int i = 0; i <= rank; ++i) {
+        for (int i = 0; i <= _rank; ++i) {
             if (!std::getline(ifs, line)) {
                 throw std::runtime_error(
                     "Not enough lines in idealTopologyFile");
@@ -444,43 +447,43 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         std::string item;
         while (std::getline(ss, item, ',')) {
             int rank = std::stoi(item);
-            idealTopologyToSend.push_back(rank);
-            if (neighboringRanks.find(rank) == neighboringRanks.end()) {
-                idealTopologyToReceive.push_back(rank);
+            _idealTopologyToSend.push_back(rank);
+            if (_neighboringRanks.find(rank) == _neighboringRanks.end()) {
+                _idealTopologyToReceive.push_back(rank);
             }
         }
     }
 
     void InitializePopulation() {
-        int sampleNum = internalIndexes.size();
+        int sampleNum = _internalIndexes.size();
         std::vector<Individual<DecisionVariableType>> sampledIndividuals =
-            sampling->Sample(sampleNum, decisionVariablesNum);
-        for (int i = 0; i < internalIndexes.size(); i++) {
-            individuals[internalIndexes[i]] = sampledIndividuals[i];
-            problem->ComputeObjectiveSet(individuals[internalIndexes[i]]);
-            decomposition->UpdateIdealPoint(
-                individuals[internalIndexes[i]].objectives);
+            _sampling->Sample(sampleNum, _decisionVariablesNum);
+        for (int i = 0; i < _internalIndexes.size(); i++) {
+            _individuals[_internalIndexes[i]] = sampledIndividuals[i];
+            _problem->ComputeObjectiveSet(_individuals[_internalIndexes[i]]);
+            _decomposition->UpdateIdealPoint(
+                _individuals[_internalIndexes[i]].objectives);
         }
     }
 
     void InitializeExternalPopulation(
-        std::vector<std::vector<double>>& receivedSolutions) {
+        std::vector<std::vector<double>>& receivedIndividuals) {
         for (auto&& receive : receivedIndividuals) {
-            int limit = receive.size() - objectivesNum;
-            for (int i = 0; i < limit; i += singleMessageSize) {
+            int limit = receive.size() - _objectivesNum;
+            for (int i = 0; i < limit; i += _singleMessageSize) {
                 int index = receive[i];
                 if (!IsExternal(index)) {
                     continue;
                 }
 
-                clonedExternalIndividuals[index].solution =
+                _clonedExternalIndividuals[index].solution =
                     Eigen::Map<Eigen::ArrayXd>(receive.data() + (i + 1),
-                                               decisionVariablesNum);
-                clonedExternalIndividuals[index].objectives =
+                                               _decisionVariablesNum);
+                _clonedExternalIndividuals[index].objectives =
                     Eigen::Map<Eigen::ArrayXd>(
-                        receive.data() + (i + 1 + decisionVariablesNum),
-                        objectivesNum);
-                UpdateIdealPoint(clonedExternalIndividuals[index].objectives);
+                        receive.data() + (i + 1 + _decisionVariablesNum),
+                        _objectivesNum);
+                UpdateIdealPoint(_clonedExternalIndividuals[index].objectives);
             }
 
             UpdateIdealPointWithMessage(receive);
@@ -488,23 +491,23 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     }
 
     void MakeLocalCopyOfExternalIndividuals() {
-        for (auto&& i : externalIndexes) {
-            individuals[i] = clonedExternalIndividuals[i];
+        for (auto&& i : _externalIndexes) {
+            _individuals[i] = _clonedExternalIndividuals[i];
         }
     }
 
     std::vector<Individual<DecisionVariableType>> SelectParents(int index) {
         std::vector<int> parentCandidates;
-        std::copy_if(individuals[index].neighborhood.begin(),
-                     individuals[index].neighborhood.end(),
+        std::copy_if(_individuals[index].neighborhood.begin(),
+                     _individuals[index].neighborhood.end(),
                      std::back_inserter(parentCandidates),
                      [index](int i) { return i != index; });
-        std::vector<int> parentIndexes =
-            selection->Select(crossover->GetParentNum() - 1, parentCandidates);
+        std::vector<int> parentIndexes = _selection->Select(
+            _crossover->GetParentNum() - 1, parentCandidates);
         std::vector<Individual<DecisionVariableType>> parents;
-        parents.push_back(individuals[index]);
+        parents.push_back(_individuals[index]);
         for (auto&& i : parentIndexes) {
-            parents.push_back(individuals[i]);
+            parents.push_back(_individuals[i]);
         }
         return parents;
     }
@@ -513,101 +516,102 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
         std::vector<Individual<DecisionVariableType>> parents =
             SelectParents(index);
         Individual<DecisionVariableType> newIndividual =
-            crossover->Cross(parents);
-        mutation->Mutate(newIndividual);
+            _crossover->Cross(parents);
+        _mutation->Mutate(newIndividual);
         return newIndividual;
     }
 
     void UpdateNeighboringIndividuals(
         int index, Individual<DecisionVariableType>& newIndividual) {
-        for (auto&& i : individuals[index].neighborhood) {
-            double newSubObjective = decomposition->ComputeObjective(
-                individuals[i].weightVector, newIndividual.objectives);
-            double oldSubObjective = decomposition->ComputeObjective(
-                individuals[i].weightVector, individuals[i].objectives);
+        for (auto&& i : _individuals[index].neighborhood) {
+            double newSubObjective = _decomposition->ComputeObjective(
+                _individuals[i].weightVector, newIndividual.objectives);
+            double oldSubObjective = _decomposition->ComputeObjective(
+                _individuals[i].weightVector, _individuals[i].objectives);
             if (newSubObjective < oldSubObjective) {
-                individuals[i].UpdateFrom(newIndividual);
+                _individuals[i].UpdateFrom(newIndividual);
                 if (IsInternal(i)) {
-                    updatedSolutionIndexes.insert(i);
+                    _updatedSolutionIndexes.insert(i);
                 }
             }
         }
     }
 
     bool IsInternal(int index) {
-        return std::find(internalIndexes.begin(), internalIndexes.end(),
-                         index) != internalIndexes.end();
+        return std::find(_internalIndexes.begin(), _internalIndexes.end(),
+                         index) != _internalIndexes.end();
     }
 
     bool IsExternal(int index) {
-        return std::find(externalIndexes.begin(), externalIndexes.end(),
-                         index) != externalIndexes.end();
+        return std::find(_externalIndexes.begin(), _externalIndexes.end(),
+                         index) != _externalIndexes.end();
     }
 
     void UpdateIdealPoint(const Eigen::ArrayXd& objectives) {
-        auto idealPoint = decomposition->IdealPoint();
-        for (int i = 0; i < objectivesNum; i++) {
+        auto idealPoint = _decomposition->IdealPoint();
+        for (int i = 0; i < _objectivesNum; i++) {
             if (objectives(i) < idealPoint(i)) {
-                isIdealPointUpdated = true;
-                decomposition->UpdateIdealPoint(objectives);
+                _isIdealPointUpdated = true;
+                _decomposition->UpdateIdealPoint(objectives);
                 break;
             }
         }
     }
 
     void UpdateIdealPointWithMessage(const std::vector<double>& message) {
-        if (message.size() % singleMessageSize == objectivesNum) {
+        if (message.size() % _singleMessageSize == _objectivesNum) {
             Eigen::ArrayXd receivedIdealPoint =
                 Eigen::Map<const Eigen::ArrayXd>(
-                    message.data() + (message.size() - objectivesNum),
-                    objectivesNum);
+                    message.data() + (message.size() - _objectivesNum),
+                    _objectivesNum);
             UpdateIdealPoint(receivedIdealPoint);
         }
     }
 
     std::unordered_map<int, std::vector<double>> CreateMessages() {
         std::vector<double> updatedInternalIndividuals;
-        updatedInternalIndividuals.reserve(updatedSolutionIndexes.size() *
-                                           singleMessageSize);
-        for (auto&& i : updatedSolutionIndexes) {
+        updatedInternalIndividuals.reserve(_updatedSolutionIndexes.size() *
+                                           _singleMessageSize);
+        for (auto&& i : _updatedSolutionIndexes) {
             updatedInternalIndividuals.push_back(i);
             updatedInternalIndividuals.insert(updatedInternalIndividuals.end(),
-                                              individuals[i].solution.begin(),
-                                              individuals[i].solution.end());
-            updatedInternalIndividuals.insert(updatedInternalIndividuals.end(),
-                                              individuals[i].objectives.begin(),
-                                              individuals[i].objectives.end());
+                                              _individuals[i].solution.begin(),
+                                              _individuals[i].solution.end());
+            updatedInternalIndividuals.insert(
+                updatedInternalIndividuals.end(),
+                _individuals[i].objectives.begin(),
+                _individuals[i].objectives.end());
         }
 
         std::unordered_map<int, std::vector<double>> dataToSend;
-        for (int i = 0; i < externalIndexes.size(); i++) {
-            int index = externalIndexes[i];
-            bool updated = (individuals[index].solution !=
-                            clonedExternalIndividuals[index].solution)
+        for (int i = 0; i < _externalIndexes.size(); i++) {
+            int index = _externalIndexes[i];
+            bool updated = (_individuals[index].solution !=
+                            _clonedExternalIndividuals[index].solution)
                                .any();
             if (updated) {
-                int rank = ranksForExternalIndividuals[i];
+                int rank = _ranksForExternalIndividuals[i];
                 dataToSend[rank].push_back(index);
                 dataToSend[rank].insert(dataToSend[rank].end(),
-                                        individuals[index].solution.begin(),
-                                        individuals[index].solution.end());
+                                        _individuals[index].solution.begin(),
+                                        _individuals[index].solution.end());
                 dataToSend[rank].insert(dataToSend[rank].end(),
-                                        individuals[index].objectives.begin(),
-                                        individuals[index].objectives.end());
+                                        _individuals[index].objectives.begin(),
+                                        _individuals[index].objectives.end());
             }
         }
 
-        for (auto&& rank : neighboringRanks) {
+        for (auto&& rank : _neighboringRanks) {
             dataToSend[rank].insert(dataToSend[rank].end(),
                                     updatedInternalIndividuals.begin(),
                                     updatedInternalIndividuals.end());
         }
 
-        if (isIdealPointUpdated) {
-            for (auto&& rank : idealTopologyToSend) {
+        if (_isIdealPointUpdated) {
+            for (auto&& rank : _idealTopologyToSend) {
                 dataToSend[rank].insert(dataToSend[rank].end(),
-                                        decomposition->IdealPoint().begin(),
-                                        decomposition->IdealPoint().end());
+                                        _decomposition->IdealPoint().begin(),
+                                        _decomposition->IdealPoint().end());
             }
         }
 
@@ -636,7 +640,7 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
 
     std::vector<std::vector<double>> ReceiveMessages() {
         std::vector<std::vector<double>> receiveMessages;
-        for (auto&& source : neighboringRanks) {
+        for (auto&& source : _neighboringRanks) {
             while (true) {
                 MPI_Status status;
                 int canReceive;
@@ -655,7 +659,7 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
             }
         }
 
-        for (auto&& source : idealTopologyToReceive) {
+        for (auto&& source : _idealTopologyToReceive) {
             while (true) {
                 MPI_Status status;
                 int canReceive;
@@ -680,11 +684,11 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     void UpdateWithMessage(std::vector<double>& message) {
         int limit = message.size();
         bool containsIdealPoint =
-            message.size() % singleMessageSize == objectivesNum;
+            message.size() % _singleMessageSize == _objectivesNum;
         if (containsIdealPoint) {
-            limit -= objectivesNum;
+            limit -= _objectivesNum;
         }
-        for (int i = 0; i < limit; i += singleMessageSize) {
+        for (int i = 0; i < limit; i += _singleMessageSize) {
             int index = message[i];
             if (!(IsInternal(index) || IsExternal(index))) {
                 continue;
@@ -692,22 +696,22 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
 
             Eigen::ArrayX<DecisionVariableType> newSolution =
                 Eigen::Map<Eigen::ArrayXd>(message.data() + i + 1,
-                                           decisionVariablesNum);
+                                           _decisionVariablesNum);
             Eigen::ArrayXd newObjectives = Eigen::Map<Eigen::ArrayXd>(
-                message.data() + i + 1 + decisionVariablesNum, objectivesNum);
+                message.data() + i + 1 + _decisionVariablesNum, _objectivesNum);
             Individual<DecisionVariableType> newIndividual(
                 std::move(newSolution), std::move(newObjectives));
             if (IsExternal(index)) {
-                clonedExternalIndividuals[index].UpdateFrom(newIndividual);
+                _clonedExternalIndividuals[index].UpdateFrom(newIndividual);
             } else {
-                double newSubObjective = decomposition->ComputeObjective(
-                    individuals[index].weightVector, newIndividual.objectives);
-                double oldSubObjective = decomposition->ComputeObjective(
-                    individuals[index].weightVector,
-                    individuals[index].objectives);
+                double newSubObjective = _decomposition->ComputeObjective(
+                    _individuals[index].weightVector, newIndividual.objectives);
+                double oldSubObjective = _decomposition->ComputeObjective(
+                    _individuals[index].weightVector,
+                    _individuals[index].objectives);
                 if (newSubObjective < oldSubObjective) {
-                    individuals[index].UpdateFrom(newIndividual);
-                    updatedSolutionIndexes.insert(index);
+                    _individuals[index].UpdateFrom(newIndividual);
+                    _updatedSolutionIndexes.insert(index);
                 }
             }
 
