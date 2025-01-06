@@ -67,6 +67,7 @@ class MpMoead : public IMoead<DecisionVariableType> {
     int _singleMessageSize;
     bool _idealPointMigration;
     bool _isIdealPointUpdated;
+    bool _isAsync;
 
    public:
     MpMoead(int generationNum, int neighborhoodSize,
@@ -78,11 +79,13 @@ class MpMoead : public IMoead<DecisionVariableType> {
             const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
             const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
             const std::shared_ptr<ISelection>& selection,
-            bool idealPointMigration = false)
+            bool idealPointMigration = false, bool isAsync = false)
         : _generationNum(generationNum),
           _neighborhoodSize(neighborhoodSize),
           _migrationInterval(migrationInterval),
-          _divisionsNumOfWeightVector(divisionsNumOfWeightVector) {
+          _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
+          _idealPointMigration(idealPointMigration),
+          _isAsync(isAsync) {
         if (!crossover || !decomposition || !mutation || !problem || !repair ||
             !sampling || !selection) {
             throw std::invalid_argument("Null pointer is passed");
@@ -95,7 +98,6 @@ class MpMoead : public IMoead<DecisionVariableType> {
         this->_repair = repair;
         this->_sampling = sampling;
         this->_selection = selection;
-        this->_idealPointMigration = idealPointMigration;
         _decisionVariablesNum = problem->DecisionVariablesNum();
         _objectivesNum = problem->ObjectivesNum();
         _currentGeneration = 0;
@@ -617,6 +619,25 @@ class MpMoead : public IMoead<DecisionVariableType> {
             MPI_Isend(message.data(), message.size(), MPI_DOUBLE, dest,
                       messageTag, MPI_COMM_WORLD, &request);
         }
+    }
+
+    std::vector<std::vector<double>> ReceiveMessagesSyns() {
+        std::vector<std::vector<double>> receiveMessages;
+        receiveMessages.reserve(_neighboringRanks.size());
+
+        for (const auto& rank : _neighboringRanks) {
+            MPI_Status status;
+            MPI_Probe(rank, messageTag, MPI_COMM_WORLD, &status);
+            int count;
+            MPI_Get_count(&status, MPI_DOUBLE, &count);
+
+            std::vector<double> message(count);
+            MPI_Recv(message.data(), count, MPI_DOUBLE, rank, messageTag,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            receiveMessages.push_back(std::move(message));
+        }
+
+        return receiveMessages;
     }
 
     std::vector<std::vector<double>> ReceiveMessages() {
