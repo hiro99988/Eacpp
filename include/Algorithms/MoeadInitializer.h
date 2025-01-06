@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Utils/EigenUtils.h"
+#include "Utils/MpiUtils.h"
 #include "Utils/Utils.h"
 
 namespace Eacpp {
@@ -156,6 +157,153 @@ class MoeadInitializer {
             GenerateWeightVectors(divisionsNumOfWeightVector, objectivesNum);
         outNeighborhoods =
             CalculateNeighborhoods2d(neighborhoodSize, outWeightVectors);
+    }
+
+    /* TODO: 重みベクトル internalの近傍インデックス internalのインデックス
+     * externalのインデックス externalの重みベクトル 近傍のランク */
+
+    void InitializeParallelMoead(
+        int divisionsNumOfWeightVector, int objectivesNum, int neighborhoodSize,
+        int parallelSize, std::vector<int>& outInternalIndividualIndexes,
+        std::vector<double>& outInternalWeightVectors,
+        std::vector<int>& outInternalNeighborhoods,
+        std::vector<int>& outInternalIndividualCounts,
+        std::vector<int>& outExternalIndividualIndexes,
+        std::vector<double>& outExternalWeightVectors,
+        std::vector<int>& outExternalIndividualCounts,
+        std::vector<int>& outRanksToSendAtInitialization,
+        std::vector<int>& outRanksToSendCounts,
+        std::vector<int>& outNeighboringRanks,
+        std::vector<int>& outNeighboringRankCounts) {
+        int totalPopulationSize =
+            CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
+
+        std::vector<std::vector<double>> weightVectors;
+        std::vector<std::vector<int>> neighborhoods;
+        GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector,
+                                              objectivesNum, neighborhoodSize,
+                                              weightVectors, neighborhoods);
+
+        // 各ランクのインデックスを生成する
+        auto internalIndividualIndexes =
+            GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
+
+        // internalIndividualIndexesを1次元に変換，個数をカウント
+        outInternalIndividualIndexes.reserve(
+            internalIndividualIndexes.size() *
+            internalIndividualIndexes[0].size());
+        outInternalIndividualCounts.reserve(internalIndividualIndexes.size());
+        for (const auto& indexes : internalIndividualIndexes) {
+            outInternalIndividualIndexes.insert(
+                outInternalIndividualIndexes.end(), indexes.begin(),
+                indexes.end());
+            outInternalIndividualCounts.push_back(indexes.size());
+        }
+
+        // 内部の重みベクトルと近傍のインデックスをまとめる
+        outInternalWeightVectors.reserve(outInternalIndividualIndexes.size() *
+                                         objectivesNum);
+        outInternalNeighborhoods.reserve(outInternalIndividualIndexes.size() *
+                                         neighborhoodSize);
+        for (auto&& i : outInternalIndividualIndexes) {
+            outInternalWeightVectors.insert(outInternalWeightVectors.end(),
+                                            weightVectors[i].begin(),
+                                            weightVectors[i].end());
+            outInternalNeighborhoods.insert(outInternalNeighborhoods.end(),
+                                            neighborhoods[i].begin(),
+                                            neighborhoods[i].end());
+        }
+
+        // 個体が所属するランクを計算する
+        std::vector<int> individualRanks(totalPopulationSize);
+        for (int i = 0; i < internalIndividualIndexes.size(); ++i) {
+            for (auto&& j : internalIndividualIndexes[i]) {
+                individualRanks[j] = i;
+            }
+        }
+
+        // 各ランクの外部のインデックス，初期化時に送信するランクを計算する
+        std::vector<std::vector<int>> externalRanks;
+        std::size_t externalRankSize = 0;
+        externalRanks.reserve(parallelSize);
+        outExternalIndividualCounts.reserve(parallelSize);
+        for (int i = 0; i < parallelSize; ++i) {
+            // ランクiの全ての個体の近傍のインデックスをまとめる
+            std::vector<int> neighborhood;
+            neighborhood.reserve(internalIndividualIndexes[i].size() *
+                                 neighborhoodSize);
+            for (auto&& j : internalIndividualIndexes[i]) {
+                neighborhood.insert(neighborhood.end(),
+                                    neighborhoods[j].begin(),
+                                    neighborhoods[j].end());
+            }
+
+            RemoveDuplicates(neighborhood);
+
+            // 内部のインデックスを削除
+            std::erase_if(neighborhood, [&](int index) {
+                return std::ranges::find(internalIndividualIndexes[i], index) !=
+                       internalIndividualIndexes[i].end();
+            });
+
+            // ランクiの外部のインデックスをまとめる，個数をカウント
+            outExternalIndividualIndexes.insert(
+                outExternalIndividualIndexes.end(), neighborhood.begin(),
+                neighborhood.end());
+            outExternalIndividualCounts.push_back(neighborhood.size());
+
+            // 外部個体が所属するランクを計算する
+            std::vector<int> ranks;
+            ranks.reserve(neighborhood.size());
+            for (auto&& j : neighborhood) {
+                ranks.push_back(individualRanks[j]);
+            }
+            RemoveDuplicates(ranks);
+
+            // 初期化時に送信するランク，近傍のランクの計算に使うために保存する
+            externalRankSize += ranks.size();
+            externalRanks.push_back(std::move(ranks));
+        }
+
+        // 外部の重みベクトルをまとめる
+        outExternalWeightVectors.reserve(outExternalIndividualIndexes.size() *
+                                         objectivesNum);
+        for (auto&& i : outExternalIndividualIndexes) {
+            outExternalWeightVectors.insert(outExternalWeightVectors.end(),
+                                            weightVectors[i].begin(),
+                                            weightVectors[i].end());
+        }
+
+        // 初期化時に送信するランクを計算する
+        std::vector<std::vector<int>> ranksToSend(parallelSize,
+                                                  std::vector<int>());
+        for (int i = 0; i < parallelSize; ++i) {
+            for (auto&& j : externalRanks[i]) {
+                ranksToSend[j].push_back(i);
+            }
+        }
+
+        // 1次元に変換，個数をカウント
+        outRanksToSendAtInitialization.reserve(externalRankSize);
+        outRanksToSendCounts.reserve(parallelSize);
+        for (std::size_t i = 0; i < ranksToSend.size(); ++i) {
+            outRanksToSendAtInitialization.insert(
+                outRanksToSendAtInitialization.end(), ranksToSend[i].begin(),
+                ranksToSend[i].end());
+            outRanksToSendCounts.push_back(ranksToSend[i].size());
+        }
+
+        // 近傍のランクを計算する
+        outNeighboringRankCounts = std::vector<int>(parallelSize, 0);
+        for (int i = 0; i < parallelSize; ++i) {
+            for (auto&& j : externalRanks[i]) {
+                if (std::ranges::find(externalRanks[j], i) !=
+                    externalRanks[j].end()) {
+                    outNeighboringRanks.push_back(j);
+                    outNeighboringRankCounts[i]++;
+                }
+            }
+        }
     }
 
    private:
