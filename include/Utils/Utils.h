@@ -187,6 +187,7 @@ inline std::string GetTimestamp(const char *format = "%y%m%d-%H%M%S") {
     ss << std::put_time(std::localtime(&nowTime), format);
     return ss.str();
 }
+
 inline std::string ConvertDoubleToStringByDividingIntoIntegersAndDecimals(
     double value, char delimiter = '-') {
     long long integer_part = static_cast<long long>(value);
@@ -198,6 +199,25 @@ inline std::string ConvertDoubleToStringByDividingIntoIntegersAndDecimals(
     std::string str = std::to_string(value);
     std::replace(str.begin(), str.end(), '.', delimiter);
     return str;
+}
+
+inline double CalculateSquaredEuclideanDistance(const std::vector<double> &v1,
+                                                const std::vector<double> &v2) {
+    if (v1.size() != v2.size()) {
+        throw std::invalid_argument("Vector sizes are different");
+    }
+
+    double sum = 0.0;
+    for (int i = 0; i < v1.size(); i++) {
+        sum += std::pow(v1[i] - v2[i], 2);
+    }
+
+    return sum;
+}
+
+inline double CalculateEuclideanDistance(const std::vector<double> &v1,
+                                         const std::vector<double> &v2) {
+    return std::sqrt(CalculateSquaredEuclideanDistance(v1, v2));
 }
 
 }  // namespace Eacpp
