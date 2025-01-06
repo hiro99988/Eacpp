@@ -103,6 +103,17 @@ std::vector<T> TransformTo1d(const std::vector<std::vector<T>> &v) {
 }
 
 template <typename T>
+std::vector<T> TransformTo1d(const std::vector<std::vector<T>> &v,
+                             std::size_t size) {
+    std::vector<T> transformed;
+    transformed.reserve(size);
+    for (const auto &i : v) {
+        transformed.insert(transformed.end(), i.begin(), i.end());
+    }
+    return transformed;
+}
+
+template <typename T>
 std::vector<std::vector<T>> TransformTo2d(std::vector<T> &vec1d,
                                           int separation) {
     if (vec1d.size() % separation != 0) {
