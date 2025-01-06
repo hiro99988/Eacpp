@@ -169,6 +169,7 @@ class MoeadInitializer {
         std::vector<int>& outInternalNeighborhoods,
         std::vector<int>& outInternalIndividualCounts,
         std::vector<int>& outExternalIndividualIndexes,
+        std::vector<int>& outExternalIndividualRanks,
         std::vector<double>& outExternalWeightVectors,
         std::vector<int>& outExternalIndividualCounts,
         std::vector<int>& outRanksToSendAtInitialization,
@@ -229,33 +230,34 @@ class MoeadInitializer {
         outExternalIndividualCounts.reserve(parallelSize);
         for (int i = 0; i < parallelSize; ++i) {
             // ランクiの全ての個体の近傍のインデックスをまとめる
-            std::vector<int> neighborhood;
-            neighborhood.reserve(internalIndividualIndexes[i].size() *
-                                 neighborhoodSize);
+            std::vector<int> externalIndexes;
+            externalIndexes.reserve(internalIndividualIndexes[i].size() *
+                                    neighborhoodSize);
             for (auto&& j : internalIndividualIndexes[i]) {
-                neighborhood.insert(neighborhood.end(),
-                                    neighborhoods[j].begin(),
-                                    neighborhoods[j].end());
+                externalIndexes.insert(externalIndexes.end(),
+                                       neighborhoods[j].begin(),
+                                       neighborhoods[j].end());
             }
 
-            RemoveDuplicates(neighborhood);
+            RemoveDuplicates(externalIndexes);
 
             // 内部のインデックスを削除
-            std::erase_if(neighborhood, [&](int index) {
+            std::erase_if(externalIndexes, [&](int index) {
                 return std::ranges::find(internalIndividualIndexes[i], index) !=
                        internalIndividualIndexes[i].end();
             });
 
             // ランクiの外部のインデックスをまとめる，個数をカウント
             outExternalIndividualIndexes.insert(
-                outExternalIndividualIndexes.end(), neighborhood.begin(),
-                neighborhood.end());
-            outExternalIndividualCounts.push_back(neighborhood.size());
+                outExternalIndividualIndexes.end(), externalIndexes.begin(),
+                externalIndexes.end());
+            outExternalIndividualCounts.push_back(externalIndexes.size());
 
-            // 外部個体が所属するランクを計算する
+            // 外部個体が所属するランク，ランクiの近傍のランクを計算する
             std::vector<int> ranks;
-            ranks.reserve(neighborhood.size());
-            for (auto&& j : neighborhood) {
+            ranks.reserve(externalIndexes.size());
+            for (auto&& j : externalIndexes) {
+                outExternalIndividualRanks.push_back(i);
                 ranks.push_back(individualRanks[j]);
             }
             RemoveDuplicates(ranks);
