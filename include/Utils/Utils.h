@@ -220,4 +220,10 @@ inline double CalculateEuclideanDistance(const std::vector<double> &v1,
     return std::sqrt(CalculateSquaredEuclideanDistance(v1, v2));
 }
 
+template <typename T>
+void RemoveDuplicates(std::vector<T> &vec) {
+    std::sort(vec.begin(), vec.end());
+    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+}
+
 }  // namespace Eacpp
