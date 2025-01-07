@@ -257,7 +257,7 @@ class MoeadInitializer {
             std::vector<int> ranks;
             ranks.reserve(externalIndexes.size());
             for (auto&& j : externalIndexes) {
-                outExternalIndividualRanks.push_back(i);
+                outExternalIndividualRanks.push_back(individualRanks[j]);
                 ranks.push_back(individualRanks[j]);
             }
             RemoveDuplicates(ranks);
