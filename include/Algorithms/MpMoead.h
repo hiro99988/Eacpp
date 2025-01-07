@@ -37,14 +37,15 @@ class MpMoead : public IMoead<DecisionVariableType> {
     constexpr static int messageTag = 0;
 
    private:
-    int _totalPopulationSize;
     int _generationNum;
-    int _currentGeneration;
+    int _neighborhoodSize;
+    int _divisionsNumOfWeightVector;
+    int _migrationInterval;
+    bool _idealPointMigration;
+    bool _isAsync;
     int _decisionVariablesNum;
     int _objectivesNum;
-    int _neighborhoodSize;
-    int _migrationInterval;
-    int _divisionsNumOfWeightVector;
+    int _singleMessageSize;
     std::shared_ptr<ICrossover<DecisionVariableType>> _crossover;
     std::shared_ptr<IDecomposition> _decomposition;
     std::shared_ptr<IMutation<DecisionVariableType>> _mutation;
@@ -54,6 +55,9 @@ class MpMoead : public IMoead<DecisionVariableType> {
     std::shared_ptr<ISelection> _selection;
     int _rank;
     int _parallelSize;
+    int _totalPopulationSize;
+    int _currentGeneration;
+    bool _isIdealPointUpdated;
     MoeadInitializer _initializer;
     std::vector<int> _internalIndexes;
     std::vector<int> _externalIndexes;
@@ -63,10 +67,6 @@ class MpMoead : public IMoead<DecisionVariableType> {
         _clonedExternalIndividuals;
     std::vector<int> _externalIndividualRanks;
     std::vector<int> _neighboringRanks;
-    int _singleMessageSize;
-    bool _idealPointMigration;
-    bool _isIdealPointUpdated;
-    bool _isAsync;
 
    public:
     MpMoead(int generationNum, int neighborhoodSize,
