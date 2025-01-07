@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
     int H = 299;
     std::string problemName = "zdt1";
     bool idealPointMigration = false;
+    bool isAsync = true;
 
     if (argc == 7) {
         generationNum = std::stoi(argv[1]);
@@ -38,6 +39,14 @@ int main(int argc, char** argv) {
         H = std::stoi(argv[4]);
         problemName = argv[5];
         idealPointMigration = std::stoi(argv[6]);
+    } else if (argc == 8) {
+        generationNum = std::stoi(argv[1]);
+        neighborhoodSize = std::stoi(argv[2]);
+        migrationInterval = std::stoi(argv[3]);
+        H = std::stoi(argv[4]);
+        problemName = argv[5];
+        idealPointMigration = std::stoi(argv[6]);
+        isAsync = std::stoi(argv[7]);
     }
 
     std::shared_ptr<IProblem<double>> problem =
@@ -55,7 +64,7 @@ int main(int argc, char** argv) {
 
     MpMoead<double> moead(generationNum, neighborhoodSize, H, migrationInterval,
                           crossover, decomposition, mutation, problem, repair,
-                          sampling, selection, idealPointMigration);
+                          sampling, selection, idealPointMigration, isAsync);
 
     double start = MPI_Wtime();
 
