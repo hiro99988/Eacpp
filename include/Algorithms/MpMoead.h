@@ -78,7 +78,7 @@ class MpMoead : public IMoead<DecisionVariableType> {
             const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
             const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
             const std::shared_ptr<ISelection>& selection,
-            bool idealPointMigration = false, bool isAsync = false)
+            bool idealPointMigration = false, bool isAsync = true)
         : _generationNum(generationNum),
           _neighborhoodSize(neighborhoodSize),
           _migrationInterval(migrationInterval),
