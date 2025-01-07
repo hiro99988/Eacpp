@@ -85,7 +85,8 @@ class ParallelMoeadBenchmark {
         std::ifstream& file, int& outTrial, int& outGenerationNum,
         int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
         int& outMigrationInterval, double& outCrossoverRate,
-        bool& outIdealPointMigration, std::vector<std::string>& outProblemNames,
+        bool& outIdealPointMigration, bool& outIsAsync,
+        std::vector<std::string>& outProblemNames,
         std::string& outAdjacencyListFileName) {
         nlohmann::json parameter = nlohmann::json::parse(file);
 
@@ -96,6 +97,7 @@ class ParallelMoeadBenchmark {
         outMigrationInterval = parameter["migrationInterval"];
         outCrossoverRate = parameter["crossoverRate"];
         outIdealPointMigration = parameter["idealPointMigration"];
+        outIsAsync = parameter["isAsync"];
         outProblemNames = parameter["problems"];
         outAdjacencyListFileName = parameter["adjacencyListFileName"];
 
@@ -227,13 +229,14 @@ class ParallelMoeadBenchmark {
         int migrationInterval;
         double crossoverRate;
         bool idealPointMigration;
+        bool isAsync;
         std::vector<std::string> problemNames;
         std::string adjacencyListFileName;
         auto parameterFile = OpenInputFile(parameterFilePath);
         auto parameter = ReadParameters(
             parameterFile, trial, generationNum, neighborhoodSize,
             divisionsNumOfWeightVector, migrationInterval, crossoverRate,
-            idealPointMigration, problemNames, adjacencyListFileName);
+            idealPointMigration, isAsync, problemNames, adjacencyListFileName);
 
         // 出力ディレクトリの作成
         const std::filesystem::path outputDirectoryPath =
@@ -327,7 +330,7 @@ class ParallelMoeadBenchmark {
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         crossover, decomposition, mutation, problem, repair,
-                        sampling, selection, idealPointMigration);
+                        sampling, selection, idealPointMigration, isAsync);
                 } else if (moeadName == MoeadNames[1]) {
                     moead = std::make_unique<NtMoead<double>>(
                         generationNum, neighborhoodSize,

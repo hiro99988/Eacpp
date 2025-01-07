@@ -1,11 +1,12 @@
 {
     "trial": 31,
-    "generationNum": 1000,
-    "neighborhoodSize": 13,
-    "divisionsNumOfWeightVector": 29,
+    "generationNum": 500,
+    "neighborhoodSize": 5,
+    "divisionsNumOfWeightVector": 13,
     "migrationInterval": 1,
     "crossoverRate": 0.9,
     "idealPointMigration": true,
+    "isAsync": true,
     "problems": [
         "zdt1",
         "zdt2",
