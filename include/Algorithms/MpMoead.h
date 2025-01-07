@@ -149,7 +149,7 @@ class MpMoead : public IMoead<DecisionVariableType> {
             if (_isAsync) {
                 messages = ReceiveMessagesAsync();
             } else {
-                messages = ReceiveMessagesSyns();
+                messages = ReceiveMessagesSync();
             }
 
             _updatedSolutionIndexes.clear();
@@ -540,7 +540,7 @@ class MpMoead : public IMoead<DecisionVariableType> {
         }
     }
 
-    std::vector<std::vector<double>> ReceiveMessagesSyns() {
+    std::vector<std::vector<double>> ReceiveMessagesSync() {
         std::vector<std::vector<double>> receiveMessages;
         receiveMessages.reserve(_neighboringRanks.size());
 
