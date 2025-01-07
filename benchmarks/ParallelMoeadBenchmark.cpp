@@ -41,8 +41,8 @@ class ParallelMoeadBenchmark {
         "MpMoead", "NtMoead", "NewMoead", "MpMoeadIdealTopology", "OneNtMoead"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
         "trial", "time(s)"};
-    constexpr static std::array<const char*, 2> IgdHeader = {"generation",
-                                                             "igd"};
+    constexpr static std::array<const char*, 3> IgdHeader = {
+        "generation", "executionTime(s)", "igd"};
 
     int rank;
     int parallelSize;
@@ -323,6 +323,8 @@ class ParallelMoeadBenchmark {
             for (int i = 0; i < trial; i++) {
                 transitionOfIdealPoint.clear();
                 localObjectivesListHistory.clear();
+                std::vector<double> executionTimes;
+                executionTimes.reserve(generationNum + 1);
 
                 std::unique_ptr<IMoead<double>> moead;
                 if (moeadName == MoeadNames[0]) {
@@ -375,6 +377,7 @@ class ParallelMoeadBenchmark {
                               decomposition->IdealPoint());
                 localObjectivesListHistory.push_back(
                     moead->GetObjectivesList());
+                executionTimes.push_back(stopwatch.Elapsed());
 
                 while (!moead->IsEnd()) {
                     stopwatch.Start();
@@ -387,6 +390,7 @@ class ParallelMoeadBenchmark {
                                   decomposition->IdealPoint());
                     localObjectivesListHistory.push_back(
                         moead->GetObjectivesList());
+                    executionTimes.push_back(stopwatch.Elapsed());
                 }
 
                 // 実行時間の出力
@@ -439,12 +443,25 @@ class ParallelMoeadBenchmark {
                         igdDirectoryPath / fileName;
                     std::ofstream igdFile = OpenOutputFile(igdFilePath);
                     SetSignificantDigits(igdFile);
-                    std::vector<std::pair<int, double>> igd;
+                    std::vector<std::tuple<int, double, double>> igd;
                     for (int j = 0; j < objectivesListHistory.size(); j++) {
-                        igd.push_back(std::make_pair(
-                            j, indicator.Calculate(objectivesListHistory[j])));
+                        igd.push_back(std::make_tuple(
+                            j, executionTimes[j],
+                            indicator.Calculate(objectivesListHistory[j])));
                     }
-                    WriteCsv(igdFile, igd, IgdHeader);
+                    // ヘッダーの書き込み
+                    for (std::size_t j = 0; j < IgdHeader.size(); j++) {
+                        igdFile << IgdHeader[j];
+                        if (j != IgdHeader.size() - 1) {
+                            igdFile << ",";
+                        }
+                    }
+                    igdFile << std::endl;
+                    // データの書き込み
+                    for (const auto& [generation, time, igdValue] : igd) {
+                        igdFile << generation << "," << time << "," << igdValue
+                                << std::endl;
+                    }
                 }
 
                 MPI_Barrier(MPI_COMM_WORLD);
