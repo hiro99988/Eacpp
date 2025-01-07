@@ -540,6 +540,10 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
                                         _decomposition->IdealPoint().begin(),
                                         _decomposition->IdealPoint().end());
             }
+        } else if (!_isAsync) {
+            for (auto&& rank : _idealTopologyToSend) {
+                dataToSend.try_emplace(rank);
+            }
         }
 
         return dataToSend;
@@ -568,31 +572,27 @@ class MpMoeadIdealTopology : public IMoead<DecisionVariableType> {
     std::vector<std::vector<double>> ReceiveMessagesSync() {
         std::vector<std::vector<double>> receiveMessages;
         for (auto&& source : _neighboringRanks) {
-            while (true) {
-                MPI_Status status;
-                MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
-                int count;
-                MPI_Get_count(&status, MPI_DOUBLE, &count);
+            MPI_Status status;
+            MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
+            int count;
+            MPI_Get_count(&status, MPI_DOUBLE, &count);
 
-                std::vector<double> receive(count);
-                MPI_Recv(receive.data(), count, MPI_DOUBLE, source, messageTag,
-                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                receiveMessages.push_back(std::move(receive));
-            }
+            std::vector<double> receive(count);
+            MPI_Recv(receive.data(), count, MPI_DOUBLE, source, messageTag,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            receiveMessages.push_back(std::move(receive));
         }
 
         for (auto&& source : _idealTopologyToReceive) {
-            while (true) {
-                MPI_Status status;
-                MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
-                int count;
-                MPI_Get_count(&status, MPI_DOUBLE, &count);
+            MPI_Status status;
+            MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
+            int count;
+            MPI_Get_count(&status, MPI_DOUBLE, &count);
 
-                std::vector<double> receive(count);
-                MPI_Recv(receive.data(), count, MPI_DOUBLE, source, messageTag,
-                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                receiveMessages.push_back(std::move(receive));
-            }
+            std::vector<double> receive(count);
+            MPI_Recv(receive.data(), count, MPI_DOUBLE, source, messageTag,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            receiveMessages.push_back(std::move(receive));
         }
 
         return receiveMessages;
