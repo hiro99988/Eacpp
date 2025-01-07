@@ -351,7 +351,8 @@ class ParallelMoeadBenchmark {
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         adjacencyListFileName, crossover, decomposition,
-                        mutation, problem, repair, sampling, selection);
+                        mutation, problem, repair, sampling, selection,
+                        isAsync);
                 } else if (moeadName == MoeadNames[4]) {
                     moead = std::make_unique<OneNtMoead<double>>(
                         generationNum, neighborhoodSize,
