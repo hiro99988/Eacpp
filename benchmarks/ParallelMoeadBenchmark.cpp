@@ -393,6 +393,8 @@ class ParallelMoeadBenchmark {
                     executionTimes.push_back(stopwatch.Elapsed());
                 }
 
+                MPI_Barrier(MPI_COMM_WORLD);
+
                 // 実行時間の出力
                 double elapsed = stopwatch.Elapsed();
                 double maxExecutionTime;
