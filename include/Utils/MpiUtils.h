@@ -19,14 +19,13 @@ template <typename T>
 constexpr bool false_v = false;
 
 /**
- * @brief 与えられたC++の型に対応するMPIデータ型を取得します。
+ * @brief 与えられたC++の型に対応するMPIデータ型を取得する
  *
  * @tparam T C++の型。
- * @param var 型Tの変数。
  * @return MPI_Datatype 対応するMPIデータ型。
  */
 template <typename T>
-MPI_Datatype GetMpiDataType(std::vector<T> var) {
+MPI_Datatype GetMpiDataType() {
     if constexpr (std::is_same_v<signed char, T>) {
         return MPI_CHAR;
     } else if constexpr (std::is_same_v<signed short int, T>) {
@@ -68,6 +67,18 @@ MPI_Datatype GetMpiDataType(std::vector<T> var) {
     } else {
         static_assert(false_v<T>, "Unsupported type");
     }
+}
+
+/**
+ * @brief 与えられたC++の型に対応するMPIデータ型を取得します。
+ *
+ * @tparam T C++の型。
+ * @param var 型Tの変数。
+ * @return MPI_Datatype 対応するMPIデータ型。
+ */
+template <typename T>
+MPI_Datatype GetMpiDataType(std::vector<T> var) {
+    return GetMpiDataType<T>();
 }
 
 /**
