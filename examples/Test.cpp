@@ -102,5 +102,23 @@ int main() {
         std::cout << std::endl;
     }
 
+    // neighboringRanksの平均サイズ
+    int sum = 0;
+    int min = outNeighboringRankCounts[0];
+    int max = outNeighboringRankCounts[0];
+    for (auto&& i : outNeighboringRankCounts) {
+        sum += i;
+        if (i < min) {
+            min = i;
+        }
+        if (i > max) {
+            max = i;
+        }
+    }
+    std::cout << "neighboringRanks min size: " << min << std::endl;
+    std::cout << "neighboringRanks max size: " << max << std::endl;
+    std::cout << "neighboringRanks average size: "
+              << (double)sum / outNeighboringRankCounts.size() << std::endl;
+
     return 0;
 }

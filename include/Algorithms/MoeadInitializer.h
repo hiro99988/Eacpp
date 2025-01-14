@@ -1,9 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <deque>
 #include <eigen3/Eigen/Core>
 #include <numeric>
 #include <ranges>
+#include <set>
 #include <vector>
 
 #include "Utils/EigenUtils.h"
@@ -179,15 +181,26 @@ class MoeadInitializer {
         int totalPopulationSize =
             CalculatePopulationSize(divisionsNumOfWeightVector, objectivesNum);
 
-        std::vector<std::vector<double>> weightVectors;
-        std::vector<std::vector<int>> neighborhoods;
-        GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector,
-                                              objectivesNum, neighborhoodSize,
-                                              weightVectors, neighborhoods);
+        auto vectors = GenerateWeightVectorDivisions(divisionsNumOfWeightVector,
+                                                     objectivesNum);
+        auto partitions = NearestNeighborPartitioning(
+            parallelSize, divisionsNumOfWeightVector, vectors);
 
-        // 各ランクのインデックスを生成する
-        auto internalIndividualIndexes =
-            GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
+        std::vector<std::vector<int>> internalIndividualIndexes;
+        internalIndividualIndexes.reserve(parallelSize);
+        for (int i = 0, count = 0; i < partitions.size();
+             count += partitions[i].size(), ++i) {
+            internalIndividualIndexes.emplace_back();
+            internalIndividualIndexes[i].reserve(partitions[i].size());
+            for (int j = count; j < count + partitions[i].size(); ++j) {
+                internalIndividualIndexes[i].push_back(j);
+            }
+        }
+
+        auto weightVectors = GenerateWeightVectors(
+            partitions, divisionsNumOfWeightVector, totalPopulationSize);
+        auto neighborhoods =
+            CalculateNeighborhoods2d(neighborhoodSize, weightVectors);
 
         // internalIndividualIndexesを1次元に変換，個数をカウント
         outInternalIndividualIndexes.reserve(
@@ -309,6 +322,25 @@ class MoeadInitializer {
     }
 
    private:
+    std::vector<std::vector<int>> GenerateWeightVectorDivisions(
+        int divisionsNumOfWeightVector, int objectivesNum) const {
+        // 0からdivisionsNumOfWeightVectorまでの数列のobjectivesNum-順列を生成する
+        std::vector<int> numerators(divisionsNumOfWeightVector + 1);
+        std::iota(numerators.begin(), numerators.end(), 0);
+        auto permutations = Product(numerators, objectivesNum);
+
+        // 各組み合わせの合計がdivisionsNumOfWeightVectorになるものを抽出する
+        std::vector<std::vector<int>> validCombinations;
+        validCombinations.reserve(permutations.size());
+        for (const auto& v : permutations) {
+            if (std::reduce(v.begin(), v.end()) == divisionsNumOfWeightVector) {
+                validCombinations.push_back(v);
+            }
+        }
+
+        return validCombinations;
+    }
+
     std::vector<std::vector<double>> CalculateEuclideanDistanceMatrix(
         const std::vector<Eigen::ArrayXd>& weightVectors) const {
         int size = weightVectors.size();
@@ -366,6 +398,125 @@ class MoeadInitializer {
         auto sortedIndexes = ArgSort(euclideanDistances);
         return std::vector<int>(sortedIndexes.begin(),
                                 sortedIndexes.begin() + neighborhoodSize);
+    }
+
+    std::vector<int> LexicographicalMin(
+        const std::vector<std::vector<int>>& vectors,
+        const std::set<std::vector<int>>& visitedVectors) {
+        const std::vector<int>* min = nullptr;
+        for (const auto& v : vectors) {
+            if (visitedVectors.find(v) == visitedVectors.end()) {
+                if (min == nullptr) {
+                    min = &v;
+                } else if (v < *min) {
+                    min = &v;
+                }
+            }
+        }
+
+        return *min;
+    }
+
+    std::vector<std::vector<int>> nearest(const std::vector<int>& vector,
+                                          int divisionsNumOfWeightVector) {
+        std::vector<std::vector<int>> neighbors;
+        for (std::size_t i = 0; i < vector.size(); ++i) {
+            for (std::size_t j = 0; j < vector.size(); ++j) {
+                if (i != j && vector[i] > 0 &&
+                    vector[j] < divisionsNumOfWeightVector) {
+                    std::vector<int> neighbor = vector;
+                    neighbor[i] -= 1;
+                    neighbor[j] += 1;
+                    neighbors.push_back(std::move(neighbor));
+                }
+            }
+        }
+
+        return neighbors;
+    }
+
+    std::vector<std::vector<std::vector<int>>> NearestNeighborPartitioning(
+        int partitionsNum, int divisionsNumOfWeightVector,
+        std::vector<std::vector<int>>& vectors) {
+        std::set<std::vector<int>> visitedVectors;
+        std::vector<std::vector<std::vector<int>>> partitions;
+        partitions.reserve(partitionsNum);
+        std::deque<std::vector<int>> queue;
+        int controlVar = 0;
+        std::size_t WeightVectorSize = vectors.size();
+
+        for (int i = 0; i < partitionsNum; ++i) {
+            std::vector<int> root;
+            if (controlVar == 0) {
+                root = LexicographicalMin(vectors, visitedVectors);
+                controlVar = root.back();
+            } else {
+                root = *std::min_element(queue.begin(), queue.end());
+                controlVar = 0;
+            }
+
+            queue = {root};
+            std::vector<std::vector<int>> currentPartition;
+            int currentCount = 0;
+
+            int partitionSize;
+            if (i < WeightVectorSize % partitionsNum) {
+                partitionSize = WeightVectorSize / partitionsNum + 1;
+            } else {
+                partitionSize = WeightVectorSize / partitionsNum;
+            }
+
+            while (currentCount < partitionSize) {
+                if (queue.empty()) {
+                    break;
+                }
+
+                auto current = queue.front();
+                queue.pop_front();
+
+                if (visitedVectors.find(current) != visitedVectors.end()) {
+                    continue;
+                }
+
+                currentPartition.push_back(current);
+                visitedVectors.insert(current);
+                controlVar = std::min(controlVar, current.back());
+                ++currentCount;
+
+                auto neighbors = nearest(current, divisionsNumOfWeightVector);
+                for (const auto& neighbor : neighbors) {
+                    if (visitedVectors.find(neighbor) == visitedVectors.end() &&
+                        std::find(queue.begin(), queue.end(), neighbor) ==
+                            queue.end()) {
+                        queue.push_back(neighbor);
+                    }
+                }
+            }
+
+            partitions.push_back(std::move(currentPartition));
+        }
+
+        return partitions;
+    }
+
+    std::vector<std::vector<double>> GenerateWeightVectors(
+        std::vector<std::vector<std::vector<int>>> partitioins,
+        int divisionsNumOfWeightVector, std::size_t size) {
+        std::vector<std::vector<double>> weightVectors;
+        weightVectors.reserve(size);
+        for (const auto& partition : partitioins) {
+            for (const auto& vector : partition) {
+                weightVectors.emplace_back(vector.begin(), vector.end());
+            }
+        }
+
+        for (auto& vector : weightVectors) {
+            for (auto& i : vector) {
+                i /= divisionsNumOfWeightVector;
+            }
+        }
+
+        return weightVectors;
     }
 };
 
