@@ -85,6 +85,7 @@ class ParallelMoeadBenchmark {
         std::ifstream& file, int& outTrial, int& outGenerationNum,
         int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
         int& outMigrationInterval, double& outCrossoverRate,
+        int outDecisionVariablesNum, int outObjectivesNum,
         bool& outIdealPointMigration, bool& outIsAsync,
         std::vector<std::string>& outProblemNames,
         std::string& outAdjacencyListFileName) {
@@ -96,6 +97,8 @@ class ParallelMoeadBenchmark {
         outDivisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
         outMigrationInterval = parameter["migrationInterval"];
         outCrossoverRate = parameter["crossoverRate"];
+        outDecisionVariablesNum = parameter["decisionVariablesNum"];
+        outObjectivesNum = parameter["objectivesNum"];
         outIdealPointMigration = parameter["idealPointMigration"];
         outIsAsync = parameter["isAsync"];
         outProblemNames = parameter["problems"];
@@ -228,6 +231,8 @@ class ParallelMoeadBenchmark {
         int divisionsNumOfWeightVector;
         int migrationInterval;
         double crossoverRate;
+        int decisionVariablesNum;
+        int objectivesNum;
         bool idealPointMigration;
         bool isAsync;
         std::vector<std::string> problemNames;
@@ -236,7 +241,8 @@ class ParallelMoeadBenchmark {
         auto parameter = ReadParameters(
             parameterFile, trial, generationNum, neighborhoodSize,
             divisionsNumOfWeightVector, migrationInterval, crossoverRate,
-            idealPointMigration, isAsync, problemNames, adjacencyListFileName);
+            decisionVariablesNum, objectivesNum, idealPointMigration, isAsync,
+            problemNames, adjacencyListFileName);
 
         // 出力ディレクトリの作成
         const std::filesystem::path outputDirectoryPath =
@@ -285,8 +291,10 @@ class ParallelMoeadBenchmark {
             }
 
             // moeadの構成クラスの作成
+            // std::shared_ptr<IProblem<double>> problem =
+            //     std::move(Reflection<IProblem<double>>::Create(problemName));
             std::shared_ptr<IProblem<double>> problem =
-                std::move(Reflection<IProblem<double>>::Create(problemName));
+                CreateProblem(problemName, decisionVariablesNum, objectivesNum);
             auto crossover = std::make_shared<SimulatedBinaryCrossover>(
                 crossoverRate, problem->VariableBounds());
             auto decomposition = std::make_shared<Tchebycheff>();
