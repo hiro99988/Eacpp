@@ -6,12 +6,20 @@
 
 using namespace Eacpp;
 
-int main() {
-    MoeadInitializer moeadInitializer;
+int main(int argc, char* argv[]) {
     int divisionsNumOfWeightVector = 199;
     int objectivesNum = 2;
     int neighborhoodSize = 21;
     int parallelSize = 50;
+
+    if (argc == 5) {
+        divisionsNumOfWeightVector = std::stoi(argv[1]);
+        objectivesNum = std::stoi(argv[2]);
+        neighborhoodSize = std::stoi(argv[3]);
+        parallelSize = std::stoi(argv[4]);
+    }
+
+    MoeadInitializer moeadInitializer;
     std::vector<int> outInternalIndividualIndexes;
     std::vector<double> outInternalWeightVectors;
     std::vector<int> outInternalNeighborhoods;
@@ -95,11 +103,19 @@ int main() {
     for (int i = 0, count = 0; i < outNeighboringRankCounts.size();
          count += outNeighboringRankCounts[i], ++i) {
         int size = outNeighboringRankCounts[i];
-        std::cout << "rank: " << i << " size: " << size << std::endl;
+        // std::cout << "rank: " << i << " size: " << size << std::endl;
+        // for (int j = 0; j < size; ++j) {
+        //     std::cout << outNeighboringRanks[count + j] << " ";
+        // }
+        // std::cout << std::endl;
+        std::cout << "[";
         for (int j = 0; j < size; ++j) {
-            std::cout << outNeighboringRanks[count + j] << " ";
+            std::cout << outNeighboringRanks[count + j];
+            if (j != size - 1) {
+                std::cout << ", ";
+            }
         }
-        std::cout << std::endl;
+        std::cout << "]," << std::endl;
     }
 
     // neighboringRanksの平均サイズ

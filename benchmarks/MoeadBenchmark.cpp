@@ -46,12 +46,15 @@ int main(int argc, char** argv) {
         "data/inputs/benchmarks/parameter.json";
     auto parameterFile = OpenInputFile(ParameterFilePath);
     nlohmann::json parameter = nlohmann::json::parse(parameterFile);
+    parameterFile.close();
 
     int trial = parameter["trial"];
     int generationNum = parameter["generationNum"];
     int neighborhoodSize = parameter["neighborhoodSize"];
     int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
     double crossoverRate = parameter["crossoverRate"];
+    int decisionVariablesNum = parameter["decisionVariablesNum"];
+    int objectivesNum = parameter["objectivesNum"];
     std::vector<std::string> problemNames = parameter["problems"];
 
     // 出力ディレクトリの作成
@@ -93,7 +96,7 @@ int main(int argc, char** argv) {
 
         // moeadの構成クラスの作成
         std::shared_ptr<IProblem<double>> problem =
-            std::move(Reflection<IProblem<double>>::Create(problemName));
+            CreateProblem(problemName, decisionVariablesNum, objectivesNum);
         auto crossover = std::make_shared<SimulatedBinaryCrossover>(
             crossoverRate, problem->VariableBounds());
         auto decomposition = std::make_shared<Tchebycheff>();
@@ -113,12 +116,15 @@ int main(int argc, char** argv) {
         for (int i = 0; i < problem->ObjectivesNum(); i++) {
             idealPointHeader.push_back("objective" + std::to_string(i + 1));
         }
-        constexpr std::array<const char*, 2> IgdHeader = {"generation", "igd"};
+        constexpr std::array<const char*, 3> IgdHeader = {
+            "generation", "executionTime(s)", "igd"};
 
         // インディケータの作成
-        std::ifstream paretoFrontFile("data/ground_truth/pareto_fronts/" +
-                                      problemName + ".csv");
+        std::ifstream paretoFrontFile(
+            "data/ground_truth/pareto_fronts/" + problemName + "-" +
+            std::to_string(problem->ObjectivesNum()) + ".csv");
         auto paretoFront = ReadCsv<double>(paretoFrontFile, false);
+        paretoFrontFile.close();
         IGD indicator(paretoFront);
 
         std::cout << "Problem: " << problemName << std::endl;
@@ -131,7 +137,9 @@ int main(int argc, char** argv) {
 
             std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
             std::vector<std::vector<Eigen::ArrayXd>> populations;
+            std::vector<double> executionTimes;
             populations.reserve(generationNum + 1);
+            executionTimes.reserve(generationNum + 1);
 
             stopwatch.Restart();
 
@@ -142,6 +150,7 @@ int main(int argc, char** argv) {
             AddIdealPoint(moead.CurrentGeneration(),
                           decomposition->IdealPoint(), transitionOfIdealPoint);
             populations.push_back(moead.GetObjectivesList());
+            executionTimes.push_back(stopwatch.Elapsed());
 
             while (!moead.IsEnd()) {
                 stopwatch.Start();
@@ -154,43 +163,56 @@ int main(int argc, char** argv) {
                               decomposition->IdealPoint(),
                               transitionOfIdealPoint);
                 populations.push_back(moead.GetObjectivesList());
+                executionTimes.push_back(stopwatch.Elapsed());
             }
 
             std::cout << "Trial " << i + 1
                       << " Total execution time: " << stopwatch.Elapsed()
                       << " seconds" << std::endl;
 
+            // 実行時間の出力
+            executionTimesFile << i + 1 << "," << stopwatch.Elapsed()
+                               << std::endl;
+
+            std::string fileName = "trial_" + std::to_string(i + 1) + ".csv";
+
             // 目的関数値の出力
             std::filesystem::path objectiveFilePath =
-                objectiveDirectoryPath /
-                ("trial_" + std::to_string(i + 1) + ".csv");
+                objectiveDirectoryPath / fileName;
             std::ofstream objectiveFile = OpenOutputFile(objectiveFilePath);
             SetSignificantDigits(objectiveFile);
             WriteCsv(objectiveFile, moead.GetObjectivesList(), objectiveHeader);
 
             // 理想点の出力
             std::filesystem::path idealPointFilePath =
-                idealPointDirectoryPath /
-                ("trial_" + std::to_string(i + 1) + ".csv");
+                idealPointDirectoryPath / fileName;
             std::ofstream idealPointFile = OpenOutputFile(idealPointFilePath);
             SetSignificantDigits(idealPointFile);
             WriteCsv(idealPointFile, transitionOfIdealPoint, idealPointHeader);
 
             // IGDの出力
             const std::filesystem::path igdFilePath =
-                igdDirectoryPath / ("trial_" + std::to_string(i + 1) + ".csv");
+                igdDirectoryPath / fileName;
             std::ofstream igdFile = OpenOutputFile(igdFilePath);
             SetSignificantDigits(igdFile);
-            std::vector<std::pair<int, double>> igd;
+            std::vector<std::tuple<int, double, double>> igd;
             for (int j = 0; j < populations.size(); j++) {
-                igd.push_back(
-                    std::make_pair(j, indicator.Calculate(populations[j])));
+                igd.push_back(std::make_tuple(
+                    j, executionTimes[j], indicator.Calculate(populations[j])));
             }
-            WriteCsv(igdFile, igd, IgdHeader);
-
-            // 実行時間の出力
-            executionTimesFile << i + 1 << "," << stopwatch.Elapsed()
-                               << std::endl;
+            // ヘッダーの書き込み
+            for (std::size_t j = 0; j < IgdHeader.size(); j++) {
+                igdFile << IgdHeader[j];
+                if (j != IgdHeader.size() - 1) {
+                    igdFile << ",";
+                }
+            }
+            igdFile << std::endl;
+            // データの書き込み
+            for (const auto& [generation, time, igdValue] : igd) {
+                igdFile << generation << "," << time << "," << igdValue
+                        << std::endl;
+            }
         }
     }
 

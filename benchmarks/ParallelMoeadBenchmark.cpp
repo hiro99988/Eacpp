@@ -14,7 +14,6 @@
 
 #include "Algorithms/MpMoead.h"
 #include "Algorithms/MpMoeadIdealTopology.h"
-#include "Algorithms/NewMoead.hpp"
 #include "Algorithms/NtMoead.h"
 #include "Algorithms/OneNtMoead.hpp"
 #include "Crossovers/SimulatedBinaryCrossover.h"
@@ -37,8 +36,8 @@ class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
         "data/inputs/benchmarks/parameter.json";
-    constexpr static std::array<const char*, 5> MoeadNames = {
-        "MpMoead", "NtMoead", "NewMoead", "MpMoeadIdealTopology", "OneNtMoead"};
+    constexpr static std::array<const char*, 4> MoeadNames = {
+        "MpMoead", "NtMoead", "MpMoeadIdealTopology", "OneNtMoead"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {
@@ -85,7 +84,7 @@ class ParallelMoeadBenchmark {
         std::ifstream& file, int& outTrial, int& outGenerationNum,
         int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
         int& outMigrationInterval, double& outCrossoverRate,
-        int outDecisionVariablesNum, int outObjectivesNum,
+        int& outDecisionVariablesNum, int& outObjectivesNum,
         bool& outIdealPointMigration, bool& outIsAsync,
         std::vector<std::string>& outProblemNames,
         std::string& outAdjacencyListFileName) {
@@ -243,6 +242,7 @@ class ParallelMoeadBenchmark {
             divisionsNumOfWeightVector, migrationInterval, crossoverRate,
             decisionVariablesNum, objectivesNum, idealPointMigration, isAsync,
             problemNames, adjacencyListFileName);
+        parameterFile.close();
 
         // 出力ディレクトリの作成
         const std::filesystem::path outputDirectoryPath =
@@ -317,11 +317,11 @@ class ParallelMoeadBenchmark {
             }
 
             // インディケータの作成
-            std::ifstream paretoFrontFile;
             std::vector<std::vector<double>> paretoFront;
             if (rank == 0) {
-                paretoFrontFile = OpenInputFile(
-                    "data/ground_truth/pareto_fronts/" + problemName + ".csv");
+                auto paretoFrontFile = OpenInputFile(
+                    "data/ground_truth/pareto_fronts/" + problemName + "-" +
+                    std::to_string(problem->ObjectivesNum()) + ".csv");
                 paretoFront = ReadCsv<double>(paretoFrontFile, false);
             }
             IGD indicator(paretoFront);
@@ -349,21 +349,13 @@ class ParallelMoeadBenchmark {
                         mutation, problem, repair, sampling, selection,
                         idealPointMigration);
                 } else if (moeadName == MoeadNames[2]) {
-                    moead = std::make_unique<NewMoead<double>>(
-                        generationNum, neighborhoodSize,
-                        divisionsNumOfWeightVector, migrationInterval,
-                        "data/graph/new/neighboringMigration.csv",
-                        "data/graph/new/idealPointMigration.csv", crossover,
-                        decomposition, mutation, problem, repair, sampling,
-                        selection, idealPointMigration);
-                } else if (moeadName == MoeadNames[3]) {
                     moead = std::make_unique<MpMoeadIdealTopology<double>>(
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         adjacencyListFileName, crossover, decomposition,
                         mutation, problem, repair, sampling, selection,
                         isAsync);
-                } else if (moeadName == MoeadNames[4]) {
+                } else if (moeadName == MoeadNames[3]) {
                     moead = std::make_unique<OneNtMoead<double>>(
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
@@ -401,10 +393,10 @@ class ParallelMoeadBenchmark {
                     executionTimes.push_back(stopwatch.Elapsed());
                 }
 
+                double elapsed = stopwatch.Elapsed();
                 MPI_Barrier(MPI_COMM_WORLD);
 
                 // 実行時間の出力
-                double elapsed = stopwatch.Elapsed();
                 double maxExecutionTime;
                 MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX,
                            0, MPI_COMM_WORLD);
