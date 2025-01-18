@@ -53,9 +53,16 @@ int main(int argc, char** argv) {
     int neighborhoodSize = parameter["neighborhoodSize"];
     int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
     double crossoverRate = parameter["crossoverRate"];
-    int decisionVariablesNum = parameter["decisionVariablesNum"];
+    std::vector<int> decisionVariablesNums = parameter["decisionVariablesNums"];
     int objectivesNum = parameter["objectivesNum"];
     std::vector<std::string> problemNames = parameter["problems"];
+
+    if (decisionVariablesNums.size() != problemNames.size()) {
+        std::cerr << "The number of decision variables is not equal to the "
+                     "number of problems."
+                  << std::endl;
+        return 1;
+    }
 
     // 出力ディレクトリの作成
     const std::filesystem::path outputDirectoryPath =
@@ -69,7 +76,10 @@ int main(int argc, char** argv) {
 
     Stopwatch stopwatch;
 
-    for (auto&& problemName : problemNames) {
+    for (std::size_t i = 0; i < problemNames.size(); i++) {
+        const std::string& problemName = problemNames[i];
+        int decisionVariablesNum = decisionVariablesNums[i];
+
         // 各種ディレクトリの作成
         const std::filesystem::path outputProblemDirectoryPath =
             outputDirectoryPath / problemName;
@@ -129,7 +139,7 @@ int main(int argc, char** argv) {
 
         std::cout << "Problem: " << problemName << std::endl;
 
-        for (int i = 0; i < trial; i++) {
+        for (int t = 0; t < trial; t++) {
             Moead<double> moead(generationNum, neighborhoodSize,
                                 divisionsNumOfWeightVector, crossover,
                                 decomposition, mutation, problem, repair,
@@ -166,15 +176,15 @@ int main(int argc, char** argv) {
                 executionTimes.push_back(stopwatch.Elapsed());
             }
 
-            std::cout << "Trial " << i + 1
+            std::cout << "Trial " << t + 1
                       << " Total execution time: " << stopwatch.Elapsed()
                       << " seconds" << std::endl;
 
             // 実行時間の出力
-            executionTimesFile << i + 1 << "," << stopwatch.Elapsed()
+            executionTimesFile << t + 1 << "," << stopwatch.Elapsed()
                                << std::endl;
 
-            std::string fileName = "trial_" + std::to_string(i + 1) + ".csv";
+            std::string fileName = "trial_" + std::to_string(t + 1) + ".csv";
 
             // 目的関数値の出力
             std::filesystem::path objectiveFilePath =

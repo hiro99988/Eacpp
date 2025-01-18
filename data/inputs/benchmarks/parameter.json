@@ -1,20 +1,24 @@
 {
-    "trial": 31,
+    "trial": 2,
     "generationNum": 500,
     "neighborhoodSize": 21,
-    "divisionsNumOfWeightVector": 199,
+    "divisionsNumOfWeightVector": 23,
     "migrationInterval": 1,
     "crossoverRate": 0.9,
-    "decisionVariablesNum": 30,
-    "objectivesNum": 2,
+    "objectivesNum": 3,
     "idealPointMigration": true,
     "isAsync": true,
+    "decisionVariablesNums": [
+        7,
+        12,
+        12,
+        12
+    ],
     "problems": [
-        "zdt1",
-        "zdt2",
-        "zdt3",
-        "zdt4",
-        "zdt6"
+        "dtlz1",
+        "dtlz2",
+        "dtlz3",
+        "dtlz4"
     ],
     "adjacencyListFileName": "data/graphs/n10_d3/adjacencyList.csv"
 }

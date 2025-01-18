@@ -84,8 +84,8 @@ class ParallelMoeadBenchmark {
         std::ifstream& file, int& outTrial, int& outGenerationNum,
         int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
         int& outMigrationInterval, double& outCrossoverRate,
-        int& outDecisionVariablesNum, int& outObjectivesNum,
-        bool& outIdealPointMigration, bool& outIsAsync,
+        int& outObjectivesNum, bool& outIdealPointMigration, bool& outIsAsync,
+        std::vector<int>& outDecisionVariablesNums,
         std::vector<std::string>& outProblemNames,
         std::string& outAdjacencyListFileName) {
         nlohmann::json parameter = nlohmann::json::parse(file);
@@ -96,10 +96,11 @@ class ParallelMoeadBenchmark {
         outDivisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
         outMigrationInterval = parameter["migrationInterval"];
         outCrossoverRate = parameter["crossoverRate"];
-        outDecisionVariablesNum = parameter["decisionVariablesNum"];
         outObjectivesNum = parameter["objectivesNum"];
         outIdealPointMigration = parameter["idealPointMigration"];
         outIsAsync = parameter["isAsync"];
+        outDecisionVariablesNums =
+            parameter["decisionVariablesNums"].get<std::vector<int>>();
         outProblemNames = parameter["problems"];
         outAdjacencyListFileName = parameter["adjacencyListFileName"];
 
@@ -230,19 +231,26 @@ class ParallelMoeadBenchmark {
         int divisionsNumOfWeightVector;
         int migrationInterval;
         double crossoverRate;
-        int decisionVariablesNum;
         int objectivesNum;
         bool idealPointMigration;
         bool isAsync;
+        std::vector<int> decisionVariablesNums;
         std::vector<std::string> problemNames;
         std::string adjacencyListFileName;
         auto parameterFile = OpenInputFile(parameterFilePath);
         auto parameter = ReadParameters(
             parameterFile, trial, generationNum, neighborhoodSize,
             divisionsNumOfWeightVector, migrationInterval, crossoverRate,
-            decisionVariablesNum, objectivesNum, idealPointMigration, isAsync,
+            objectivesNum, idealPointMigration, isAsync, decisionVariablesNums,
             problemNames, adjacencyListFileName);
         parameterFile.close();
+
+        if (decisionVariablesNums.size() != problemNames.size()) {
+            throw std::invalid_argument(
+                "The number of decision variables is not equal to the number "
+                "of "
+                "problems.");
+        }
 
         // 出力ディレクトリの作成
         const std::filesystem::path outputDirectoryPath =
@@ -264,7 +272,10 @@ class ParallelMoeadBenchmark {
 
         MpiStopwatch stopwatch;
 
-        for (auto&& problemName : problemNames) {
+        for (std::size_t i = 0; i < problemNames.size(); i++) {
+            const std::string& problemName = problemNames[i];
+            int decisionVariablesNum = decisionVariablesNums[i];
+
             // 各種ディレクトリの作成
             const std::filesystem::path outputProblemDirectoryPath =
                 outputDirectoryPath / problemName;
@@ -291,8 +302,6 @@ class ParallelMoeadBenchmark {
             }
 
             // moeadの構成クラスの作成
-            // std::shared_ptr<IProblem<double>> problem =
-            //     std::move(Reflection<IProblem<double>>::Create(problemName));
             std::shared_ptr<IProblem<double>> problem =
                 CreateProblem(problemName, decisionVariablesNum, objectivesNum);
             auto crossover = std::make_shared<SimulatedBinaryCrossover>(
@@ -328,7 +337,7 @@ class ParallelMoeadBenchmark {
 
             RANK0(std::cout << "Problem: " << problemName << std::endl)
 
-            for (int i = 0; i < trial; i++) {
+            for (int t = 0; t < trial; t++) {
                 transitionOfIdealPoint.clear();
                 localObjectivesListHistory.clear();
                 std::vector<double> executionTimes;
@@ -400,14 +409,14 @@ class ParallelMoeadBenchmark {
                 double maxExecutionTime;
                 MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX,
                            0, MPI_COMM_WORLD);
-                RANK0(std::cout << "Trial " << i + 1
+                RANK0(std::cout << "Trial " << t + 1
                                 << " Total execution time: " << maxExecutionTime
                                 << " seconds" << std::endl;)
-                RANK0(executionTimesFile << i + 1 << "," << maxExecutionTime
+                RANK0(executionTimesFile << t + 1 << "," << maxExecutionTime
                                          << std::endl;)
 
                 std::string fileName =
-                    "trial_" + std::to_string(i + 1) + ".csv";
+                    "trial_" + std::to_string(t + 1) + ".csv";
 
                 // 理想点の出力
                 auto transitionOfIdealPointList =
