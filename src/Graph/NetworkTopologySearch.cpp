@@ -79,7 +79,8 @@ void NetworkTopologySearch::Search() {
         }
 
         double aspl = Evaluate(neighbor);
-        auto objective = aspl - lowerBoundOfAspl;
+        // auto objective = aspl - lowerBoundOfAspl;
+        auto objective = aspl;
         if (AcceptanceCriterion(objective, bestObjective, lowerBoundOfAspl,
                                 unitOfAspl, temperature)) {
             bestObjective = objective;
@@ -88,8 +89,8 @@ void NetworkTopologySearch::Search() {
                 _bestSoFarObjective = objective;
                 _bestSoFarGraph = bestNeighbor;
             }
-            std::cout << i << " aspl: " << aspl << " objective: " << objective
-                      << std::endl;
+            std::cout << i << " aspl: " << aspl << " diff from lower bound: "
+                      << objective - lowerBoundOfAspl << std::endl;
         }
 
         UpdateTemperature(temperature, _minTemperature, _coolingRate);
@@ -148,6 +149,9 @@ void NetworkTopologySearch::Write() const {
     evalJson["initialTemperature"] = _initialTemperature;
     evalJson["minTemperature"] = _minTemperature;
     evalJson["coolingRate"] = _coolingRate;
+    double lowerBoundOfAspl = LowerBoundOfAspl(_nodesNum, _degree);
+    evalJson["lowerBoundOfAspl"] = lowerBoundOfAspl;
+    evalJson["diffenceFromLowerBound"] = _bestSoFarObjective - lowerBoundOfAspl;
 
     std::ofstream evalFile(directoryPath / "evaluation.json");
     evalFile << evalJson.dump(4);
