@@ -42,8 +42,10 @@ class ParallelMoeadBenchmark {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {
         "generation", "executionTime(s)", "igd"};
-    constexpr static std::array<const char*, 4> DataTrafficsHeader = {
-        "generation", "source", "destination", "size"};
+    constexpr static std::array<const char*, 6> DataTrafficsHeader = {
+        "rank",         "generation",
+        "sendTimes",    "totalSendDataTraffic",
+        "receiveTimes", "totalReceiveDataTraffic"};
 
     int rank;
     int parallelSize;
@@ -240,10 +242,14 @@ class ParallelMoeadBenchmark {
         std::vector<std::vector<int>> allDataTraffics;
         allDataTraffics.reserve(receiveBuffer.size() / dataSize);
         if (rank == 0) {
-            for (std::size_t i = 0; i < receiveBuffer.size(); i += dataSize) {
-                allDataTraffics.emplace_back(
-                    receiveBuffer.begin() + i,
-                    receiveBuffer.begin() + i + dataSize);
+            for (int rank = 0, count = 0; rank < parallelSize;
+                 count += sizes[rank], rank++) {
+                for (int j = count; j < count + sizes[rank]; j += dataSize) {
+                    std::vector<int> traffic = {rank};
+                    traffic.insert(traffic.end(), receiveBuffer.begin() + j,
+                                   receiveBuffer.begin() + j + dataSize);
+                    allDataTraffics.push_back(std::move(traffic));
+                }
             }
         }
 
@@ -318,19 +324,14 @@ class ParallelMoeadBenchmark {
                 outputProblemDirectoryPath / "idealPoint";
             const std::filesystem::path igdDirectoryPath =
                 outputProblemDirectoryPath / "igd";
-            const std::filesystem::path sendDataTrafficsDirectoryPath =
-                outputProblemDirectoryPath / "sendDataTraffics";
-            const std::filesystem::path receiveDataTrafficsDirectoryPath =
-                outputProblemDirectoryPath / "receiveDataTraffics";
+            const std::filesystem::path dataTrafficsDirectoryPath =
+                outputProblemDirectoryPath / "dataTraffics";
             RANK0(
                 std::filesystem::create_directories(outputProblemDirectoryPath);
                 std::filesystem::create_directories(objectiveDirectoryPath);
                 std::filesystem::create_directories(idealPointDirectoryPath);
                 std::filesystem::create_directories(igdDirectoryPath);
-                std::filesystem::create_directories(
-                    sendDataTrafficsDirectoryPath);
-                std::filesystem::create_directories(
-                    receiveDataTrafficsDirectoryPath);)
+                std::filesystem::create_directories(dataTrafficsDirectoryPath);)
 
             // 実行時間ファイルの作成
             const std::filesystem::path executionTimesFilePath =
@@ -495,24 +496,12 @@ class ParallelMoeadBenchmark {
                     }
                 }
 
-                // 送信データ量の出力
-                auto sendDataTraffics = moead->GetSendDataTraffics();
+                // データ量の出力
+                auto sendDataTraffics = moead->GetDataTraffics();
                 auto allDataTraffics = GatherDataTraffics(sendDataTraffics);
                 if (rank == 0) {
                     std::filesystem::path dataTrafficsFilePath =
-                        sendDataTrafficsDirectoryPath / fileName;
-                    std::ofstream dataTrafficsFile =
-                        OpenOutputFile(dataTrafficsFilePath);
-                    WriteCsv(dataTrafficsFile, allDataTraffics,
-                             DataTrafficsHeader);
-                }
-
-                // 受信データ量の出力
-                auto receiveDataTraffics = moead->GetReceiveDataTraffics();
-                allDataTraffics = GatherDataTraffics(receiveDataTraffics);
-                if (rank == 0) {
-                    std::filesystem::path dataTrafficsFilePath =
-                        receiveDataTrafficsDirectoryPath / fileName;
+                        dataTrafficsDirectoryPath / fileName;
                     std::ofstream dataTrafficsFile =
                         OpenOutputFile(dataTrafficsFilePath);
                     WriteCsv(dataTrafficsFile, allDataTraffics,

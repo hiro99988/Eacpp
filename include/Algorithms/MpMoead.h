@@ -70,8 +70,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     std::vector<int> _neighboringRanks;
     std::vector<int> _ranksToSend;
     MpiStopwatch _stopwatch;
-    std::vector<std::vector<int>> _sendDataTraffics;
-    std::vector<std::vector<int>> _receiveDataTraffics;
+    std::vector<std::vector<int>> _traffics;
 
    public:
     MpMoead(int generationNum, int neighborhoodSize,
@@ -160,6 +159,17 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
                 messages = ReceiveMessagesSync();
             }
 
+            // 受信データ量を記録する
+            _stopwatch.Stop();
+            int receiveTimes = messages.size();
+            int totalReceiveDataTraffic = 0;
+            for (const auto& message : messages) {
+                totalReceiveDataTraffic += message.size();
+            }
+            _traffics.back().push_back(receiveTimes);
+            _traffics.back().push_back(totalReceiveDataTraffic);
+            _stopwatch.Start();
+
             _updatedSolutionIndexes.clear();
             _isIdealPointUpdated = false;
 
@@ -206,12 +216,8 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         return _stopwatch.Elapsed();
     }
 
-    std::vector<std::vector<int>> GetSendDataTraffics() const override {
-        return _sendDataTraffics;
-    }
-
-    std::vector<std::vector<int>> GetReceiveDataTraffics() const override {
-        return _receiveDataTraffics;
+    std::vector<std::vector<int>> GetDataTraffics() const override {
+        return _traffics;
     }
 
    private:
@@ -572,10 +578,13 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
 
         // 送信データ量を記録する
         _stopwatch.Stop();
+        int sendTimes = sendMessages.size();
+        int totalSendDataTraffic = 0;
         for (const auto& [dest, message] : sendMessages) {
-            _sendDataTraffics.push_back({_currentGeneration, _rank, dest,
-                                         static_cast<int>(message.size())});
+            totalSendDataTraffic += message.size();
         }
+        _traffics.push_back(
+            {_currentGeneration, sendTimes, totalSendDataTraffic});
         _stopwatch.Start();
 
         // メッセージを送信する
@@ -600,11 +609,6 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             MPI_Recv(message.data(), count, MPI_DOUBLE, source, messageTag,
                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             receiveMessages.push_back(std::move(message));
-
-            _stopwatch.Stop();
-            _receiveDataTraffics.push_back(
-                {_currentGeneration, source, _rank, count});
-            _stopwatch.Start();
         }
 
         return receiveMessages;
@@ -628,11 +632,6 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
                 MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source,
                          messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 receiveMessages.push_back(std::move(receive));
-
-                _stopwatch.Stop();
-                _receiveDataTraffics.push_back(
-                    {_currentGeneration, source, _rank, receiveDataSize});
-                _stopwatch.Start();
             }
         }
 

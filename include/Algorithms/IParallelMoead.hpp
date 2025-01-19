@@ -9,8 +9,7 @@ struct IParallelMoead : public IMoead<DecisionVariableType> {
     virtual ~IParallelMoead() {}
 
     virtual double GetElapsedTime() const = 0;
-    virtual std::vector<std::vector<int>> GetSendDataTraffics() const = 0;
-    virtual std::vector<std::vector<int>> GetReceiveDataTraffics() const = 0;
+    virtual std::vector<std::vector<int>> GetDataTraffics() const = 0;
 };
 
 }  // namespace Eacpp
