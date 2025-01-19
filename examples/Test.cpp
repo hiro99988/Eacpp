@@ -91,13 +91,38 @@ int main(int argc, char* argv[]) {
     std::cout << "ranksToSend" << std::endl;
     for (int i = 0, count = 0; i < outRanksToSendCounts.size();
          count += outRanksToSendCounts[i], ++i) {
-        int size = outRanksToSendCounts[i];
-        std::cout << "rank: " << i << " size: " << size << std::endl;
-        for (int j = 0; j < size; ++j) {
-            std::cout << outRanksToSendAtInitialization[count + j] << " ";
+        // int size = outRanksToSendCounts[i];
+        // std::cout << "rank: " << i << " size: " << size << std::endl;
+        // for (int j = 0; j < size; ++j) {
+        //     std::cout << outRanksToSendAtInitialization[count + j] << " ";
+        // }
+        // std::cout << std::endl;
+        std::cout << "[";
+        for (int j = 0; j < outRanksToSendCounts[i]; ++j) {
+            std::cout << outRanksToSendAtInitialization[count + j];
+            if (j != outRanksToSendCounts[i] - 1) {
+                std::cout << ", ";
+            }
         }
-        std::cout << std::endl;
+        std::cout << "]," << std::endl;
     }
+    // ranksToSendの平均サイズ
+    int sum = 0;
+    int min = outRanksToSendCounts[0];
+    int max = outRanksToSendCounts[0];
+    for (auto&& i : outRanksToSendCounts) {
+        sum += i;
+        if (i < min) {
+            min = i;
+        }
+        if (i > max) {
+            max = i;
+        }
+    }
+    std::cout << "ranksToSend min size: " << min << std::endl;
+    std::cout << "ranksToSend max size: " << max << std::endl;
+    std::cout << "ranksToSend average size: "
+              << (double)sum / outRanksToSendCounts.size() << std::endl;
 
     std::cout << "neighboringRanks" << std::endl;
     for (int i = 0, count = 0; i < outNeighboringRankCounts.size();
@@ -119,9 +144,9 @@ int main(int argc, char* argv[]) {
     }
 
     // neighboringRanksの平均サイズ
-    int sum = 0;
-    int min = outNeighboringRankCounts[0];
-    int max = outNeighboringRankCounts[0];
+    sum = 0;
+    min = outNeighboringRankCounts[0];
+    max = outNeighboringRankCounts[0];
     for (auto&& i : outNeighboringRankCounts) {
         sum += i;
         if (i < min) {

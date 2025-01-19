@@ -202,6 +202,17 @@ class MoeadInitializer {
         auto neighborhoods =
             CalculateNeighborhoods2d(neighborhoodSize, weightVectors);
 
+        // std::vector<std::vector<double>> weightVectors;
+        // std::vector<std::vector<int>> neighborhoods;
+        // GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector,
+        //                                       objectivesNum,
+        //                                       neighborhoodSize,
+        //                                       weightVectors, neighborhoods);
+
+        // // 各ランクのインデックスを生成する
+        // auto internalIndividualIndexes =
+        //     GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
+
         // internalIndividualIndexesを1次元に変換，個数をカウント
         outInternalIndividualIndexes.reserve(
             internalIndividualIndexes.size() *
@@ -309,15 +320,19 @@ class MoeadInitializer {
         }
 
         // 近傍のランクを計算する
-        outNeighboringRankCounts = std::vector<int>(parallelSize, 0);
+        outNeighboringRankCounts = std::vector<int>(parallelSize);
         for (int i = 0; i < parallelSize; ++i) {
-            for (auto&& j : externalRanks[i]) {
-                if (std::ranges::find(externalRanks[j], i) !=
-                    externalRanks[j].end()) {
-                    outNeighboringRanks.push_back(j);
-                    outNeighboringRankCounts[i]++;
-                }
-            }
+            // for (auto&& j : externalRanks[i]) {
+            // if (std::ranges::find(externalRanks[j], i) !=
+            //     externalRanks[j].end()) {
+            //     outNeighboringRanks.push_back(j);
+            //     outNeighboringRankCounts[i]++;
+            // }
+            // }
+            outNeighboringRanks.insert(outNeighboringRanks.end(),
+                                       externalRanks[i].begin(),
+                                       externalRanks[i].end());
+            outNeighboringRankCounts[i] = externalRanks[i].size();
         }
     }
 

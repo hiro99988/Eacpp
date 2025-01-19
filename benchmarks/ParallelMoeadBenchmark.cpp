@@ -36,12 +36,14 @@ class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
         "data/inputs/benchmarks/parameter.json";
-    constexpr static std::array<const char*, 4> MoeadNames = {
-        "MpMoead", "NtMoead", "MpMoeadIdealTopology", "OneNtMoead"};
+    constexpr static std::array<const char*, 2> MoeadNames = {"MpMoead",
+                                                              "MpMoeadIt"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {
         "generation", "executionTime(s)", "igd"};
+    constexpr static std::array<const char*, 4> DataTrafficsHeader = {
+        "generation", "source", "destination", "size"};
 
     int rank;
     int parallelSize;
@@ -221,6 +223,33 @@ class ParallelMoeadBenchmark {
         return transitionOfIdealPointList;
     }
 
+    std::vector<std::vector<int>> GatherDataTraffics(
+        const std::vector<std::vector<int>>& dataTraffics) {
+        std::vector<int> sendBuffer;
+        int dataSize = dataTraffics[0].size();
+        sendBuffer.reserve(dataSize * dataTraffics.size());
+        for (const auto& dataTraffic : dataTraffics) {
+            sendBuffer.insert(sendBuffer.end(), dataTraffic.begin(),
+                              dataTraffic.end());
+        }
+
+        std::vector<int> receiveBuffer;
+        std::vector<int> sizes;
+        Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
+
+        std::vector<std::vector<int>> allDataTraffics;
+        allDataTraffics.reserve(receiveBuffer.size() / dataSize);
+        if (rank == 0) {
+            for (std::size_t i = 0; i < receiveBuffer.size(); i += dataSize) {
+                allDataTraffics.emplace_back(
+                    receiveBuffer.begin() + i,
+                    receiveBuffer.begin() + i + dataSize);
+            }
+        }
+
+        return allDataTraffics;
+    }
+
     void Run() {
         InitializeMpi();
 
@@ -253,8 +282,14 @@ class ParallelMoeadBenchmark {
         }
 
         // 出力ディレクトリの作成
-        const std::filesystem::path outputDirectoryPath =
-            "out/data/" + moeadName + "/" + GetTimestamp() + "/";
+        std::filesystem::path outputDirectoryPath;
+        if (isAsync) {
+            outputDirectoryPath =
+                "out/data/" + moeadName + "Async" + "/" + GetTimestamp() + "/";
+        } else {
+            outputDirectoryPath =
+                "out/data/" + moeadName + "Sync" + "/" + GetTimestamp() + "/";
+        }
         RANK0(std::filesystem::create_directories(outputDirectoryPath);)
 
         // パラメータファイルのコピー
@@ -270,8 +305,6 @@ class ParallelMoeadBenchmark {
         Warmup();
         RANK0(std::cout << "End warmup" << std::endl)
 
-        MpiStopwatch stopwatch;
-
         for (std::size_t i = 0; i < problemNames.size(); i++) {
             const std::string& problemName = problemNames[i];
             int decisionVariablesNum = decisionVariablesNums[i];
@@ -285,11 +318,19 @@ class ParallelMoeadBenchmark {
                 outputProblemDirectoryPath / "idealPoint";
             const std::filesystem::path igdDirectoryPath =
                 outputProblemDirectoryPath / "igd";
+            const std::filesystem::path sendDataTrafficsDirectoryPath =
+                outputProblemDirectoryPath / "sendDataTraffics";
+            const std::filesystem::path receiveDataTrafficsDirectoryPath =
+                outputProblemDirectoryPath / "receiveDataTraffics";
             RANK0(
                 std::filesystem::create_directories(outputProblemDirectoryPath);
                 std::filesystem::create_directories(objectiveDirectoryPath);
                 std::filesystem::create_directories(idealPointDirectoryPath);
-                std::filesystem::create_directories(igdDirectoryPath);)
+                std::filesystem::create_directories(igdDirectoryPath);
+                std::filesystem::create_directories(
+                    sendDataTrafficsDirectoryPath);
+                std::filesystem::create_directories(
+                    receiveDataTrafficsDirectoryPath);)
 
             // 実行時間ファイルの作成
             const std::filesystem::path executionTimesFilePath =
@@ -343,7 +384,7 @@ class ParallelMoeadBenchmark {
                 std::vector<double> executionTimes;
                 executionTimes.reserve(generationNum + 1);
 
-                std::unique_ptr<IMoead<double>> moead;
+                std::unique_ptr<IParallelMoead<double>> moead;
                 if (moeadName == MoeadNames[0]) {
                     moead = std::make_unique<MpMoead<double>>(
                         generationNum, neighborhoodSize,
@@ -351,58 +392,37 @@ class ParallelMoeadBenchmark {
                         crossover, decomposition, mutation, problem, repair,
                         sampling, selection, idealPointMigration, isAsync);
                 } else if (moeadName == MoeadNames[1]) {
-                    moead = std::make_unique<NtMoead<double>>(
-                        generationNum, neighborhoodSize,
-                        divisionsNumOfWeightVector, migrationInterval,
-                        adjacencyListFileName, crossover, decomposition,
-                        mutation, problem, repair, sampling, selection,
-                        idealPointMigration);
-                } else if (moeadName == MoeadNames[2]) {
                     moead = std::make_unique<MpMoeadIdealTopology<double>>(
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         adjacencyListFileName, crossover, decomposition,
                         mutation, problem, repair, sampling, selection,
                         isAsync);
-                } else if (moeadName == MoeadNames[3]) {
-                    moead = std::make_unique<OneNtMoead<double>>(
-                        generationNum, neighborhoodSize,
-                        divisionsNumOfWeightVector, migrationInterval,
-                        adjacencyListFileName, crossover, decomposition,
-                        mutation, problem, repair, sampling, selection,
-                        idealPointMigration);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }
 
                 MPI_Barrier(MPI_COMM_WORLD);
-                stopwatch.Restart();
 
                 moead->Initialize();
-
-                stopwatch.Stop();
 
                 AddIdealPoint(moead->CurrentGeneration(),
                               decomposition->IdealPoint());
                 localObjectivesListHistory.push_back(
                     moead->GetObjectivesList());
-                executionTimes.push_back(stopwatch.Elapsed());
+                executionTimes.push_back(moead->GetElapsedTime());
 
                 while (!moead->IsEnd()) {
-                    stopwatch.Start();
-
                     moead->Update();
-
-                    stopwatch.Stop();
 
                     AddIdealPoint(moead->CurrentGeneration(),
                                   decomposition->IdealPoint());
                     localObjectivesListHistory.push_back(
                         moead->GetObjectivesList());
-                    executionTimes.push_back(stopwatch.Elapsed());
+                    executionTimes.push_back(moead->GetElapsedTime());
                 }
 
-                double elapsed = stopwatch.Elapsed();
+                double elapsed = moead->GetElapsedTime();
                 MPI_Barrier(MPI_COMM_WORLD);
 
                 // 実行時間の出力
@@ -473,6 +493,30 @@ class ParallelMoeadBenchmark {
                         igdFile << generation << "," << time << "," << igdValue
                                 << std::endl;
                     }
+                }
+
+                // 送信データ量の出力
+                auto sendDataTraffics = moead->GetSendDataTraffics();
+                auto allDataTraffics = GatherDataTraffics(sendDataTraffics);
+                if (rank == 0) {
+                    std::filesystem::path dataTrafficsFilePath =
+                        sendDataTrafficsDirectoryPath / fileName;
+                    std::ofstream dataTrafficsFile =
+                        OpenOutputFile(dataTrafficsFilePath);
+                    WriteCsv(dataTrafficsFile, allDataTraffics,
+                             DataTrafficsHeader);
+                }
+
+                // 受信データ量の出力
+                auto receiveDataTraffics = moead->GetReceiveDataTraffics();
+                allDataTraffics = GatherDataTraffics(receiveDataTraffics);
+                if (rank == 0) {
+                    std::filesystem::path dataTrafficsFilePath =
+                        receiveDataTrafficsDirectoryPath / fileName;
+                    std::ofstream dataTrafficsFile =
+                        OpenOutputFile(dataTrafficsFilePath);
+                    WriteCsv(dataTrafficsFile, allDataTraffics,
+                             DataTrafficsHeader);
                 }
 
                 MPI_Barrier(MPI_COMM_WORLD);
