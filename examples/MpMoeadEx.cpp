@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
     std::string problemName = "zdt1";
     bool idealPointMigration = false;
     bool isAsync = true;
+    int decisionVariableNum = 30;
+    int objectiveNum = 2;
 
     if (argc == 7) {
         generationNum = std::stoi(argv[1]);
@@ -39,7 +41,7 @@ int main(int argc, char** argv) {
         H = std::stoi(argv[4]);
         problemName = argv[5];
         idealPointMigration = std::stoi(argv[6]);
-    } else if (argc == 8) {
+    } else if (argc == 10) {
         generationNum = std::stoi(argv[1]);
         neighborhoodSize = std::stoi(argv[2]);
         migrationInterval = std::stoi(argv[3]);
@@ -47,10 +49,12 @@ int main(int argc, char** argv) {
         problemName = argv[5];
         idealPointMigration = std::stoi(argv[6]);
         isAsync = std::stoi(argv[7]);
+        decisionVariableNum = std::stoi(argv[8]);
+        objectiveNum = std::stoi(argv[9]);
     }
 
     std::shared_ptr<IProblem<double>> problem =
-        Reflection<IProblem<double>>::Create(problemName);
+        CreateProblem(problemName, decisionVariableNum, objectiveNum);
 
     auto crossover = std::make_shared<SimulatedBinaryCrossover>(
         0.9, problem->VariableBounds());
