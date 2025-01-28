@@ -34,7 +34,7 @@ namespace Eacpp {
 template <typename DecisionVariableType>
 class MpMoead : public IParallelMoead<DecisionVariableType> {
    public:
-    constexpr static int maxBufferSize = 100;
+    constexpr static int maxBufferSize = 10;
     constexpr static int messageTag = 0;
 
    private:
@@ -47,6 +47,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     int _decisionVariablesNum;
     int _objectivesNum;
     int _singleMessageSize;
+    int _dummyVariablesNum;
     std::shared_ptr<ICrossover<DecisionVariableType>> _crossover;
     std::shared_ptr<IDecomposition> _decomposition;
     std::shared_ptr<IMutation<DecisionVariableType>> _mutation;
@@ -81,7 +82,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
             const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
             const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
-            const std::shared_ptr<ISelection>& selection,
+            const std::shared_ptr<ISelection>& selection, int dummyVariablesNum,
             bool idealPointMigration = false, bool isAsync = true)
         : _generationNum(generationNum),
           _neighborhoodSize(neighborhoodSize),
@@ -92,6 +93,10 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         if (!crossover || !decomposition || !mutation || !problem || !repair ||
             !sampling || !selection) {
             throw std::invalid_argument("Null pointer is passed");
+        }
+
+        if (dummyVariablesNum <= 0) {
+            throw std::invalid_argument("dummyVariablesNum must be positive");
         }
 
         this->_crossover = crossover;
@@ -106,6 +111,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         _currentGeneration = 0;
         _singleMessageSize = _decisionVariablesNum + _objectivesNum + 1;
         _isIdealPointUpdated = false;
+        _dummyVariablesNum = dummyVariablesNum;
     }
 
     int CurrentGeneration() const override {
@@ -553,6 +559,15 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             }
         }
 
+        // ダミー変数を追加する
+        for (auto& [_, message] : dataToSend) {
+            std::size_t count = message.size() / _singleMessageSize;
+            message.reserve(message.size() + count * _dummyVariablesNum);
+            for (std::size_t i = 0; i < count; ++i) {
+                message.insert(message.end(), _dummyVariablesNum, -1.0);
+            }
+        }
+
         if (_idealPointMigration && _isIdealPointUpdated) {
             for (auto&& rank : _ranksToSend) {
                 dataToSend[rank].insert(dataToSend[rank].end(),
@@ -639,15 +654,28 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     }
 
     void UpdateWithMessage(std::vector<double>& message) {
-        int limit = message.size();
-        bool containsIdealPoint =
-            _idealPointMigration &&
-            message.size() % _singleMessageSize == _objectivesNum;
-        if (containsIdealPoint) {
-            limit -= _objectivesNum;
-        }
-        for (int i = 0; i < limit; i += _singleMessageSize) {
+        for (int i = 0, count = 0; i < message.size();
+             i += _singleMessageSize) {
             int index = message[i];
+
+            // ダミー変数の処理
+            if (index == -1) {
+                if (_idealPointMigration) {
+                    std::size_t remaining = message.size() - i;
+                    int dummys = _dummyVariablesNum * count;
+                    if (remaining != dummys) {
+                        Eigen::ArrayXd idealPoint = Eigen::Map<Eigen::ArrayXd>(
+                            message.data() + message.size() - _objectivesNum,
+                            _objectivesNum);
+                        UpdateIdealPoint(idealPoint);
+                    }
+                }
+
+                break;
+            }
+
+            ++count;
+
             if (!(IsInternal(index) || IsExternal(index))) {
                 continue;
             }
@@ -674,10 +702,6 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             }
 
             UpdateIdealPoint(newIndividual.objectives);
-        }
-
-        if (containsIdealPoint) {
-            UpdateIdealPointWithMessage(message);
         }
     }
 

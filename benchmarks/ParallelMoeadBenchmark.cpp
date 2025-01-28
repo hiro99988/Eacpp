@@ -91,7 +91,7 @@ class ParallelMoeadBenchmark {
         int& outObjectivesNum, bool& outIdealPointMigration, bool& outIsAsync,
         std::vector<int>& outDecisionVariablesNums,
         std::vector<std::string>& outProblemNames,
-        std::string& outAdjacencyListFileName) {
+        std::string& outAdjacencyListFileName, int& outDummyVariablesNum) {
         nlohmann::json parameter = nlohmann::json::parse(file);
 
         outTrial = parameter["trial"];
@@ -107,6 +107,7 @@ class ParallelMoeadBenchmark {
             parameter["decisionVariablesNums"].get<std::vector<int>>();
         outProblemNames = parameter["problems"];
         outAdjacencyListFileName = parameter["adjacencyListFileName"];
+        outDummyVariablesNum = parameter["dummyVariablesNum"];
 
         return parameter;
     }
@@ -272,12 +273,14 @@ class ParallelMoeadBenchmark {
         std::vector<int> decisionVariablesNums;
         std::vector<std::string> problemNames;
         std::string adjacencyListFileName;
+        int dummyVariablesNum;
+
         auto parameterFile = OpenInputFile(parameterFilePath);
         auto parameter = ReadParameters(
             parameterFile, trial, generationNum, neighborhoodSize,
             divisionsNumOfWeightVector, migrationInterval, crossoverRate,
             objectivesNum, idealPointMigration, isAsync, decisionVariablesNums,
-            problemNames, adjacencyListFileName);
+            problemNames, adjacencyListFileName, dummyVariablesNum);
         parameterFile.close();
 
         if (decisionVariablesNums.size() != problemNames.size()) {
@@ -391,14 +394,15 @@ class ParallelMoeadBenchmark {
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         crossover, decomposition, mutation, problem, repair,
-                        sampling, selection, idealPointMigration, isAsync);
+                        sampling, selection, dummyVariablesNum,
+                        idealPointMigration, isAsync);
                 } else if (moeadName == MoeadNames[1]) {
                     moead = std::make_unique<MpMoeadIdealTopology<double>>(
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         adjacencyListFileName, crossover, decomposition,
                         mutation, problem, repair, sampling, selection,
-                        isAsync);
+                        dummyVariablesNum, isAsync);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }
