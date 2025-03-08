@@ -53,6 +53,7 @@ class ParallelMoeadBenchmark {
     std::filesystem::path parameterFilePath;
     std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
     std::vector<std::vector<Eigen::ArrayXd>> localObjectivesListHistory;
+    std::vector<double> executionTimes;
 
     ParallelMoeadBenchmark(const std::string& moeadName)
         : parameterFilePath(DefaultParameterFilePath) {
@@ -256,6 +257,16 @@ class ParallelMoeadBenchmark {
         return allDataTraffics;
     }
 
+    std::vector<double> GatherExecutionTimes() {
+        std::vector<double> globalExecutionTimes(executionTimes.size());
+        for (std::size_t i = 0; i < executionTimes.size(); ++i) {
+            MPI_Reduce(&executionTimes[i], &globalExecutionTimes[i], 1,
+                       MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        }
+
+        return globalExecutionTimes;
+    }
+
     void Run() {
         InitializeMpi();
 
@@ -286,6 +297,10 @@ class ParallelMoeadBenchmark {
                 "of "
                 "problems.");
         }
+
+        // vectorの確保
+        localObjectivesListHistory.reserve(trial);
+        executionTimes.reserve(trial);
 
         // 出力ディレクトリの作成
         std::filesystem::path outputDirectoryPath;
@@ -382,8 +397,7 @@ class ParallelMoeadBenchmark {
             for (int t = 0; t < trial; t++) {
                 transitionOfIdealPoint.clear();
                 localObjectivesListHistory.clear();
-                std::vector<double> executionTimes;
-                executionTimes.reserve(generationNum + 1);
+                executionTimes.clear();
 
                 std::unique_ptr<IParallelMoead<double>> moead;
                 if (moeadName == MoeadNames[0]) {
@@ -412,6 +426,8 @@ class ParallelMoeadBenchmark {
                 localObjectivesListHistory.push_back(
                     moead->GetObjectivesList());
                 executionTimes.push_back(moead->GetElapsedTime());
+
+                MPI_Barrier(MPI_COMM_WORLD);
 
                 while (!moead->IsEnd()) {
                     moead->Update();
@@ -470,6 +486,7 @@ class ParallelMoeadBenchmark {
                 }
 
                 // IGDの出力
+                auto globalExecutionTimes = GatherExecutionTimes();
                 if (rank == 0) {
                     std::filesystem::path igdFilePath =
                         igdDirectoryPath / fileName;
@@ -478,7 +495,7 @@ class ParallelMoeadBenchmark {
                     std::vector<std::tuple<int, double, double>> igd;
                     for (int j = 0; j < objectivesListHistory.size(); j++) {
                         igd.push_back(std::make_tuple(
-                            j, executionTimes[j],
+                            j, globalExecutionTimes[j],
                             indicator.Calculate(objectivesListHistory[j])));
                     }
                     // ヘッダーの書き込み
