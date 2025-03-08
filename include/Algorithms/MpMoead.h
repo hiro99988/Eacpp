@@ -7,6 +7,7 @@
 #include <eigen3/Eigen/Dense>
 #include <filesystem>
 #include <fstream>
+#include <list>
 #include <memory>
 #include <numeric>
 #include <ranges>
@@ -71,6 +72,16 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     std::vector<int> _ranksToSend;
     MpiStopwatch _stopwatch;
     std::vector<std::vector<int>> _traffics;
+
+   private:
+    // 送信中のデータを管理する構造体
+    struct PendingSend {
+        MPI_Request request;
+        std::vector<double> data;
+    };
+
+    // 保留中の送信データを管理するバッファ
+    std::list<PendingSend> pendingSends;
 
    public:
     MpMoead(int generationNum, int neighborhoodSize,
@@ -187,6 +198,10 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         }
 
         _stopwatch.Stop();
+
+        if (_currentGeneration >= _generationNum) {
+            CompletePendingSends();
+        }
     }
 
     bool IsEnd() const override {
@@ -565,16 +580,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     }
 
     void SendMessages() {
-        // MPI_Isendで使うバッファ
-        static std::array<std::unordered_map<int, std::vector<double>>,
-                          maxBufferSize>
-            sendMessageBuffers;
-        static int sendMessageBufferIndex = 0;
-        sendMessageBufferIndex = (sendMessageBufferIndex + 1) % maxBufferSize;
-
-        std::unordered_map<int, std::vector<double>>& sendMessages =
-            sendMessageBuffers[sendMessageBufferIndex];
-        sendMessages = CreateMessages();
+        auto sendMessages = CreateMessages();
 
         // 送信データ量を記録する
         _stopwatch.Stop();
@@ -588,11 +594,20 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         _stopwatch.Start();
 
         // メッセージを送信する
-        MPI_Request request;
         for (auto&& [dest, message] : sendMessages) {
-            MPI_Isend(message.data(), message.size(), MPI_DOUBLE, dest,
-                      messageTag, MPI_COMM_WORLD, &request);
+            PendingSend ps;
+            ps.data = std::move(message);
+            MPI_Isend(ps.data.data(), ps.data.size(), MPI_DOUBLE, dest,
+                      messageTag, MPI_COMM_WORLD, &ps.request);
+            pendingSends.push_back(std::move(ps));
         }
+
+        // 送信が完了したリクエストを削除する
+        pendingSends.remove_if([](PendingSend& ps) {
+            int flag = 0;
+            MPI_Test(&ps.request, &flag, MPI_STATUS_IGNORE);
+            return flag;
+        });
     }
 
     std::vector<std::vector<double>> ReceiveMessagesSync() {
@@ -679,6 +694,18 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         if (containsIdealPoint) {
             UpdateIdealPointWithMessage(message);
         }
+    }
+
+    void CompletePendingSends() {
+        MPI_Barrier(MPI_COMM_WORLD);
+        ReleaseIsend(_parallelSize, MPI_DOUBLE);
+
+        std::vector<MPI_Request> requests;
+        for (auto&& ps : pendingSends) {
+            requests.push_back(ps.request);
+        }
+
+        MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
 
 #ifdef _TEST_
