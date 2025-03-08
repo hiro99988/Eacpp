@@ -33,7 +33,7 @@
 namespace Eacpp {
 
 template <typename DecisionVariableType>
-class MpMoead : public IParallelMoead<DecisionVariableType> {
+class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
    public:
     constexpr static int maxBufferSize = 100;
     constexpr static int messageTag = 0;
@@ -70,6 +70,8 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     std::vector<int> _externalIndividualRanks;
     std::vector<int> _neighboringRanks;
     std::vector<int> _ranksToSend;
+    std::vector<int> _ranksToSend1;
+    std::vector<int> _ranksToSend2;
     MpiStopwatch _stopwatch;
     std::vector<std::vector<int>> _traffics;
 
@@ -83,17 +85,21 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     // 保留中の送信データを管理するバッファ
     std::list<PendingSend> pendingSends;
 
+    // 通信インデックス
+    int _sendIndex = 0;
+
    public:
-    MpMoead(int generationNum, int neighborhoodSize,
-            int divisionsNumOfWeightVector, int migrationInterval,
-            const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
-            const std::shared_ptr<IDecomposition>& decomposition,
-            const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
-            const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
-            const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
-            const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
-            const std::shared_ptr<ISelection>& selection,
-            bool idealPointMigration = false, bool isAsync = true)
+    HalfMpMoead(
+        int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector,
+        int migrationInterval,
+        const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
+        const std::shared_ptr<IDecomposition>& decomposition,
+        const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
+        const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
+        const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
+        const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
+        const std::shared_ptr<ISelection>& selection,
+        bool idealPointMigration = false, bool isAsync = true)
         : _generationNum(generationNum),
           _neighborhoodSize(neighborhoodSize),
           _migrationInterval(migrationInterval),
@@ -181,8 +187,12 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             _traffics.back().push_back(totalReceiveDataTraffic);
             _stopwatch.Start();
 
-            _updatedSolutionIndexes.clear();
-            _isIdealPointUpdated = false;
+            if (_sendIndex == 0) {
+                _updatedSolutionIndexes.clear();
+                _isIdealPointUpdated = false;
+            }
+            // _updatedSolutionIndexes.clear();
+            // _isIdealPointUpdated = false;
 
             for (auto&& message : messages) {
                 if (message.empty()) {
@@ -306,6 +316,13 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         // 初期化時に送信するノードを分散する
         _ranksToSend = Scatterv(ranksToSendAtInitialization, ranksToSendCounts,
                                 1, _rank, _parallelSize);
+
+        // _ranksToSendを2つに分割する
+        _ranksToSend1 =
+            std::vector<int>(_ranksToSend.begin(),
+                             _ranksToSend.begin() + _ranksToSend.size() / 2);
+        _ranksToSend2 = std::vector<int>(
+            _ranksToSend.begin() + _ranksToSend.size() / 2, _ranksToSend.end());
 
         // 近傍のランクを分散する
         _neighboringRanks = Scatterv(neighboringRanks, neighboringRankCounts, 1,
@@ -538,9 +555,18 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
                 _individuals[i].objectives.end());
         }
 
+        std::vector<int>& ranksToSend =
+            _sendIndex == 0 ? _ranksToSend1 : _ranksToSend2;
+        _sendIndex = (_sendIndex + 1) % 2;
+
         std::unordered_map<int, std::vector<double>> dataToSend;
         for (int i = 0; i < _externalIndexes.size(); i++) {
             if (_externalIndividualRanks[i] == -1) {
+                continue;
+            }
+
+            if (std::find(ranksToSend.begin(), ranksToSend.end(),
+                          _externalIndividualRanks[i]) == ranksToSend.end()) {
                 continue;
             }
 
@@ -561,7 +587,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         }
 
         if ((!_isAsync) || (_isAsync && !updatedInternalIndividuals.empty())) {
-            for (auto&& rank : _ranksToSend) {
+            for (auto&& rank : ranksToSend) {
                 dataToSend[rank].insert(dataToSend[rank].end(),
                                         updatedInternalIndividuals.begin(),
                                         updatedInternalIndividuals.end());
@@ -569,7 +595,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         }
 
         if (_idealPointMigration && _isIdealPointUpdated) {
-            for (auto&& rank : _ranksToSend) {
+            for (auto&& rank : ranksToSend) {
                 dataToSend[rank].insert(dataToSend[rank].end(),
                                         _decomposition->IdealPoint().begin(),
                                         _decomposition->IdealPoint().end());
@@ -707,22 +733,6 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
-
-#ifdef _TEST_
-   public:
-    MpMoead(int totalPopulationSize, int generationNum, int decisionVariableNum,
-            int objectiveNum, int neighborNum, int migrationInterval, int H)
-        : _totalPopulationSize(totalPopulationSize),
-          generationNum(generationNum),
-          decisionVariablesNum(decisionVariableNum),
-          _objectivesNum(objectiveNum),
-          neighborhoodSize(neighborNum),
-          migrationInterval(migrationInterval),
-          divisionsNumOfWeightVector(H) {}
-
-    friend class MpMoeadTest;
-    friend class MpMoeadTestM;
-#endif
 };
 
 }  // namespace Eacpp

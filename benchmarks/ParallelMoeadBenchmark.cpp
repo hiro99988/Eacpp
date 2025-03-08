@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "Algorithms/HalfMpMoead.hpp"
 #include "Algorithms/MpMoead.h"
 #include "Algorithms/MpMoeadIdealTopology.h"
 #include "Algorithms/NtMoead.h"
@@ -36,8 +37,8 @@ class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
         "data/inputs/benchmarks/parameter.json";
-    constexpr static std::array<const char*, 2> MoeadNames = {"MpMoead",
-                                                              "MpMoeadIt"};
+    constexpr static std::array<const char*, 3> MoeadNames = {
+        "MpMoead", "MpMoeadIt", "HalfMpMoead"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {
@@ -413,6 +414,12 @@ class ParallelMoeadBenchmark {
                         adjacencyListFileName, crossover, decomposition,
                         mutation, problem, repair, sampling, selection,
                         isAsync);
+                } else if (moeadName == MoeadNames[2]) {
+                    moead = std::make_unique<HalfMpMoead<double>>(
+                        generationNum, neighborhoodSize,
+                        divisionsNumOfWeightVector, migrationInterval,
+                        crossover, decomposition, mutation, problem, repair,
+                        sampling, selection, idealPointMigration, isAsync);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }
