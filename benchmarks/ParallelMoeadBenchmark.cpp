@@ -418,8 +418,9 @@ class ParallelMoeadBenchmark {
                     moead = std::make_unique<HalfMpMoead<double>>(
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
-                        crossover, decomposition, mutation, problem, repair,
-                        sampling, selection, idealPointMigration, isAsync);
+                        adjacencyListFileName, crossover, decomposition,
+                        mutation, problem, repair, sampling, selection,
+                        isAsync);
                 } else {
                     throw std::invalid_argument("Invalid moead name");
                 }

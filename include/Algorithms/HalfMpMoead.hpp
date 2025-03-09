@@ -12,6 +12,7 @@
 #include <numeric>
 #include <ranges>
 #include <set>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "Samplings/ISampling.h"
 #include "Selections/ISelection.h"
 #include "Stopwatches/MpiStopwatch.hpp"
+#include "Utils/FileUtils.h"
 #include "Utils/MpiUtils.h"
 #include "Utils/Utils.h"
 
@@ -148,6 +150,7 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
             _divisionsNumOfWeightVector, _objectivesNum);
         _decomposition->InitializeIdealPoint(_objectivesNum);
         InitializeIsland();
+        InitializeIdealTopology();
         _currentGeneration = 0;
         _stopwatch.Stop();
     }
@@ -212,7 +215,7 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
 
         _stopwatch.Stop();
 
-        if (_currentGeneration >= _generationNum) {
+        if (IsEnd()) {
             CompletePendingSends();
 
             double elapsed = _communicationTime.Elapsed();
@@ -266,6 +269,8 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         _clonedExternalIndividuals.clear();
         _externalIndividualRanks.clear();
         _neighboringRanks.clear();
+        _idealTopologyToSend.clear();
+        _idealTopologyToReceive.clear();
         _ranksToSend.clear();
     }
 
@@ -329,22 +334,6 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         _ranksToSend = Scatterv(ranksToSendAtInitialization, ranksToSendCounts,
                                 1, _rank, _parallelSize);
 
-        // _ranksToSendを2つに分割する
-        _ranksToSend1 =
-            std::vector<int>(_ranksToSend.begin(),
-                             _ranksToSend.begin() + _ranksToSend.size() / 2);
-        _ranksToSend2 = std::vector<int>(
-            _ranksToSend.begin() + _ranksToSend.size() / 2, _ranksToSend.end());
-
-        // インデックスが偶数，奇数のもので分割
-        // for (std::size_t i = 0; i < _ranksToSend.size(); ++i) {
-        //     if (i % 2 == 0) {
-        //         _ranksToSend1.push_back(_ranksToSend[i]);
-        //     } else {
-        //         _ranksToSend2.push_back(_ranksToSend[i]);
-        //     }
-        // }
-
         // 近傍のランクを分散する
         _neighboringRanks = Scatterv(neighboringRanks, neighboringRankCounts, 1,
                                      _rank, _parallelSize);
@@ -393,10 +382,8 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
     std::vector<std::vector<double>> ScatterPopulation(
         const std::vector<int>& ranksToSend) {
         std::vector<double> individualsToSend;
-        individualsToSend.reserve(
-            _idealPointMigration
-                ? _internalIndexes.size() * _singleMessageSize + _objectivesNum
-                : _internalIndexes.size() * _singleMessageSize);
+        individualsToSend.reserve(_internalIndexes.size() * _singleMessageSize +
+                                  _objectivesNum);
         for (auto&& i : _internalIndexes) {
             individualsToSend.push_back(i);
             individualsToSend.insert(individualsToSend.end(),
@@ -407,11 +394,9 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
                                      _individuals[i].objectives.end());
         }
 
-        if (_idealPointMigration) {
-            individualsToSend.insert(individualsToSend.end(),
-                                     _decomposition->IdealPoint().begin(),
-                                     _decomposition->IdealPoint().end());
-        }
+        individualsToSend.insert(individualsToSend.end(),
+                                 _decomposition->IdealPoint().begin(),
+                                 _decomposition->IdealPoint().end());
 
         std::vector<MPI_Request> requests;
         requests.reserve(ranksToSend.size());
@@ -444,6 +429,27 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         return receivedIndividuals;
     }
 
+    void InitializeIdealTopology() {
+        std::ifstream ifs = OpenInputFile(_idealTopologyFilePath);
+        std::string line;
+        for (int i = 0; i <= _rank; ++i) {
+            if (!std::getline(ifs, line)) {
+                throw std::runtime_error(
+                    "Not enough lines in idealTopologyFile");
+            }
+        }
+        std::stringstream ss(line);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            int rank = std::stoi(item);
+            _idealTopologyToSend.push_back(rank);
+            if (std::ranges::find(_neighboringRanks, rank) ==
+                _neighboringRanks.end()) {
+                _idealTopologyToReceive.push_back(rank);
+            }
+        }
+    }
+
     void InitializePopulation() {
         int sampleNum = _internalIndexes.size();
         std::vector<Individual<DecisionVariableType>> sampledIndividuals =
@@ -459,8 +465,7 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
     void InitializeExternalPopulation(
         std::vector<std::vector<double>>& receivedIndividuals) {
         for (auto&& receive : receivedIndividuals) {
-            int limit = _idealPointMigration ? receive.size() - _objectivesNum
-                                             : receive.size();
+            int limit = receive.size() - _objectivesNum;
             for (int i = 0; i < limit; i += _singleMessageSize) {
                 int index = receive[i];
                 if (!IsExternal(index)) {
@@ -477,9 +482,7 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
                 UpdateIdealPoint(_clonedExternalIndividuals[index].objectives);
             }
 
-            if (_idealPointMigration) {
-                UpdateIdealPointWithMessage(receive);
-            }
+            UpdateIdealPointWithMessage(receive);
         }
     }
 
@@ -615,11 +618,15 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
             }
         }
 
-        if (_idealPointMigration && _isIdealPointUpdated) {
-            for (auto&& rank : ranksToSend) {
+        if (_isIdealPointUpdated) {
+            for (auto&& rank : _idealTopologyToSend) {
                 dataToSend[rank].insert(dataToSend[rank].end(),
                                         _decomposition->IdealPoint().begin(),
                                         _decomposition->IdealPoint().end());
+            }
+        } else if (!_isAsync) {
+            for (auto&& rank : _idealTopologyToSend) {
+                dataToSend.try_emplace(rank);
             }
         }
 
@@ -661,18 +668,28 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
 
     std::vector<std::vector<double>> ReceiveMessagesSync() {
         std::vector<std::vector<double>> receiveMessages;
-        receiveMessages.reserve(_neighboringRanks.size());
-
-        for (const auto& source : _neighboringRanks) {
+        for (auto&& source : _neighboringRanks) {
             MPI_Status status;
             MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
             int count;
             MPI_Get_count(&status, MPI_DOUBLE, &count);
 
-            std::vector<double> message(count);
-            MPI_Recv(message.data(), count, MPI_DOUBLE, source, messageTag,
+            std::vector<double> receive(count);
+            MPI_Recv(receive.data(), count, MPI_DOUBLE, source, messageTag,
                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            receiveMessages.push_back(std::move(message));
+            receiveMessages.push_back(std::move(receive));
+        }
+
+        for (auto&& source : _idealTopologyToReceive) {
+            MPI_Status status;
+            MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
+            int count;
+            MPI_Get_count(&status, MPI_DOUBLE, &count);
+
+            std::vector<double> receive(count);
+            MPI_Recv(receive.data(), count, MPI_DOUBLE, source, messageTag,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            receiveMessages.push_back(std::move(receive));
         }
 
         return receiveMessages;
@@ -699,13 +716,31 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
             }
         }
 
+        for (auto&& source : _idealTopologyToReceive) {
+            while (true) {
+                MPI_Status status;
+                int canReceive;
+                MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive,
+                           &status);
+                if (!canReceive) {
+                    break;
+                }
+
+                int receiveDataSize;
+                MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
+                std::vector<double> receive(receiveDataSize);
+                MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source,
+                         messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                receiveMessages.push_back(std::move(receive));
+            }
+        }
+
         return receiveMessages;
     }
 
     void UpdateWithMessage(std::vector<double>& message) {
         int limit = message.size();
         bool containsIdealPoint =
-            _idealPointMigration &&
             message.size() % _singleMessageSize == _objectivesNum;
         if (containsIdealPoint) {
             limit -= _objectivesNum;
