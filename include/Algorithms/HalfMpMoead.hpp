@@ -43,7 +43,6 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
     int _neighborhoodSize;
     int _divisionsNumOfWeightVector;
     int _migrationInterval;
-    bool _idealPointMigration;
     bool _isAsync;
     int _decisionVariablesNum;
     int _objectivesNum;
@@ -69,11 +68,15 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         _clonedExternalIndividuals;
     std::vector<int> _externalIndividualRanks;
     std::vector<int> _neighboringRanks;
+    std::string _idealTopologyFilePath;
+    std::vector<int> _idealTopologyToSend;
+    std::vector<int> _idealTopologyToReceive;
     std::vector<int> _ranksToSend;
-    std::vector<int> _ranksToSend1;
-    std::vector<int> _ranksToSend2;
     MpiStopwatch _stopwatch;
     std::vector<std::vector<int>> _traffics;
+
+    std::vector<int> _ranksToSend1;
+    std::vector<int> _ranksToSend2;
 
    private:
     // 送信中のデータを管理する構造体
@@ -87,24 +90,24 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
 
     // 通信インデックス
     int _sendIndex = 0;
+    MpiStopwatch _communicationTime;
 
    public:
     HalfMpMoead(
         int generationNum, int neighborhoodSize, int divisionsNumOfWeightVector,
-        int migrationInterval,
+        int migrationInterval, std::string idealTopologyFilePath,
         const std::shared_ptr<ICrossover<DecisionVariableType>>& crossover,
         const std::shared_ptr<IDecomposition>& decomposition,
         const std::shared_ptr<IMutation<DecisionVariableType>>& mutation,
         const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
         const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
         const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
-        const std::shared_ptr<ISelection>& selection,
-        bool idealPointMigration = false, bool isAsync = true)
+        const std::shared_ptr<ISelection>& selection, bool isAsync = true)
         : _generationNum(generationNum),
           _neighborhoodSize(neighborhoodSize),
           _migrationInterval(migrationInterval),
           _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-          _idealPointMigration(idealPointMigration),
+          _idealTopologyFilePath(idealTopologyFilePath),
           _isAsync(isAsync) {
         if (!crossover || !decomposition || !mutation || !problem || !repair ||
             !sampling || !selection) {
@@ -169,12 +172,14 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         if (_currentGeneration % _migrationInterval == 0) {
             SendMessages();
 
+            _communicationTime.Start();
             std::vector<std::vector<double>> messages;
             if (_isAsync) {
                 messages = ReceiveMessagesAsync();
             } else {
                 messages = ReceiveMessagesSync();
             }
+            _communicationTime.Stop();
 
             // 受信データ量を記録する
             _stopwatch.Stop();
@@ -191,8 +196,6 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
                 _updatedSolutionIndexes.clear();
                 _isIdealPointUpdated = false;
             }
-            // _updatedSolutionIndexes.clear();
-            // _isIdealPointUpdated = false;
 
             for (auto&& message : messages) {
                 if (message.empty()) {
@@ -211,6 +214,15 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
 
         if (_currentGeneration >= _generationNum) {
             CompletePendingSends();
+
+            double elapsed = _communicationTime.Elapsed();
+            double maxExecutionTime;
+            MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX, 0,
+                       MPI_COMM_WORLD);
+            if (_rank == 0) {
+                std::cout << "Max communication time: " << maxExecutionTime
+                          << std::endl;
+            }
         }
     }
 
@@ -323,6 +335,15 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
                              _ranksToSend.begin() + _ranksToSend.size() / 2);
         _ranksToSend2 = std::vector<int>(
             _ranksToSend.begin() + _ranksToSend.size() / 2, _ranksToSend.end());
+
+        // インデックスが偶数，奇数のもので分割
+        // for (std::size_t i = 0; i < _ranksToSend.size(); ++i) {
+        //     if (i % 2 == 0) {
+        //         _ranksToSend1.push_back(_ranksToSend[i]);
+        //     } else {
+        //         _ranksToSend2.push_back(_ranksToSend[i]);
+        //     }
+        // }
 
         // 近傍のランクを分散する
         _neighboringRanks = Scatterv(neighboringRanks, neighboringRankCounts, 1,
@@ -619,6 +640,7 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
             {_currentGeneration, sendTimes, totalSendDataTraffic});
         _stopwatch.Start();
 
+        _communicationTime.Start();
         // メッセージを送信する
         for (auto&& [dest, message] : sendMessages) {
             PendingSend ps;
@@ -634,6 +656,7 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
             MPI_Test(&ps.request, &flag, MPI_STATUS_IGNORE);
             return flag;
         });
+        _communicationTime.Stop();
     }
 
     std::vector<std::vector<double>> ReceiveMessagesSync() {
