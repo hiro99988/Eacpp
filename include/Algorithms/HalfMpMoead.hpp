@@ -334,6 +334,23 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         _ranksToSend = Scatterv(ranksToSendAtInitialization, ranksToSendCounts,
                                 1, _rank, _parallelSize);
 
+        // _ranksToSendを2つに分割する
+        // _ranksToSend1 =
+        //     std::vector<int>(_ranksToSend.begin(),
+        //                      _ranksToSend.begin() + _ranksToSend.size() / 2);
+        // _ranksToSend2 = std::vector<int>(
+        //     _ranksToSend.begin() + _ranksToSend.size() / 2,
+        //     _ranksToSend.end());
+
+        // インデックスが偶数，奇数のもので分割
+        for (std::size_t i = 0; i < _ranksToSend.size(); ++i) {
+            if (i % 2 == 0) {
+                _ranksToSend1.push_back(_ranksToSend[i]);
+            } else {
+                _ranksToSend2.push_back(_ranksToSend[i]);
+            }
+        }
+
         // 近傍のランクを分散する
         _neighboringRanks = Scatterv(neighboringRanks, neighboringRankCounts, 1,
                                      _rank, _parallelSize);
