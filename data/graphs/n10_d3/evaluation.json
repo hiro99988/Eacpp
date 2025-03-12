@@ -1,0 +1,11 @@
+{
+    "coolingRate": 0.995,
+    "degree": 3,
+    "diffenceFromLowerBound": 0.0,
+    "initialTemperature": 1000.0,
+    "lowerBoundOfAspl": 1.6666666666666667,
+    "minTemperature": 0.0001,
+    "nodesNum": 10,
+    "objective": 1.6666666666666667,
+    "repeats": 500000
+}
