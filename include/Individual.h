@@ -1,19 +1,17 @@
 #pragma once
 
-#include <algorithm>
-#include <eigen3/Eigen/Core>
 #include <iostream>
 #include <vector>
 
-#include "Utils/EigenUtils.h"
+#include "Utils/VectorUtils.hpp"
 
 namespace Eacpp {
 
-template <typename T>
+template <typename T, typename U>
 struct Individual {
-    Eigen::ArrayX<T> solution;
-    Eigen::ArrayXd objectives;
-    Eigen::ArrayXd weightVector;
+    std::vector<T> solution;
+    std::vector<U> objectives;
+    std::vector<double> weightVector;
     std::vector<int> neighborhood;
 
     Individual() {}
@@ -23,22 +21,19 @@ struct Individual {
     Individual(const int solutionSize, const int objectivesSize)
         : solution(solutionSize), objectives(objectivesSize) {}
 
-    Individual(const Eigen::ArrayX<T>& solution) : solution(solution) {}
+    explicit Individual(const std::vector<T>& solution) : solution(solution) {}
 
-    Individual(const Eigen::ArrayX<T>& solution,
-               const Eigen::ArrayXd& objectives)
+    Individual(const std::vector<T>& solution, const std::vector<U>& objectives)
         : solution(solution), objectives(objectives) {}
 
-    Individual(const Eigen::ArrayX<T>& solution,
-               const Eigen::ArrayXd& objectives,
-               const Eigen::ArrayXd& weightVector)
+    Individual(const std::vector<T>& solution, const std::vector<U>& objectives,
+               const std::vector<double>& weightVector)
         : solution(solution),
           objectives(objectives),
           weightVector(weightVector) {}
 
-    Individual(const Eigen::ArrayX<T>& solution,
-               const Eigen::ArrayXd& objectives,
-               const Eigen::ArrayXd& weightVector,
+    Individual(const std::vector<T>& solution, const std::vector<U>& objectives,
+               const std::vector<double>& weightVector,
                const std::vector<int>& neighborhood)
         : solution(solution),
           objectives(objectives),
@@ -58,13 +53,13 @@ struct Individual {
             weightVector = other.weightVector;
             neighborhood = other.neighborhood;
         }
+
         return *this;
     }
 
     bool operator==(const Individual& other) const {
-        return AreEqual(solution, other.solution) &&
-               AreEqual(objectives, other.objectives) &&
-               AreEqual(weightVector, other.weightVector) &&
+        return solution == other.solution && objectives == other.objectives &&
+               weightVector == other.weightVector &&
                neighborhood == other.neighborhood;
     }
 
@@ -75,36 +70,33 @@ struct Individual {
     friend std::ostream& operator<<(std::ostream& os,
                                     const Individual& individual) {
         os << "Individual: { ";
-        os << "solution: { " << individual.solution.transpose() << " }, ";
-        os << "objectives: { " << individual.objectives.transpose() << " }, ";
-        os << "weightVector: { " << individual.weightVector.transpose()
+        os << "solution: { " << Join(individual.solution, ", ") << " }, ";
+        os << "objectives: { " << Join(individual.objectives, ", ") << " }, ";
+        os << "weightVector: { " << Join(individual.weightVector, ", ")
            << " }, ";
-        os << "neighborhood: { ";
-        for (const auto& neighbor : individual.neighborhood) {
-            os << neighbor << " ";
-        }
-        os << "} ";
+        os << "neighborhood: { " << Join(individual.neighborhood, ", ") << " }";
         os << "}\n";
         return os;
     }
 
-    void UpdateFrom(const Individual& other) {
+    void ReplaceSolutionAndObjective(const Individual& other) {
         solution = other.solution;
         objectives = other.objectives;
     }
 
-    bool IsWeightVectorEqual(const Individual& other) const {
-        return AreEqual(weightVector, other.weightVector);
-    }
-
-    double CalculateSquaredEuclideanDistanceOfWeightVector(
-        const Individual& other) const {
-        return (weightVector - other.weightVector).matrix().squaredNorm();
+    bool HasSameWeightVector(const Individual& other) const {
+        return weightVector == other.weightVector;
     }
 };
 
-using Individuali = Individual<int>;
-using Individualf = Individual<float>;
-using Individuald = Individual<double>;
+using Individualii = Individual<int, int>;
+using Individualif = Individual<int, float>;
+using Individualid = Individual<int, double>;
+using Individualfi = Individual<float, int>;
+using Individualff = Individual<float, float>;
+using Individualfd = Individual<float, double>;
+using Individualdi = Individual<double, int>;
+using Individualdf = Individual<double, float>;
+using Individualdd = Individual<double, double>;
 
 }  // namespace Eacpp
