@@ -17,8 +17,8 @@ target_link_libraries(MpMoeadEx.out Eacpp MPI::MPI_CXX)
 add_executable(NtMoeadEx.out NtMoeadEx.cpp)
 target_link_libraries(NtMoeadEx.out Eacpp MPI::MPI_CXX nlohmann_json::nlohmann_json)
 
-add_executable(Test.out Test.cpp)
-target_link_libraries(Test.out Eacpp)
+add_executable(MpMoeadNetwork.out MpMoeadNetwork.cpp)
+target_link_libraries(MpMoeadNetwork.out Eacpp)
 
 add_executable(GraphGenerator.out GraphGenerator.cpp)
 target_link_libraries(GraphGenerator.out Eacpp nlohmann_json::nlohmann_json)
