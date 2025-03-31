@@ -4,7 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/lib/x86_64-linux-gnu/openmpi/include"
+                "/usr/lib/x86_64-linux-gnu/openmpi/include",
+                "${workspaceFolder}/extern/pybind11/include/",
+                "/usr/include/python3.12"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
