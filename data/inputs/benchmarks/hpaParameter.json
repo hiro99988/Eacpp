@@ -1,0 +1,16 @@
+{
+    "trial": 15,
+    "generationNum": 500,
+    "neighborhoodSize": 5,
+    "divisionsNumOfWeightVector": 19,
+    "migrationInterval": 1,
+    "crossoverRate": 0.9,
+    "idealPointMigration": true,
+    "isAsync": true,
+    "level": 0,
+    "problems": [
+        "HPA201",
+        "HPA301"
+    ],
+    "adjacencyListFileName": "data/graphs/n10_d3/adjacencyList.csv"
+}
