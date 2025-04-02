@@ -137,8 +137,10 @@ class ParallelMoeadBenchmark {
     void GatherObjectivesListHistory(
         std::vector<std::vector<std::vector<double>>>& outObjectivesListHistory,
         std::vector<std::pair<int, std::vector<double>>>& finalObjectivesList) {
+        std::vector<std::vector<std::pair<int, std::vector<double>>>>
+            objectivesListHistory;
         if (rank == 0) {
-            outObjectivesListHistory.reserve(localObjectivesListHistory.size());
+            objectivesListHistory.reserve(localObjectivesListHistory.size());
         }
 
         for (int i = 0; i < localObjectivesListHistory.size(); i++) {
@@ -157,7 +159,8 @@ class ParallelMoeadBenchmark {
             Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
 
             if (rank == 0) {
-                std::vector<std::vector<double>> objectivesList;
+                // 世代 i の目的関数値
+                std::vector<std::pair<int, std::vector<double>>> objectivesList;
                 for (int j = 0, count = 0; j < parallelSize;
                      count += sizes[j], j++) {
                     for (int k = 0; k < sizes[j]; k += dataSize) {
@@ -165,19 +168,84 @@ class ParallelMoeadBenchmark {
                             receiveBuffer.begin() + count + k,
                             receiveBuffer.begin() + count + k + dataSize);
 
-                        if (i == localObjectivesListHistory.size() - 1) {
-                            objectivesList.push_back(objectives);
-                            finalObjectivesList.push_back(
-                                std::make_pair(j, std::move(objectives)));
-                        } else {
-                            objectivesList.push_back(std::move(objectives));
-                        }
+                        objectivesList.push_back(
+                            std::make_pair(j, std::move(objectives)));
                     }
                 }
 
-                outObjectivesListHistory.push_back(std::move(objectivesList));
+                // 目的関数値の非支配解を計算
+                auto nonDominated = ComputeNonDominatedSolutions(
+                    objectivesList,
+                    i == 0 ? std::vector<std::pair<int, std::vector<double>>>{}
+                           : objectivesListHistory.back());
+
+                if (i == localObjectivesListHistory.size() - 1) {
+                    // 最終世代の非支配解を保存
+                    finalObjectivesList = nonDominated;
+                    objectivesListHistory.push_back(std::move(nonDominated));
+                    // outObjectivesListHistoryにobjectiveListHistoryのstd::vectorだけ保存
+                    outObjectivesListHistory.resize(
+                        objectivesListHistory.size());
+                    for (std::size_t j = 0; j < objectivesListHistory.size();
+                         ++j) {
+                        for (auto&& objectivesList : objectivesListHistory[j]) {
+                            outObjectivesListHistory[j].push_back(
+                                std::move(objectivesList.second));
+                        }
+                    }
+                } else {
+                    objectivesListHistory.push_back(std::move(nonDominated));
+                }
             }
         }
+    }
+
+    std::vector<std::pair<int, std::vector<double>>>
+    ComputeNonDominatedSolutions(
+        const std::vector<std::pair<int, std::vector<double>>>& newObjectives,
+        const std::vector<std::pair<int, std::vector<double>>>&
+            existingNonDominated) {
+        // Lambda to check if solution a dominates solution b
+        auto dominates = [](const std::vector<double>& a,
+                            const std::vector<double>& b) -> bool {
+            bool strictlyBetter = false;
+            for (std::size_t i = 0; i < a.size(); ++i) {
+                if (a[i] > b[i]) {  // if any objective is worse, 'a' does not
+                                    // dominate 'b'
+                    return false;
+                } else if (a[i] < b[i]) {
+                    strictlyBetter = true;
+                }
+            }
+            return strictlyBetter;
+        };
+
+        // Merge the two sets of solutions, ignoring the int in the pair
+        std::vector<std::pair<int, std::vector<double>>> allSolutions;
+        allSolutions.reserve(newObjectives.size() +
+                             existingNonDominated.size());
+        allSolutions.insert(allSolutions.end(), newObjectives.begin(),
+                            newObjectives.end());
+        allSolutions.insert(allSolutions.end(), existingNonDominated.begin(),
+                            existingNonDominated.end());
+
+        // Compute the non-dominated set
+        std::vector<std::pair<int, std::vector<double>>> nonDominated;
+        for (std::size_t i = 0; i < allSolutions.size(); ++i) {
+            bool isDominated = false;
+            for (std::size_t j = 0; j < allSolutions.size(); ++j) {
+                if (i == j) continue;
+                if (dominates(allSolutions[j].second, allSolutions[i].second)) {
+                    isDominated = true;
+                    break;
+                }
+            }
+            if (!isDominated) {
+                nonDominated.push_back(allSolutions[i]);
+            }
+        }
+
+        return nonDominated;
     }
 
     std::vector<std::pair<std::array<int, 2>, std::vector<double>>>
