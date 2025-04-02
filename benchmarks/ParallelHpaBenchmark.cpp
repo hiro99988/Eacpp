@@ -256,6 +256,13 @@ class ParallelMoeadBenchmark {
         return globalExecutionTimes;
     }
 
+    int CalculatePopulationSize(int divisionsNumOfWeightVector,
+                                int objectivesNum) const {
+        int n = divisionsNumOfWeightVector + objectivesNum - 1;
+        int r = objectivesNum - 1;
+        return Combination(n, r);
+    }
+
     void Run() {
         InitializeMpi();
 
@@ -338,6 +345,12 @@ class ParallelMoeadBenchmark {
                 int divisionsNumOfWeightVector =
                     divisionsNumOfWeightVectors.at(problem->ObjectivesNum());
                 int evaluationsNum = evaluationsNums.at(hpaProblem.level);
+                int generationsNum =
+                    evaluationsNum /
+                    CalculatePopulationSize(divisionsNumOfWeightVector,
+                                            problem->ObjectivesNum());
+                RANK0(std::cout << "generationsNum: " << generationsNum
+                                << std::endl;)
 
                 // MP-MOEA/D-NOのobjとhpaの目的数が一致するか確認
                 if (algorithm.name.compare(0, std::string(MoeadNames[1]).size(),
@@ -425,18 +438,20 @@ class ParallelMoeadBenchmark {
                     std::unique_ptr<IParallelMoead<double>> moead;
                     if (algorithm.name == MoeadNames[0]) {
                         moead = std::make_unique<MpMoead<double>>(
-                            50, neighborhoodSize, divisionsNumOfWeightVector,
-                            migrationInterval, crossover, decomposition,
-                            mutation, problem, repair, sampling, selection,
-                            idealPointMigration, algorithm.isAsync);
+                            generationsNum, neighborhoodSize,
+                            divisionsNumOfWeightVector, migrationInterval,
+                            crossover, decomposition, mutation, problem, repair,
+                            sampling, selection, idealPointMigration,
+                            algorithm.isAsync);
                     } else if (algorithm.name.compare(
                                    0, std::string(MoeadNames[1]).size(),
                                    MoeadNames[1]) == 0) {
                         moead = std::make_unique<MpMoeadIdealTopology<double>>(
-                            50, neighborhoodSize, divisionsNumOfWeightVector,
-                            migrationInterval, algorithm.adjacencyListFileName,
-                            crossover, decomposition, mutation, problem, repair,
-                            sampling, selection, algorithm.isAsync);
+                            generationsNum, neighborhoodSize,
+                            divisionsNumOfWeightVector, migrationInterval,
+                            algorithm.adjacencyListFileName, crossover,
+                            decomposition, mutation, problem, repair, sampling,
+                            selection, algorithm.isAsync);
                     } else {
                         throw std::invalid_argument("Invalid moead name");
                     }
