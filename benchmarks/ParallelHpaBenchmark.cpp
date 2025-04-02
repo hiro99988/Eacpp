@@ -397,29 +397,28 @@ class ParallelMoeadBenchmark {
                 parameterOutputFile.close();
             }
 
+            // 問題名の修正．"-"以降を削除
+            // 例: "HPA201-0" -> "HPA201"
+            std::string hpaName = hpaProblem.name;
+            std::size_t pos = hpaName.find('-');
+            if (pos != std::string::npos) {
+                hpaName = hpaName.substr(0, pos);
+            }
+
+            // HPA問題の作成
+            std::shared_ptr<IProblem<double>> problem = std::make_unique<Hpa>(
+                hpaModule, hpaName.c_str(), 4, hpaProblem.level);
+            int divisionsNumOfWeightVector =
+                divisionsNumOfWeightVectors.at(problem->ObjectivesNum());
+            int evaluationsNum = evaluationsNums.at(hpaProblem.level);
+            int generationsNum =
+                evaluationsNum /
+                CalculatePopulationSize(divisionsNumOfWeightVector,
+                                        problem->ObjectivesNum());
+            RANK0(std::cout << "generationsNum: " << generationsNum
+                            << std::endl;)
+
             for (auto&& algorithm : algorithms) {
-                // 問題名の修正．"-"以降を削除
-                // 例: "HPA201-0" -> "HPA201"
-                std::string hpaName = hpaProblem.name;
-                std::size_t pos = hpaName.find('-');
-                if (pos != std::string::npos) {
-                    hpaName = hpaName.substr(0, pos);
-                }
-
-                // HPA問題の作成
-                std::shared_ptr<IProblem<double>> problem =
-                    std::make_unique<Hpa>(hpaModule, hpaName.c_str(), 4,
-                                          hpaProblem.level);
-                int divisionsNumOfWeightVector =
-                    divisionsNumOfWeightVectors.at(problem->ObjectivesNum());
-                int evaluationsNum = evaluationsNums.at(hpaProblem.level);
-                int generationsNum =
-                    evaluationsNum /
-                    CalculatePopulationSize(divisionsNumOfWeightVector,
-                                            problem->ObjectivesNum());
-                RANK0(std::cout << "generationsNum: " << generationsNum
-                                << std::endl;)
-
                 // MP-MOEA/D-NOのobjとhpaの目的数が一致するか確認
                 if (algorithm.name.compare(0, std::string(MoeadNames[1]).size(),
                                            MoeadNames[1]) == 0) {
