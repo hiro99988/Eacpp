@@ -1,16 +1,202 @@
 {
-    "trial": 15,
+    "trial": 31,
     "generationNum": 500,
-    "neighborhoodSize": 5,
-    "divisionsNumOfWeightVector": 19,
+    "neighborhoodSize": 21,
+    "divisionsNumOfWeightVector": 199,
     "migrationInterval": 1,
     "crossoverRate": 0.9,
     "idealPointMigration": true,
-    "isAsync": true,
-    "level": 0,
-    "problems": [
-        "HPA201",
-        "HPA301"
+    "algorithms": [
+        {
+            "name": "MP-MOEA/D",
+            "isAsync": true
+        },
+        {
+            "name": "MP-MOEA/D-NO-3",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d3/adjacencyList.csv",
+            "obj": [
+                2
+            ]
+        },
+        {
+            "name": "MP-MOEA/D-NO-4",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d4/adjacencyList.csv",
+            "obj": [
+                2,
+                3
+            ]
+        },
+        {
+            "name": "MP-MOEA/D-NO-5",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d5/adjacencyList.csv",
+            "obj": [
+                3
+            ]
+        },
+        {
+            "name": "MP-MOEA/D-NO-10",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d10/adjacencyList.csv",
+            "obj": [
+                5
+            ]
+        },
+        {
+            "name": "MP-MOEA/D-NO-12",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d12/adjacencyList.csv",
+            "obj": [
+                5
+            ]
+        }
     ],
-    "adjacencyListFileName": "data/graphs/n10_d3/adjacencyList.csv"
+    "problems": [
+        {
+            "name": "HPA201-0",
+            "level": 0
+        },
+        {
+            "name": "HPA201-1",
+            "level": 1
+        },
+        {
+            "name": "HPA201-2",
+            "level": 2
+        },
+        {
+            "name": "HPA202-0",
+            "level": 0
+        },
+        {
+            "name": "HPA202-1",
+            "level": 1
+        },
+        {
+            "name": "HPA202-2",
+            "level": 2
+        },
+        {
+            "name": "HPA203-0",
+            "level": 0
+        },
+        {
+            "name": "HPA203-1",
+            "level": 1
+        },
+        {
+            "name": "HPA203-2",
+            "level": 2
+        },
+        {
+            "name": "HPA204-0",
+            "level": 0
+        },
+        {
+            "name": "HPA204-1",
+            "level": 1
+        },
+        {
+            "name": "HPA204-2",
+            "level": 2
+        },
+        {
+            "name": "HPA205-0",
+            "level": 0
+        },
+        {
+            "name": "HPA205-1",
+            "level": 1
+        },
+        {
+            "name": "HPA205-2",
+            "level": 2
+        },
+        {
+            "name": "HPA301-0",
+            "level": 0
+        },
+        {
+            "name": "HPA301-1",
+            "level": 1
+        },
+        {
+            "name": "HPA301-2",
+            "level": 2
+        },
+        {
+            "name": "HPA302-0",
+            "level": 0
+        },
+        {
+            "name": "HPA302-1",
+            "level": 1
+        },
+        {
+            "name": "HPA302-2",
+            "level": 2
+        },
+        {
+            "name": "HPA303-0",
+            "level": 0
+        },
+        {
+            "name": "HPA303-1",
+            "level": 1
+        },
+        {
+            "name": "HPA303-2",
+            "level": 2
+        },
+        {
+            "name": "HPA304-0",
+            "level": 0
+        },
+        {
+            "name": "HPA304-1",
+            "level": 1
+        },
+        {
+            "name": "HPA304-2",
+            "level": 2
+        },
+        {
+            "name": "HPA305-0",
+            "level": 0
+        },
+        {
+            "name": "HPA305-1",
+            "level": 1
+        },
+        {
+            "name": "HPA305-2",
+            "level": 2
+        },
+        {
+            "name": "HPA501-0",
+            "level": 0
+        },
+        {
+            "name": "HPA501-1",
+            "level": 1
+        },
+        {
+            "name": "HPA501-2",
+            "level": 2
+        },
+        {
+            "name": "HPA502-0",
+            "level": 0
+        },
+        {
+            "name": "HPA502-1",
+            "level": 1
+        },
+        {
+            "name": "HPA502-2",
+            "level": 2
+        }
+    ]
 }

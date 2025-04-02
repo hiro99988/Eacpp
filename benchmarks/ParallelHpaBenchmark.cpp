@@ -35,12 +35,38 @@
 
 namespace Eacpp {
 
+struct Algorithm {
+    std::string name;
+    bool isAsync;
+    std::string adjacencyListFileName;  // オプション項目
+    std::vector<int> obj;               // オプション項目
+};
+
+void from_json(const nlohmann::json& j, Algorithm& alg) {
+    j.at("name").get_to(alg.name);
+    j.at("isAsync").get_to(alg.isAsync);
+    // オプション項目は存在する場合のみ取得
+    if (j.contains("adjacencyListFileName"))
+        j.at("adjacencyListFileName").get_to(alg.adjacencyListFileName);
+    if (j.contains("obj")) j.at("obj").get_to(alg.obj);
+}
+
+struct Problem {
+    std::string name;
+    int level;
+};
+
+void from_json(const nlohmann::json& j, Problem& prob) {
+    j.at("name").get_to(prob.name);
+    j.at("level").get_to(prob.level);
+}
+
 class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
         "data/inputs/benchmarks/hpaParameter.json";
-    constexpr static std::array<const char*, 3> MoeadNames = {
-        "MpMoead", "MpMoeadIt", "HalfMpMoead"};
+    constexpr static std::array<const char*, 3> MoeadNames = {"MPMOEAD",
+                                                              "MPMOEAD-NO"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {
@@ -50,33 +76,20 @@ class ParallelMoeadBenchmark {
         "sendTimes",    "totalSendDataTraffic",
         "receiveTimes", "totalReceiveDataTraffic"};
 
+    // key: 目的数, H
+    const std::unordered_map<int, int> divisionsNumOfWeightVectors = {
+        {2, 79}, {3, 14}, {4, 8}, {5, 6}, {6, 5}, {9, 4}};
+    // key: level, 評価回数
+    const std::unordered_map<int, int> evaluationsNums = {
+        {0, 72000}, {1, 72000}, {2, 216000}};
+
     int rank;
     int parallelSize;
-    std::string moeadName;
-    std::filesystem::path parameterFilePath;
     std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
     std::vector<std::vector<Eigen::ArrayXd>> localObjectivesListHistory;
     std::vector<double> executionTimes;
 
-    ParallelMoeadBenchmark(const std::string& moeadName)
-        : parameterFilePath(DefaultParameterFilePath) {
-        InitializeMoeadName(moeadName);
-    }
-
-    ParallelMoeadBenchmark(const std::string& moeadName,
-                           const std::filesystem::path& parameterFilePath)
-        : parameterFilePath(parameterFilePath) {
-        InitializeMoeadName(moeadName);
-    }
-
-    void InitializeMoeadName(const std::string& moeadName) {
-        if (std::ranges::find(MoeadNames, moeadName) == MoeadNames.end()) {
-            throw std::invalid_argument("Invalid moead name \"" + moeadName +
-                                        "\"");
-        }
-
-        this->moeadName = moeadName;
-    }
+    ParallelMoeadBenchmark() {}
 
     void InitializeMpi() {
         int initialized;
@@ -86,30 +99,6 @@ class ParallelMoeadBenchmark {
         }
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
-    }
-
-    nlohmann::json_abi_v3_11_3::json ReadParameters(
-        std::ifstream& file, int& outTrial, int& outGenerationNum,
-        int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
-        int& outMigrationInterval, double& outCrossoverRate,
-        bool& outIdealPointMigration, bool& outIsAsync, int& outLevel,
-        std::vector<std::string>& outProblemNames,
-        std::string& outAdjacencyListFileName) {
-        nlohmann::json parameter = nlohmann::json::parse(file);
-
-        outTrial = parameter["trial"];
-        outGenerationNum = parameter["generationNum"];
-        outNeighborhoodSize = parameter["neighborhoodSize"];
-        outDivisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
-        outMigrationInterval = parameter["migrationInterval"];
-        outCrossoverRate = parameter["crossoverRate"];
-        outIdealPointMigration = parameter["idealPointMigration"];
-        outIsAsync = parameter["isAsync"];
-        outLevel = parameter["level"];
-        outProblemNames = parameter["problems"];
-        outAdjacencyListFileName = parameter["adjacencyListFileName"];
-
-        return parameter;
     }
 
     void AddIdealPoint(int gen, const Eigen::ArrayXd& add) {
@@ -271,48 +260,24 @@ class ParallelMoeadBenchmark {
         InitializeMpi();
 
         // パラメータ読み込み
-        int trial;
-        int generationNum;
-        int neighborhoodSize;
-        int divisionsNumOfWeightVector;
-        int migrationInterval;
-        double crossoverRate;
-        bool idealPointMigration;
-        bool isAsync;
-        int level;
-        std::vector<std::string> problemNames;
-        std::string adjacencyListFileName;
-        auto parameterFile = OpenInputFile(parameterFilePath);
-        auto parameter = ReadParameters(
-            parameterFile, trial, generationNum, neighborhoodSize,
-            divisionsNumOfWeightVector, migrationInterval, crossoverRate,
-            idealPointMigration, isAsync, level, problemNames,
-            adjacencyListFileName);
+        auto parameterFile = OpenInputFile(DefaultParameterFilePath);
+        nlohmann::json parameter = nlohmann::json::parse(parameterFile);
+
+        int trial = parameter["trial"];
+        int neighborhoodSize = parameter["neighborhoodSize"];
+        int migrationInterval = parameter["migrationInterval"];
+        double crossoverRate = parameter["crossoverRate"];
+        bool idealPointMigration = parameter["idealPointMigration"];
+        std::vector<Algorithm> algorithms =
+            parameter.at("algorithms").get<std::vector<Algorithm>>();
+        std::vector<Problem> problems =
+            parameter.at("problems").get<std::vector<Problem>>();
+
         parameterFile.close();
 
         // vectorの確保
         localObjectivesListHistory.reserve(trial);
         executionTimes.reserve(trial);
-
-        // 出力ディレクトリの作成
-        std::filesystem::path outputDirectoryPath;
-        if (isAsync) {
-            outputDirectoryPath =
-                "out/data/" + moeadName + "Async" + "/" + GetTimestamp() + "/";
-        } else {
-            outputDirectoryPath =
-                "out/data/" + moeadName + "Sync" + "/" + GetTimestamp() + "/";
-        }
-        RANK0(std::filesystem::create_directories(outputDirectoryPath);)
-
-        // パラメータファイルのコピー
-        if (rank == 0) {
-            parameter["parallelSize"] = parallelSize;
-            std::string parameterString = parameter.dump(4);
-            std::ofstream parameterOutputFile(outputDirectoryPath /
-                                              "parameter.json");
-            parameterOutputFile << parameterString;
-        }
 
         // pythonインタープリターの初期化
         pybind11::scoped_interpreter guard{};
@@ -323,213 +288,270 @@ class ParallelMoeadBenchmark {
         Warmup();
         RANK0(std::cout << "End warmup" << std::endl)
 
-        for (std::size_t i = 0; i < problemNames.size(); i++) {
-            const std::string& problemName = problemNames[i];
+        // アルゴリズム名が正しいか確認
+        for (auto&& algorithm : algorithms) {
+            bool valid = false;
+            for (const auto& prefix : MoeadNames) {
+                if (algorithm.name.compare(0, std::string(prefix).size(),
+                                           prefix) == 0) {
+                    valid = true;
+                    break;
+                }
+            }
+            if (!valid) {
+                throw std::invalid_argument("Invalid algorithm name: " +
+                                            algorithm.name);
+            }
+        }
 
-            // 各種ディレクトリの作成
-            const std::filesystem::path outputProblemDirectoryPath =
-                outputDirectoryPath / problemName;
-            const std::filesystem::path objectiveDirectoryPath =
-                outputProblemDirectoryPath / "objective";
-            const std::filesystem::path idealPointDirectoryPath =
-                outputProblemDirectoryPath / "idealPoint";
-            const std::filesystem::path igdDirectoryPath =
-                outputProblemDirectoryPath / "igd";
-            const std::filesystem::path dataTrafficsDirectoryPath =
-                outputProblemDirectoryPath / "dataTraffics";
-            RANK0(
-                std::filesystem::create_directories(outputProblemDirectoryPath);
-                std::filesystem::create_directories(objectiveDirectoryPath);
-                std::filesystem::create_directories(idealPointDirectoryPath);
-                std::filesystem::create_directories(igdDirectoryPath);
-                std::filesystem::create_directories(dataTrafficsDirectoryPath);)
+        for (auto&& hpaProblem : problems) {
+            RANK0(std::cout << "Problem: " << hpaProblem.name << std::endl)
 
-            // 実行時間ファイルの作成
-            const std::filesystem::path executionTimesFilePath =
-                outputProblemDirectoryPath / "executionTimes.csv";
-            std::ofstream executionTimesFile;
+            // 問題ディレクトリの作成
+            std::filesystem::path outputDirectoryPath =
+                "out/data/" + hpaProblem.name;
+            RANK0(std::filesystem::create_directories(outputDirectoryPath);)
+
+            // パラメータファイルのコピー
             if (rank == 0) {
-                executionTimesFile = OpenOutputFile(executionTimesFilePath);
-                SetSignificantDigits(executionTimesFile, 9);
-                WriteCsvLine(executionTimesFile, ExecutionTimesHeader);
+                parameter["parallelSize"] = parallelSize;
+                std::string parameterString = parameter.dump(4);
+                std::ofstream parameterOutputFile(outputDirectoryPath /
+                                                  "parameter.json");
+                parameterOutputFile << parameterString;
+                parameterOutputFile.close();
             }
 
-            // moeadの構成クラスの作成
-            std::shared_ptr<IProblem<double>> problem =
-                std::make_unique<Hpa>(hpaModule, problemName.c_str(), 4, level);
-            auto crossover = std::make_shared<SimulatedBinaryCrossover>(
-                crossoverRate, problem->VariableBounds());
-            auto decomposition = std::make_shared<Tchebycheff>();
-            auto mutation = std::make_shared<PolynomialMutation>(
-                1.0 / problem->DecisionVariablesNum(),
-                problem->VariableBounds());
-            auto sampling =
-                std::make_shared<RealRandomSampling>(problem->VariableBounds());
-            auto repair = std::make_shared<RealRandomRepair>(problem);
-            auto selection = std::make_shared<RandomSelection>();
-
-            // ヘッダの作成
-            std::vector<std::string> objectiveHeader = {"rank"};
-            for (int i = 0; i < problem->ObjectivesNum(); i++) {
-                objectiveHeader.push_back("objective" + std::to_string(i + 1));
-            }
-            std::vector<std::string> idealPointHeader = {"rank", "generation"};
-            for (int i = 0; i < problem->ObjectivesNum(); i++) {
-                idealPointHeader.push_back("objective" + std::to_string(i + 1));
-            }
-
-            // インディケータの作成
-            std::vector<std::vector<double>> paretoFront;
-            if (rank == 0) {
-                auto paretoFrontFile = OpenInputFile(
-                    "extern/hpa/igd_reference_points/n=4/" + problemName + "-" +
-                    std::to_string(level) + ".csv");
-                paretoFront = ReadCsv<double>(paretoFrontFile, true);
-            }
-            IGD indicator(paretoFront);
-
-            RANK0(std::cout << "Problem: " << problemName << std::endl)
-
-            for (int t = 0; t < trial; t++) {
-                transitionOfIdealPoint.clear();
-                localObjectivesListHistory.clear();
-                executionTimes.clear();
-
-                std::unique_ptr<IParallelMoead<double>> moead;
-                if (moeadName == MoeadNames[0]) {
-                    moead = std::make_unique<MpMoead<double>>(
-                        generationNum, neighborhoodSize,
-                        divisionsNumOfWeightVector, migrationInterval,
-                        crossover, decomposition, mutation, problem, repair,
-                        sampling, selection, idealPointMigration, isAsync);
-                } else if (moeadName == MoeadNames[1]) {
-                    moead = std::make_unique<MpMoeadIdealTopology<double>>(
-                        generationNum, neighborhoodSize,
-                        divisionsNumOfWeightVector, migrationInterval,
-                        adjacencyListFileName, crossover, decomposition,
-                        mutation, problem, repair, sampling, selection,
-                        isAsync);
-                } else if (moeadName == MoeadNames[2]) {
-                    moead = std::make_unique<HalfMpMoead<double>>(
-                        generationNum, neighborhoodSize,
-                        divisionsNumOfWeightVector, migrationInterval,
-                        adjacencyListFileName, crossover, decomposition,
-                        mutation, problem, repair, sampling, selection,
-                        isAsync);
-                } else {
-                    throw std::invalid_argument("Invalid moead name");
+            for (auto&& algorithm : algorithms) {
+                // 問題名の修正．"-"以降を削除
+                // 例: "HPA201-0" -> "HPA201"
+                std::string hpaName = hpaProblem.name;
+                std::size_t pos = hpaName.find('-');
+                if (pos != std::string::npos) {
+                    hpaName = hpaName.substr(0, pos);
                 }
 
-                MPI_Barrier(MPI_COMM_WORLD);
+                // HPA問題の作成
+                std::shared_ptr<IProblem<double>> problem =
+                    std::make_unique<Hpa>(hpaModule, hpaName.c_str(), 4,
+                                          hpaProblem.level);
+                int divisionsNumOfWeightVector =
+                    divisionsNumOfWeightVectors.at(problem->ObjectivesNum());
+                int evaluationsNum = evaluationsNums.at(hpaProblem.level);
 
-                moead->Initialize();
+                // MP-MOEA/D-NOのobjとhpaの目的数が一致するか確認
+                if (algorithm.name.compare(0, std::string(MoeadNames[1]).size(),
+                                           MoeadNames[1]) == 0) {
+                    if (std::find(algorithm.obj.begin(), algorithm.obj.end(),
+                                  problem->ObjectivesNum()) ==
+                        algorithm.obj.end()) {
+                        continue;
+                    }
+                }
 
-                AddIdealPoint(moead->CurrentGeneration(),
-                              decomposition->IdealPoint());
-                localObjectivesListHistory.push_back(
-                    moead->GetObjectivesList());
-                executionTimes.push_back(moead->GetElapsedTime());
+                // 各種ディレクトリの作成
+                const std::filesystem::path outputAlgorithmDirectoryPath =
+                    outputDirectoryPath / algorithm.name;
+                const std::filesystem::path objectiveDirectoryPath =
+                    outputAlgorithmDirectoryPath / "objective";
+                const std::filesystem::path idealPointDirectoryPath =
+                    outputAlgorithmDirectoryPath / "idealPoint";
+                const std::filesystem::path igdDirectoryPath =
+                    outputAlgorithmDirectoryPath / "igd";
+                const std::filesystem::path dataTrafficsDirectoryPath =
+                    outputAlgorithmDirectoryPath / "dataTraffics";
+                RANK0(
+                    std::filesystem::create_directories(
+                        outputAlgorithmDirectoryPath);
+                    std::filesystem::create_directories(objectiveDirectoryPath);
+                    std::filesystem::create_directories(
+                        idealPointDirectoryPath);
+                    std::filesystem::create_directories(igdDirectoryPath);
+                    std::filesystem::create_directories(
+                        dataTrafficsDirectoryPath);)
 
-                MPI_Barrier(MPI_COMM_WORLD);
+                // 実行時間ファイルの作成
+                const std::filesystem::path executionTimesFilePath =
+                    outputAlgorithmDirectoryPath / "executionTimes.csv";
+                std::ofstream executionTimesFile;
+                if (rank == 0) {
+                    executionTimesFile = OpenOutputFile(executionTimesFilePath);
+                    SetSignificantDigits(executionTimesFile, 9);
+                    WriteCsvLine(executionTimesFile, ExecutionTimesHeader);
+                }
 
-                while (!moead->IsEnd()) {
-                    moead->Update();
+                // moeadの構成クラスの作成
+                auto crossover = std::make_shared<SimulatedBinaryCrossover>(
+                    crossoverRate, problem->VariableBounds());
+                auto decomposition = std::make_shared<Tchebycheff>();
+                auto mutation = std::make_shared<PolynomialMutation>(
+                    1.0 / problem->DecisionVariablesNum(),
+                    problem->VariableBounds());
+                auto sampling = std::make_shared<RealRandomSampling>(
+                    problem->VariableBounds());
+                auto repair = std::make_shared<RealRandomRepair>(problem);
+                auto selection = std::make_shared<RandomSelection>();
+
+                // ヘッダの作成
+                std::vector<std::string> objectiveHeader = {"rank"};
+                for (int i = 0; i < problem->ObjectivesNum(); i++) {
+                    objectiveHeader.push_back("objective" +
+                                              std::to_string(i + 1));
+                }
+                std::vector<std::string> idealPointHeader = {"rank",
+                                                             "generation"};
+                for (int i = 0; i < problem->ObjectivesNum(); i++) {
+                    idealPointHeader.push_back("objective" +
+                                               std::to_string(i + 1));
+                }
+
+                // インディケータの作成
+                std::vector<std::vector<double>> paretoFront;
+                if (rank == 0) {
+                    auto paretoFrontFile =
+                        OpenInputFile("extern/hpa/igd_reference_points/n=4/" +
+                                      hpaProblem.name + ".csv");
+                    paretoFront = ReadCsv<double>(paretoFrontFile, true);
+                }
+                IGD indicator(paretoFront);
+
+                RANK0(std::cout << "Algorithm: " << algorithm.name << std::endl)
+
+                for (int t = 0; t < trial; t++) {
+                    transitionOfIdealPoint.clear();
+                    localObjectivesListHistory.clear();
+                    executionTimes.clear();
+
+                    std::unique_ptr<IParallelMoead<double>> moead;
+                    if (algorithm.name == MoeadNames[0]) {
+                        moead = std::make_unique<MpMoead<double>>(
+                            50, neighborhoodSize, divisionsNumOfWeightVector,
+                            migrationInterval, crossover, decomposition,
+                            mutation, problem, repair, sampling, selection,
+                            idealPointMigration, algorithm.isAsync);
+                    } else if (algorithm.name.compare(
+                                   0, std::string(MoeadNames[1]).size(),
+                                   MoeadNames[1]) == 0) {
+                        moead = std::make_unique<MpMoeadIdealTopology<double>>(
+                            50, neighborhoodSize, divisionsNumOfWeightVector,
+                            migrationInterval, algorithm.adjacencyListFileName,
+                            crossover, decomposition, mutation, problem, repair,
+                            sampling, selection, algorithm.isAsync);
+                    } else {
+                        throw std::invalid_argument("Invalid moead name");
+                    }
+
+                    MPI_Barrier(MPI_COMM_WORLD);
+
+                    moead->Initialize();
 
                     AddIdealPoint(moead->CurrentGeneration(),
                                   decomposition->IdealPoint());
                     localObjectivesListHistory.push_back(
                         moead->GetObjectivesList());
                     executionTimes.push_back(moead->GetElapsedTime());
-                }
 
-                double elapsed = moead->GetElapsedTime();
-                MPI_Barrier(MPI_COMM_WORLD);
+                    MPI_Barrier(MPI_COMM_WORLD);
 
-                // 実行時間の出力
-                double maxExecutionTime;
-                MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX,
-                           0, MPI_COMM_WORLD);
-                RANK0(std::cout << "Trial " << t + 1
-                                << " Total execution time: " << maxExecutionTime
-                                << " seconds" << std::endl;)
-                RANK0(executionTimesFile << t + 1 << "," << maxExecutionTime
-                                         << std::endl;)
+                    while (!moead->IsEnd()) {
+                        moead->Update();
 
-                std::string fileName =
-                    "trial_" + std::to_string(t + 1) + ".csv";
-
-                // 理想点の出力
-                auto transitionOfIdealPointList =
-                    GatherTransitionOfIdealPoint();
-                if (rank == 0) {
-                    std::filesystem::path idealPointFilePath =
-                        idealPointDirectoryPath / fileName;
-                    std::ofstream idealPointFile =
-                        OpenOutputFile(idealPointFilePath);
-                    SetSignificantDigits(idealPointFile);
-                    WriteCsv(idealPointFile, transitionOfIdealPointList,
-                             idealPointHeader);
-                }
-
-                // 目的関数値の出力
-                std::vector<std::vector<std::vector<double>>>
-                    objectivesListHistory;
-                std::vector<std::pair<int, std::vector<double>>>
-                    finalObjectivesList;
-                GatherObjectivesListHistory(objectivesListHistory,
-                                            finalObjectivesList);
-                if (rank == 0) {
-                    std::filesystem::path objectiveFilePath =
-                        objectiveDirectoryPath / fileName;
-                    std::ofstream objectiveFile =
-                        OpenOutputFile(objectiveFilePath);
-                    SetSignificantDigits(objectiveFile);
-                    WriteCsv(objectiveFile, finalObjectivesList,
-                             objectiveHeader);
-                }
-
-                // IGDの出力
-                auto globalExecutionTimes = GatherExecutionTimes();
-                if (rank == 0) {
-                    std::filesystem::path igdFilePath =
-                        igdDirectoryPath / fileName;
-                    std::ofstream igdFile = OpenOutputFile(igdFilePath);
-                    SetSignificantDigits(igdFile);
-                    std::vector<std::tuple<int, double, double>> igd;
-                    for (int j = 0; j < objectivesListHistory.size(); j++) {
-                        igd.push_back(std::make_tuple(
-                            j, globalExecutionTimes[j],
-                            indicator.Calculate(objectivesListHistory[j])));
+                        AddIdealPoint(moead->CurrentGeneration(),
+                                      decomposition->IdealPoint());
+                        localObjectivesListHistory.push_back(
+                            moead->GetObjectivesList());
+                        executionTimes.push_back(moead->GetElapsedTime());
                     }
-                    // ヘッダーの書き込み
-                    for (std::size_t j = 0; j < IgdHeader.size(); j++) {
-                        igdFile << IgdHeader[j];
-                        if (j != IgdHeader.size() - 1) {
-                            igdFile << ",";
+
+                    double elapsed = moead->GetElapsedTime();
+                    MPI_Barrier(MPI_COMM_WORLD);
+
+                    // 実行時間の出力
+                    double maxExecutionTime;
+                    MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE,
+                               MPI_MAX, 0, MPI_COMM_WORLD);
+                    RANK0(std::cout
+                              << "Trial " << t + 1 << " Total execution time: "
+                              << maxExecutionTime << " seconds" << std::endl;)
+                    RANK0(executionTimesFile << t + 1 << "," << maxExecutionTime
+                                             << std::endl;)
+
+                    std::string fileName =
+                        "trial_" + std::to_string(t + 1) + ".csv";
+
+                    // 理想点の出力
+                    auto transitionOfIdealPointList =
+                        GatherTransitionOfIdealPoint();
+                    if (rank == 0) {
+                        std::filesystem::path idealPointFilePath =
+                            idealPointDirectoryPath / fileName;
+                        std::ofstream idealPointFile =
+                            OpenOutputFile(idealPointFilePath);
+                        SetSignificantDigits(idealPointFile);
+                        WriteCsv(idealPointFile, transitionOfIdealPointList,
+                                 idealPointHeader);
+                    }
+
+                    // 目的関数値の出力
+                    std::vector<std::vector<std::vector<double>>>
+                        objectivesListHistory;
+                    std::vector<std::pair<int, std::vector<double>>>
+                        finalObjectivesList;
+                    GatherObjectivesListHistory(objectivesListHistory,
+                                                finalObjectivesList);
+                    if (rank == 0) {
+                        std::filesystem::path objectiveFilePath =
+                            objectiveDirectoryPath / fileName;
+                        std::ofstream objectiveFile =
+                            OpenOutputFile(objectiveFilePath);
+                        SetSignificantDigits(objectiveFile);
+                        WriteCsv(objectiveFile, finalObjectivesList,
+                                 objectiveHeader);
+                    }
+
+                    // IGDの出力
+                    auto globalExecutionTimes = GatherExecutionTimes();
+                    if (rank == 0) {
+                        std::filesystem::path igdFilePath =
+                            igdDirectoryPath / fileName;
+                        std::ofstream igdFile = OpenOutputFile(igdFilePath);
+                        SetSignificantDigits(igdFile);
+                        std::vector<std::tuple<int, double, double>> igd;
+                        for (int j = 0; j < objectivesListHistory.size(); j++) {
+                            igd.push_back(std::make_tuple(
+                                j, globalExecutionTimes[j],
+                                indicator.Calculate(objectivesListHistory[j])));
+                        }
+                        // ヘッダーの書き込み
+                        for (std::size_t j = 0; j < IgdHeader.size(); j++) {
+                            igdFile << IgdHeader[j];
+                            if (j != IgdHeader.size() - 1) {
+                                igdFile << ",";
+                            }
+                        }
+                        igdFile << std::endl;
+                        // データの書き込み
+                        for (const auto& [generation, time, igdValue] : igd) {
+                            igdFile << generation << "," << time << ","
+                                    << igdValue << std::endl;
                         }
                     }
-                    igdFile << std::endl;
-                    // データの書き込み
-                    for (const auto& [generation, time, igdValue] : igd) {
-                        igdFile << generation << "," << time << "," << igdValue
-                                << std::endl;
+
+                    // データ量の出力
+                    auto sendDataTraffics = moead->GetDataTraffics();
+                    auto allDataTraffics = GatherDataTraffics(sendDataTraffics);
+                    if (rank == 0) {
+                        std::filesystem::path dataTrafficsFilePath =
+                            dataTrafficsDirectoryPath / fileName;
+                        std::ofstream dataTrafficsFile =
+                            OpenOutputFile(dataTrafficsFilePath);
+                        WriteCsv(dataTrafficsFile, allDataTraffics,
+                                 DataTrafficsHeader);
                     }
-                }
 
-                // データ量の出力
-                auto sendDataTraffics = moead->GetDataTraffics();
-                auto allDataTraffics = GatherDataTraffics(sendDataTraffics);
-                if (rank == 0) {
-                    std::filesystem::path dataTrafficsFilePath =
-                        dataTrafficsDirectoryPath / fileName;
-                    std::ofstream dataTrafficsFile =
-                        OpenOutputFile(dataTrafficsFilePath);
-                    WriteCsv(dataTrafficsFile, allDataTraffics,
-                             DataTrafficsHeader);
+                    MPI_Barrier(MPI_COMM_WORLD);
+                    ReleaseIsend(parallelSize, MPI_DOUBLE);
                 }
-
-                MPI_Barrier(MPI_COMM_WORLD);
-                ReleaseIsend(parallelSize, MPI_DOUBLE);
             }
         }
     }
@@ -543,24 +565,7 @@ int main(int argc, char* argv[]) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::string moeadName;
-    std::string parameterFilePath;
-    if (argc < 2 || argc > 4) {
-        RANK0(std::cerr << "Usage: " << argv[0]
-                        << " <moeadName> [parameterFilePath]" << std::endl;)
-        MPI_Finalize();
-        return 1;
-    } else if (argc == 2) {
-        moeadName = argv[1];
-    } else if (argc == 3) {
-        moeadName = argv[1];
-        parameterFilePath = argv[2];
-    }
-
-    auto benchmark =
-        parameterFilePath.empty()
-            ? Eacpp::ParallelMoeadBenchmark(moeadName)
-            : Eacpp::ParallelMoeadBenchmark(moeadName, parameterFilePath);
+    auto benchmark = Eacpp::ParallelMoeadBenchmark();
     benchmark.Run();
 
     MPI_Finalize();
