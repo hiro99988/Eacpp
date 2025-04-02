@@ -23,6 +23,8 @@ FetchContent_MakeAvailable(json)
 
 enable_testing()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+
 set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 file(GLOB_RECURSE SRC_FILES "${SRC_DIRECTORY}/*.cpp")
