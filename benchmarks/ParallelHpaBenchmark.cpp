@@ -396,23 +396,27 @@ class ParallelMoeadBenchmark {
             }
         }
 
+        // 出力ディレクトリの作成
+        std::filesystem::path outputDirectoryPath =
+            "out/data/" + GetTimestamp();
+        RANK0(std::filesystem::create_directories(outputDirectoryPath);)
+        // パラメータファイルのコピー
+        if (rank == 0) {
+            parameter["parallelSize"] = parallelSize;
+            std::string parameterString = parameter.dump(4);
+            auto parameterOutputFile =
+                OpenOutputFile(outputDirectoryPath / "parameter.json");
+            parameterOutputFile << parameterString;
+            parameterOutputFile.close();
+        }
+
         for (auto&& hpaProblem : problems) {
             RANK0(std::cout << "Problem: " << hpaProblem.name << std::endl)
 
             // 問題ディレクトリの作成
-            std::filesystem::path outputDirectoryPath =
-                "out/data/" + hpaProblem.name;
-            RANK0(std::filesystem::create_directories(outputDirectoryPath);)
-
-            // パラメータファイルのコピー
-            if (rank == 0) {
-                parameter["parallelSize"] = parallelSize;
-                std::string parameterString = parameter.dump(4);
-                std::ofstream parameterOutputFile(outputDirectoryPath /
-                                                  "parameter.json");
-                parameterOutputFile << parameterString;
-                parameterOutputFile.close();
-            }
+            std::filesystem::path problemDirectoryPath =
+                outputDirectoryPath / hpaProblem.name;
+            RANK0(std::filesystem::create_directories(problemDirectoryPath);)
 
             // 問題名の修正．"-"以降を削除
             // 例: "HPA201-0" -> "HPA201"
@@ -448,7 +452,7 @@ class ParallelMoeadBenchmark {
 
                 // 各種ディレクトリの作成
                 const std::filesystem::path outputAlgorithmDirectoryPath =
-                    outputDirectoryPath / algorithm.name;
+                    problemDirectoryPath / algorithm.name;
                 const std::filesystem::path objectiveDirectoryPath =
                     outputAlgorithmDirectoryPath / "objective";
                 const std::filesystem::path idealPointDirectoryPath =
