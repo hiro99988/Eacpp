@@ -65,8 +65,8 @@ class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
         "data/inputs/benchmarks/hpaParameter.json";
-    constexpr static std::array<const char*, 3> MoeadNames = {"MPMOEAD",
-                                                              "MPMOEAD-NO"};
+    constexpr static std::array<const char*, 3> MoeadNames = {"MP-MOEAD",
+                                                              "MP-MOEAD-NO"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {

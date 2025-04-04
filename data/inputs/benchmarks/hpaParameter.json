@@ -8,11 +8,11 @@
     "idealPointMigration": true,
     "algorithms": [
         {
-            "name": "MPMOEAD",
+            "name": "MP-MOEAD",
             "isAsync": true
         },
         {
-            "name": "MPMOEAD-NO-3",
+            "name": "MP-MOEAD-NO-3",
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d3/adjacencyList.csv",
             "obj": [
@@ -20,7 +20,7 @@
             ]
         },
         {
-            "name": "MPMOEAD-NO-4",
+            "name": "MP-MOEAD-NO-4",
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d4/adjacencyList.csv",
             "obj": [
@@ -29,7 +29,7 @@
             ]
         },
         {
-            "name": "MPMOEAD-NO-5",
+            "name": "MP-MOEAD-NO-5",
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d5/adjacencyList.csv",
             "obj": [
@@ -37,7 +37,7 @@
             ]
         },
         {
-            "name": "MPMOEAD-NO-10",
+            "name": "MP-MOEAD-NO-10",
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d10/adjacencyList.csv",
             "obj": [
@@ -45,7 +45,7 @@
             ]
         },
         {
-            "name": "MPMOEAD-NO-12",
+            "name": "MP-MOEAD-NO-12",
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d12/adjacencyList.csv",
             "obj": [
