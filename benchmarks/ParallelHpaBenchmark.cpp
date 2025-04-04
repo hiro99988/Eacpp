@@ -158,9 +158,9 @@ class ParallelMoeadBenchmark {
             std::vector<int> sizes;
             Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
 
+            std::vector<std::pair<int, std::vector<double>>> objectivesList;
             if (rank == 0) {
                 // 世代 i の目的関数値
-                std::vector<std::pair<int, std::vector<double>>> objectivesList;
                 for (int j = 0, count = 0; j < parallelSize;
                      count += sizes[j], j++) {
                     for (int k = 0; k < sizes[j]; k += dataSize) {
@@ -172,13 +172,16 @@ class ParallelMoeadBenchmark {
                             std::make_pair(j, std::move(objectives)));
                     }
                 }
+            }
 
-                // 目的関数値の非支配解を計算
-                auto nonDominated = ComputeNonDominatedSolutions(
-                    objectivesList,
-                    i == 0 ? std::vector<std::pair<int, std::vector<double>>>{}
-                           : objectivesListHistory.back());
+            // 目的関数値の非支配解を計算
+            auto nonDominated = ComputeNonDominatedSolutions(
+                objectivesList,
+                i == 0 || rank != 0
+                    ? std::vector<std::pair<int, std::vector<double>>>{}
+                    : objectivesListHistory.back());
 
+            if (rank == 0) {
                 if (i == localObjectivesListHistory.size() - 1) {
                     // 最終世代の非支配解を保存
                     finalObjectivesList = nonDominated;
@@ -205,65 +208,184 @@ class ParallelMoeadBenchmark {
         const std::vector<std::pair<int, std::vector<double>>>& newObjectives,
         const std::vector<std::pair<int, std::vector<double>>>&
             existingNonDominated) {
-        // 全ての解を結合
-        std::vector<std::pair<int, std::vector<double>>> allSolutions;
-        allSolutions.reserve(newObjectives.size() +
-                             existingNonDominated.size());
-        allSolutions.insert(allSolutions.end(), newObjectives.begin(),
-                            newObjectives.end());
-        allSolutions.insert(allSolutions.end(), existingNonDominated.begin(),
-                            existingNonDominated.end());
-
-        // 辞書順に昇順ソート
-        std::sort(allSolutions.begin(), allSolutions.end(),
-                  [](const std::pair<int, std::vector<double>>& lhs,
-                     const std::pair<int, std::vector<double>>& rhs) {
-                      return std::lexicographical_compare(
-                          lhs.second.begin(), lhs.second.end(),
-                          rhs.second.begin(), rhs.second.end());
-                  });
-
-        // 暫定非支配集合
-        std::vector<std::pair<int, std::vector<double>>> nonDominated;
-        nonDominated.reserve(allSolutions.size());
-
-        // dominates関数
+        // Lambda to check if solution a dominates solution b
         auto dominates = [](const std::vector<double>& a,
-                            const std::vector<double>& b) {
+                            const std::vector<double>& b) -> bool {
             bool strictlyBetter = false;
             for (std::size_t i = 0; i < a.size(); ++i) {
-                if (a[i] > b[i]) return false;
-                if (a[i] < b[i]) strictlyBetter = true;
+                if (a[i] > b[i]) {  // if any objective is worse, 'a' does not
+                                    // dominate 'b'
+                    return false;
+                } else if (a[i] < b[i]) {
+                    strictlyBetter = true;
+                }
             }
             return strictlyBetter;
         };
 
-        // 暫定非支配集合に対し、新たな点が支配されていないかを判定
-        for (auto&& current : allSolutions) {
-            bool dominatedByExisting = false;
-            // 既存非支配集合をチェック
-            for (auto& nd : nonDominated) {
-                if (dominates(nd.second, current.second)) {
-                    dominatedByExisting = true;
-                    break;
-                }
+        // Merge solutions
+        std::vector<std::pair<int, std::vector<double>>> merged = newObjectives;
+        merged.insert(merged.end(), existingNonDominated.begin(),
+                      existingNonDominated.end());
+        int N = static_cast<int>(merged.size());
+
+        // ------------------------
+        // 1) 全プロセスでサイズNを共有
+        // ------------------------
+        MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // 解をシリアライズしてブロードキャスト (rank 0 以外は受信領域を確保)
+        // 各解は int + vector<double>
+        // のため、以下の例では単純に連続double配列化します （元々rank
+        // 0が全解を持っている想定）
+        int dimension = 0;
+        if (rank == 0 && N > 0) {
+            dimension = static_cast<int>(merged[0].second.size());
+        }
+        MPI_Bcast(&dimension, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        std::vector<double> buffer;
+        buffer.reserve(N * (dimension + 1));  // +1はpair<int, ...>のintの格納用
+        if (rank == 0) {
+            for (auto& m : merged) {
+                // 先にpair<int, ...>のint
+                buffer.push_back(static_cast<double>(m.first));
+                // 次に解ベクトル
+                buffer.insert(buffer.end(), m.second.begin(), m.second.end());
             }
-            // 非支配ならリストに追加し、既存リスト側が支配されていれば除去
-            if (!dominatedByExisting) {
-                // 逆にcurrentがndを支配しているなら、そのndを削除
-                nonDominated.erase(
-                    std::remove_if(nonDominated.begin(), nonDominated.end(),
-                                   [&](auto& nd) {
-                                       return dominates(current.second,
-                                                        nd.second);
-                                   }),
-                    nonDominated.end());
-                nonDominated.push_back(std::move(current));
+        }
+        buffer.resize(N * (dimension + 1));
+        // 全プロセスにブロードキャスト
+        MPI_Bcast(buffer.data(), static_cast<int>(buffer.size()), MPI_DOUBLE, 0,
+                  MPI_COMM_WORLD);
+
+        // 受信後、各プロセスはmergedを再構築
+        if (rank != 0) {
+            merged.resize(N);
+            for (int i = 0; i < N; ++i) {
+                int offset = i * (dimension + 1);
+                int info = static_cast<int>(buffer[offset]);
+                std::vector<double> sol(dimension);
+                for (int d = 0; d < dimension; ++d) {
+                    sol[d] = buffer[offset + 1 + d];
+                }
+                merged[i] = std::make_pair(info, std::move(sol));
             }
         }
 
-        return nonDominated;
+        // ------------------------
+        // 2) 各プロセスに部分範囲を割り当て
+        // ------------------------
+        // rankごとに [start, end) のインデックスを担当
+        int chunkSize = (N + parallelSize - 1) / parallelSize;
+        int start = rank * chunkSize;
+        int end = std::min(start + chunkSize, N);
+
+        // この範囲について「自分が支配されているか」を判定 (isDominatedLocal[i]
+        // = 1 or 0)
+        std::vector<int> isDominatedLocal(N, 0);
+
+        for (int i = start; i < end; ++i) {
+            for (int j = 0; j < N; ++j) {
+                if (i == j) continue;
+                if (dominates(merged[j].second, merged[i].second)) {
+                    isDominatedLocal[i] = 1;
+                    break;
+                }
+            }
+        }
+
+        // ------------------------
+        // 3) Rank 0に集約
+        // ------------------------
+        std::vector<int> isDominatedGlobal(N, 0);
+        MPI_Reduce(isDominatedLocal.data(), isDominatedGlobal.data(), N,
+                   MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+
+        // ------------------------
+        // 4) Rank 0が非支配解を構築して返す
+        // ------------------------
+        if (rank == 0) {
+            std::vector<std::pair<int, std::vector<double>>> nonDominated;
+            nonDominated.reserve(N);
+            for (int i = 0; i < N; ++i) {
+                if (isDominatedGlobal[i] == 0) {
+                    nonDominated.push_back(merged[i]);
+                }
+            }
+            return nonDominated;
+        } else {
+            // Rank 0以外は空（または必要があれば同期して同一データを返す）
+            return {};
+        }
     }
+
+    // 逐次的に非支配解を計算する関数
+    // std::vector<std::pair<int, std::vector<double>>>
+    // ComputeNonDominatedSolutions(
+    //     const std::vector<std::pair<int, std::vector<double>>>&
+    //     newObjectives, const std::vector<std::pair<int,
+    //     std::vector<double>>>&
+    //         existingNonDominated) {
+    //     // 全ての解を結合
+    //     std::vector<std::pair<int, std::vector<double>>> allSolutions;
+    //     allSolutions.reserve(newObjectives.size() +
+    //                          existingNonDominated.size());
+    //     allSolutions.insert(allSolutions.end(), newObjectives.begin(),
+    //                         newObjectives.end());
+    //     allSolutions.insert(allSolutions.end(), existingNonDominated.begin(),
+    //                         existingNonDominated.end());
+
+    //     // 辞書順に昇順ソート
+    //     std::sort(allSolutions.begin(), allSolutions.end(),
+    //               [](const std::pair<int, std::vector<double>>& lhs,
+    //                  const std::pair<int, std::vector<double>>& rhs) {
+    //                   return std::lexicographical_compare(
+    //                       lhs.second.begin(), lhs.second.end(),
+    //                       rhs.second.begin(), rhs.second.end());
+    //               });
+
+    //     // 暫定非支配集合
+    //     std::vector<std::pair<int, std::vector<double>>> nonDominated;
+    //     nonDominated.reserve(allSolutions.size());
+
+    //     // dominates関数
+    //     auto dominates = [](const std::vector<double>& a,
+    //                         const std::vector<double>& b) {
+    //         bool strictlyBetter = false;
+    //         for (std::size_t i = 0; i < a.size(); ++i) {
+    //             if (a[i] > b[i]) return false;
+    //             if (a[i] < b[i]) strictlyBetter = true;
+    //         }
+    //         return strictlyBetter;
+    //     };
+
+    //     // 暫定非支配集合に対し、新たな点が支配されていないかを判定
+    //     for (auto&& current : allSolutions) {
+    //         bool dominatedByExisting = false;
+    //         // 既存非支配集合をチェック
+    //         for (auto& nd : nonDominated) {
+    //             if (dominates(nd.second, current.second)) {
+    //                 dominatedByExisting = true;
+    //                 break;
+    //             }
+    //         }
+    //         // 非支配ならリストに追加し、既存リスト側が支配されていれば除去
+    //         if (!dominatedByExisting) {
+    //             // 逆にcurrentがndを支配しているなら、そのndを削除
+    //             nonDominated.erase(
+    //                 std::remove_if(nonDominated.begin(), nonDominated.end(),
+    //                                [&](auto& nd) {
+    //                                    return dominates(current.second,
+    //                                                     nd.second);
+    //                                }),
+    //                 nonDominated.end());
+    //             nonDominated.push_back(std::move(current));
+    //         }
+    //     }
+
+    //     return nonDominated;
+    // }
 
     std::vector<std::pair<std::array<int, 2>, std::vector<double>>>
     GatherTransitionOfIdealPoint() {
