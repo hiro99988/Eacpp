@@ -205,22 +205,7 @@ class ParallelMoeadBenchmark {
         const std::vector<std::pair<int, std::vector<double>>>& newObjectives,
         const std::vector<std::pair<int, std::vector<double>>>&
             existingNonDominated) {
-        // Lambda to check if solution a dominates solution b
-        auto dominates = [](const std::vector<double>& a,
-                            const std::vector<double>& b) -> bool {
-            bool strictlyBetter = false;
-            for (std::size_t i = 0; i < a.size(); ++i) {
-                if (a[i] > b[i]) {  // if any objective is worse, 'a' does not
-                                    // dominate 'b'
-                    return false;
-                } else if (a[i] < b[i]) {
-                    strictlyBetter = true;
-                }
-            }
-            return strictlyBetter;
-        };
-
-        // Merge the two sets of solutions, ignoring the int in the pair
+        // 全ての解を結合
         std::vector<std::pair<int, std::vector<double>>> allSolutions;
         allSolutions.reserve(newObjectives.size() +
                              existingNonDominated.size());
@@ -229,19 +214,51 @@ class ParallelMoeadBenchmark {
         allSolutions.insert(allSolutions.end(), existingNonDominated.begin(),
                             existingNonDominated.end());
 
-        // Compute the non-dominated set
+        // 辞書順に昇順ソート
+        std::sort(allSolutions.begin(), allSolutions.end(),
+                  [](const std::pair<int, std::vector<double>>& lhs,
+                     const std::pair<int, std::vector<double>>& rhs) {
+                      return std::lexicographical_compare(
+                          lhs.second.begin(), lhs.second.end(),
+                          rhs.second.begin(), rhs.second.end());
+                  });
+
+        // 暫定非支配集合
         std::vector<std::pair<int, std::vector<double>>> nonDominated;
-        for (std::size_t i = 0; i < allSolutions.size(); ++i) {
-            bool isDominated = false;
-            for (std::size_t j = 0; j < allSolutions.size(); ++j) {
-                if (i == j) continue;
-                if (dominates(allSolutions[j].second, allSolutions[i].second)) {
-                    isDominated = true;
+        nonDominated.reserve(allSolutions.size());
+
+        // dominates関数
+        auto dominates = [](const std::vector<double>& a,
+                            const std::vector<double>& b) {
+            bool strictlyBetter = false;
+            for (std::size_t i = 0; i < a.size(); ++i) {
+                if (a[i] > b[i]) return false;
+                if (a[i] < b[i]) strictlyBetter = true;
+            }
+            return strictlyBetter;
+        };
+
+        // 暫定非支配集合に対し、新たな点が支配されていないかを判定
+        for (auto&& current : allSolutions) {
+            bool dominatedByExisting = false;
+            // 既存非支配集合をチェック
+            for (auto& nd : nonDominated) {
+                if (dominates(nd.second, current.second)) {
+                    dominatedByExisting = true;
                     break;
                 }
             }
-            if (!isDominated) {
-                nonDominated.push_back(allSolutions[i]);
+            // 非支配ならリストに追加し、既存リスト側が支配されていれば除去
+            if (!dominatedByExisting) {
+                // 逆にcurrentがndを支配しているなら、そのndを削除
+                nonDominated.erase(
+                    std::remove_if(nonDominated.begin(), nonDominated.end(),
+                                   [&](auto& nd) {
+                                       return dominates(current.second,
+                                                        nd.second);
+                                   }),
+                    nonDominated.end());
+                nonDominated.push_back(std::move(current));
             }
         }
 
