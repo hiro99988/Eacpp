@@ -170,12 +170,14 @@ class MpMoeadIdealTopology : public IParallelMoead<DecisionVariableType> {
         if (_currentGeneration % _migrationInterval == 0) {
             SendMessages();
 
+            _communicationTime.Start();
             std::vector<std::vector<double>> messages;
             if (_isAsync) {
                 messages = ReceiveMessagesAsync();
             } else {
                 messages = ReceiveMessagesSync();
             }
+            _communicationTime.Stop();
 
             // 受信データ量を記録する
             _stopwatch.Stop();
@@ -206,8 +208,17 @@ class MpMoeadIdealTopology : public IParallelMoead<DecisionVariableType> {
 
         _stopwatch.Stop();
 
-        if (_currentGeneration >= _generationNum) {
+        if (IsEnd()) {
             CompletePendingSends();
+
+            double elapsed = _communicationTime.Elapsed();
+            double maxExecutionTime;
+            MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX, 0,
+                       MPI_COMM_WORLD);
+            if (_rank == 0) {
+                std::cout << "Max communication time: " << maxExecutionTime
+                          << std::endl;
+            }
         }
     }
 
@@ -620,6 +631,7 @@ class MpMoeadIdealTopology : public IParallelMoead<DecisionVariableType> {
             {_currentGeneration, sendTimes, totalSendDataTraffic});
         _stopwatch.Start();
 
+        _communicationTime.Start();
         // メッセージを送信する
         for (auto&& [dest, message] : sendMessages) {
             pendingSends.emplace_back();
@@ -635,6 +647,7 @@ class MpMoeadIdealTopology : public IParallelMoead<DecisionVariableType> {
             MPI_Test(&ps.request, &flag, MPI_STATUS_IGNORE);
             return flag;
         });
+        _communicationTime.Stop();
     }
 
     std::vector<std::vector<double>> ReceiveMessagesSync() {
