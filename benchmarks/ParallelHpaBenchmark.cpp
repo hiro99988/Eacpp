@@ -644,8 +644,6 @@ class ParallelMoeadBenchmark {
                     localObjectivesListHistory.clear();
                     executionTimes.clear();
 
-                    // auto sampling = std::make_shared<RealRandomSampling>(
-                    // problem->VariableBounds());
                     auto sampling = rank == 0
                                         ? std::make_shared<RealRandomSampling>(
                                               problem->VariableBounds(),
