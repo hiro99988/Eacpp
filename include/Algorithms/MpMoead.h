@@ -608,11 +608,11 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         _communicationTime.Start();
         // メッセージを送信する
         for (auto&& [dest, message] : sendMessages) {
-            PendingSend ps;
+            pendingSends.emplace_back();
+            auto& ps = pendingSends.back();
             ps.data = std::move(message);
             MPI_Isend(ps.data.data(), ps.data.size(), MPI_DOUBLE, dest,
                       messageTag, MPI_COMM_WORLD, &ps.request);
-            pendingSends.push_back(std::move(ps));
         }
 
         // 送信が完了したリクエストを削除する
