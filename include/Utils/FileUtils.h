@@ -143,8 +143,8 @@ void WriteCsv(std::ofstream& file, const T& data, int step,
 }
 
 template <typename T>
-std::vector<std::vector<T>> ReadCsv(std::ifstream& file,
-                                    bool hasHeader = false) {
+std::vector<std::vector<T>> ReadCsv(std::ifstream& file, bool hasHeader = false,
+                                    bool indexColumn = false) {
     std::vector<std::vector<T>> data;
     std::string line;
     if (hasHeader) {
@@ -155,6 +155,10 @@ std::vector<std::vector<T>> ReadCsv(std::ifstream& file,
         std::vector<T> row;
         std::istringstream lineStream(line);
         std::string cell;
+        if (indexColumn) {
+            // Skip the first column
+            std::getline(lineStream, cell, ',');
+        }
         while (std::getline(lineStream, cell, ',')) {
             row.push_back(static_cast<T>(std::stod(cell)));
         }
