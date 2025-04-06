@@ -443,12 +443,47 @@ class MpMoeadIdealTopology : public IParallelMoead<DecisionVariableType> {
         }
     }
 
+    // 各ランクが初期個体をそれぞれでサンプルする関数
+    // void InitializePopulation() {
+    //     int sampleNum = _internalIndexes.size();
+    //     std::vector<Individual<DecisionVariableType>> sampledIndividuals =
+    //         _sampling->Sample(sampleNum, _decisionVariablesNum);
+    //     for (int i = 0; i < _internalIndexes.size(); i++) {
+    //         _individuals[_internalIndexes[i]] = sampledIndividuals[i];
+    //         _problem->ComputeObjectiveSet(_individuals[_internalIndexes[i]]);
+    //         _decomposition->UpdateIdealPoint(
+    //             _individuals[_internalIndexes[i]].objectives);
+    //     }
+    // }
+
     void InitializePopulation() {
-        int sampleNum = _internalIndexes.size();
-        std::vector<Individual<DecisionVariableType>> sampledIndividuals =
-            _sampling->Sample(sampleNum, _decisionVariablesNum);
-        for (int i = 0; i < _internalIndexes.size(); i++) {
-            _individuals[_internalIndexes[i]] = sampledIndividuals[i];
+        std::vector<int> populationSizes;
+        std::vector<DecisionVariableType> sendBuffer;
+        if (_rank == 0) {
+            // 各ランクの母集団サイズ
+            populationSizes =
+                CalculateNodeWorkloads(_totalPopulationSize, _parallelSize);
+            std::vector<Individual<DecisionVariableType>> samples =
+                _sampling->Sample(_totalPopulationSize, _decisionVariablesNum);
+
+            sendBuffer.reserve(samples.size() * _decisionVariablesNum);
+            // samplesの解を送信用に1次元に変換
+            for (auto&& sample : samples) {
+                sendBuffer.insert(sendBuffer.end(), sample.solution.begin(),
+                                  sample.solution.end());
+            }
+        }
+
+        // 解を分散
+        auto received = Scatterv(sendBuffer, populationSizes,
+                                 _decisionVariablesNum, _rank, _parallelSize);
+        // 受信した解を2次元に変換
+        std::vector<Eigen::ArrayX<DecisionVariableType>> receivedSolutions =
+            TransformToEigenArrayX2d(received, _decisionVariablesNum);
+
+        // 受信した解を個体に格納
+        for (int i = 0; i < receivedSolutions.size(); i++) {
+            _individuals.emplace(_internalIndexes[i], receivedSolutions[i]);
             _problem->ComputeObjectiveSet(_individuals[_internalIndexes[i]]);
             _decomposition->UpdateIdealPoint(
                 _individuals[_internalIndexes[i]].objectives);

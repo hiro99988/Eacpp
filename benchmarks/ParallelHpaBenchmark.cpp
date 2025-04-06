@@ -26,6 +26,7 @@
 #include "Problems/Problems.h"
 #include "Reflections/Reflection.h"
 #include "Repairs/RealRandomRepair.h"
+#include "Rng/Rng.h"
 #include "Samplings/RealRandomSampling.h"
 #include "Selections/RandomSelection.h"
 #include "Stopwatches/MpiStopwatch.hpp"
@@ -610,8 +611,6 @@ class ParallelMoeadBenchmark {
                 auto mutation = std::make_shared<PolynomialMutation>(
                     1.0 / problem->DecisionVariablesNum(),
                     problem->VariableBounds());
-                auto sampling = std::make_shared<RealRandomSampling>(
-                    problem->VariableBounds());
                 auto repair = std::make_shared<RealRandomRepair>(problem);
                 auto selection = std::make_shared<RandomSelection>();
 
@@ -634,7 +633,7 @@ class ParallelMoeadBenchmark {
                     auto paretoFrontFile =
                         OpenInputFile("extern/hpa/igd_reference_points/n=4/" +
                                       hpaProblem.name + ".csv");
-                    paretoFront = ReadCsv<double>(paretoFrontFile, true);
+                    paretoFront = ReadCsv<double>(paretoFrontFile, true, true);
                 }
                 IGD indicator(paretoFront);
 
@@ -644,6 +643,15 @@ class ParallelMoeadBenchmark {
                     transitionOfIdealPoint.clear();
                     localObjectivesListHistory.clear();
                     executionTimes.clear();
+
+                    // auto sampling = std::make_shared<RealRandomSampling>(
+                    // problem->VariableBounds());
+                    auto sampling = rank == 0
+                                        ? std::make_shared<RealRandomSampling>(
+                                              problem->VariableBounds(),
+                                              std::make_shared<Rng>(t))
+                                        : std::make_shared<RealRandomSampling>(
+                                              problem->VariableBounds());
 
                     std::unique_ptr<IParallelMoead<double>> moead;
                     if (algorithm.name == MoeadNames[0]) {
