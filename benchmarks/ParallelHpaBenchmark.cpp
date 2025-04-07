@@ -192,6 +192,8 @@ class ParallelMoeadBenchmark {
                         objectivesListHistory.size());
                     for (std::size_t j = 0; j < objectivesListHistory.size();
                          ++j) {
+                        outObjectivesListHistory[j].reserve(
+                            objectivesListHistory[j].size());
                         for (auto&& objectivesList : objectivesListHistory[j]) {
                             outObjectivesListHistory[j].push_back(
                                 std::move(objectivesList.second));
@@ -209,13 +211,12 @@ class ParallelMoeadBenchmark {
         const std::vector<std::pair<int, std::vector<double>>>& newObjectives,
         const std::vector<std::pair<int, std::vector<double>>>&
             existingNonDominated) {
-        // Lambda to check if solution a dominates solution b
+        // aがbを支配するかどうかを判定するラムダ関数
         auto dominates = [](const std::vector<double>& a,
                             const std::vector<double>& b) -> bool {
             bool strictlyBetter = false;
             for (std::size_t i = 0; i < a.size(); ++i) {
-                if (a[i] > b[i]) {  // if any objective is worse, 'a' does not
-                                    // dominate 'b'
+                if (a[i] > b[i]) {
                     return false;
                 } else if (a[i] < b[i]) {
                     strictlyBetter = true;
@@ -224,99 +225,96 @@ class ParallelMoeadBenchmark {
             return strictlyBetter;
         };
 
-        // Merge solutions
+        // 全ての解を結合
         std::vector<std::pair<int, std::vector<double>>> merged = newObjectives;
         merged.insert(merged.end(), existingNonDominated.begin(),
                       existingNonDominated.end());
-        int N = static_cast<int>(merged.size());
+        int mergedSize = static_cast<int>(merged.size());
 
-        // ------------------------
-        // 1) 全プロセスでサイズNを共有
-        // ------------------------
-        MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        // 全プロセスでサイズを共有
+        MPI_Bcast(&mergedSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        // 解をシリアライズしてブロードキャスト (rank 0 以外は受信領域を確保)
-        // 各解は int + vector<double>
-        // のため、以下の例では単純に連続double配列化します （元々rank
-        // 0が全解を持っている想定）
+        // 全プロセスで解の次元数を共有
         int dimension = 0;
-        if (rank == 0 && N > 0) {
+        if (rank == 0 && mergedSize > 0) {
             dimension = static_cast<int>(merged[0].second.size());
         }
         MPI_Bcast(&dimension, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+        // 解のみを buffer に集約
         std::vector<double> buffer;
-        buffer.reserve(N * (dimension + 1));  // +1はpair<int, ...>のintの格納用
         if (rank == 0) {
+            buffer.reserve(mergedSize * dimension);
             for (auto& m : merged) {
-                // 先にpair<int, ...>のint
-                buffer.push_back(static_cast<double>(m.first));
-                // 次に解ベクトル
                 buffer.insert(buffer.end(), m.second.begin(), m.second.end());
             }
         }
-        buffer.resize(N * (dimension + 1));
+        buffer.resize(mergedSize * dimension);
         // 全プロセスにブロードキャスト
         MPI_Bcast(buffer.data(), static_cast<int>(buffer.size()), MPI_DOUBLE, 0,
                   MPI_COMM_WORLD);
 
-        // 受信後、各プロセスはmergedを再構築
+        // 受信後，各プロセスは buffer を解のベクトルに変換
+        std::vector<std::vector<double>> mergedSolutions;
         if (rank != 0) {
-            merged.resize(N);
-            for (int i = 0; i < N; ++i) {
-                int offset = i * (dimension + 1);
-                int info = static_cast<int>(buffer[offset]);
-                std::vector<double> sol(dimension);
-                for (int d = 0; d < dimension; ++d) {
-                    sol[d] = buffer[offset + 1 + d];
-                }
-                merged[i] = std::make_pair(info, std::move(sol));
+            mergedSolutions.reserve(mergedSize);
+            for (int i = 0; i < mergedSize; ++i) {
+                mergedSolutions.emplace_back(
+                    buffer.begin() + i * dimension,
+                    buffer.begin() + (i + 1) * dimension);
             }
         }
 
-        // ------------------------
-        // 2) 各プロセスに部分範囲を割り当て
-        // ------------------------
+        // 各プロセスに部分範囲を割り当て
         // rankごとに [start, end) のインデックスを担当
-        int chunkSize = (N + parallelSize - 1) / parallelSize;
+        int chunkSize = (mergedSize + parallelSize - 1) / parallelSize;
         int start = rank * chunkSize;
-        int end = std::min(start + chunkSize, N);
+        int end = std::min(start + chunkSize, mergedSize);
 
-        // この範囲について「自分が支配されているか」を判定 (isDominatedLocal[i]
-        // = 1 or 0)
-        std::vector<int> isDominatedLocal(N, 0);
-
-        for (int i = start; i < end; ++i) {
-            for (int j = 0; j < N; ++j) {
-                if (i == j) continue;
-                if (dominates(merged[j].second, merged[i].second)) {
-                    isDominatedLocal[i] = 1;
-                    break;
+        // 割り当てられた範囲において自分が支配されている（=1）か判定
+        std::vector<int> isDominatedLocal(mergedSize, 0);
+        if (rank == 0) {
+            for (int i = start; i < end; ++i) {
+                for (int j = 0; j < mergedSize; ++j) {
+                    if (i == j) continue;
+                    if (dominates(merged[j].second, merged[i].second)) {
+                        isDominatedLocal[i] = 1;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (int i = start; i < end; ++i) {
+                for (int j = 0; j < mergedSize; ++j) {
+                    if (i == j) continue;
+                    if (dominates(mergedSolutions[j], mergedSolutions[i])) {
+                        isDominatedLocal[i] = 1;
+                        break;
+                    }
                 }
             }
         }
 
-        // ------------------------
-        // 3) Rank 0に集約
-        // ------------------------
-        std::vector<int> isDominatedGlobal(N, 0);
-        MPI_Reduce(isDominatedLocal.data(), isDominatedGlobal.data(), N,
-                   MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+        // Rank 0に集約
+        std::vector<int> isDominatedGlobal;
+        if (rank == 0) {
+            isDominatedGlobal.resize(mergedSize, 0);
+        }
+        MPI_Reduce(isDominatedLocal.data(), isDominatedGlobal.data(),
+                   mergedSize, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
 
-        // ------------------------
-        // 4) Rank 0が非支配解を構築して返す
-        // ------------------------
+        // Rank 0が非支配解を構築して返す
         if (rank == 0) {
             std::vector<std::pair<int, std::vector<double>>> nonDominated;
-            nonDominated.reserve(N);
-            for (int i = 0; i < N; ++i) {
+            nonDominated.reserve(mergedSize);
+            for (int i = 0; i < mergedSize; ++i) {
                 if (isDominatedGlobal[i] == 0) {
-                    nonDominated.push_back(merged[i]);
+                    nonDominated.push_back(std::move(merged[i]));
                 }
             }
+            nonDominated.shrink_to_fit();
             return nonDominated;
         } else {
-            // Rank 0以外は空（または必要があれば同期して同一データを返す）
             return {};
         }
     }
