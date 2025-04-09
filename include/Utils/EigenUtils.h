@@ -39,4 +39,12 @@ T CalculateEuclideanDistance(const Eigen::ArrayX<T>& lhs,
     return (lhs - rhs).matrix().norm();
 }
 
+template <typename T>
+T CalculateModifiedDistance(const Eigen::ArrayX<T>& lhs,
+                            const Eigen::ArrayX<T>& rhs) {
+    Eigen::ArrayX<T> diff = lhs - rhs;
+    // 各要素と0を比較して、最大値を取る．負の値は0に置き換えられる
+    diff = diff.cwiseMax(T(0));
+    return diff.matrix().norm();
+}
 }  // namespace Eacpp
