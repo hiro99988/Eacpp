@@ -332,7 +332,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             TransformToEigenArrayX2d(receivedExternalWeightVectors,
                                      _objectivesNum);
 
-        InitializePopulation();
+        InitializePopulation(internalIndividualCounts);
 
         auto receivedExternalIndividuals = ScatterPopulation(_ranksToSend);
 
@@ -431,15 +431,17 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     //     }
     // }
 
-    void InitializePopulation() {
-        std::vector<int> populationSizes;
+    void InitializePopulation(
+        const std::vector<int>& internalIndividualCounts) {
         std::vector<DecisionVariableType> sendBuffer;
         if (_rank == 0) {
-            // 各ランクの母集団サイズ
-            populationSizes =
-                CalculateNodeWorkloads(_totalPopulationSize, _parallelSize);
+            int sampleNum = 0;
+            for (auto&& i : internalIndividualCounts) {
+                sampleNum += i;
+            }
+
             std::vector<Individual<DecisionVariableType>> samples =
-                _sampling->Sample(_totalPopulationSize, _decisionVariablesNum);
+                _sampling->Sample(sampleNum, _decisionVariablesNum);
 
             sendBuffer.reserve(samples.size() * _decisionVariablesNum);
             // samplesの解を送信用に1次元に変換
@@ -450,7 +452,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         }
 
         // 解を分散
-        auto received = Scatterv(sendBuffer, populationSizes,
+        auto received = Scatterv(sendBuffer, internalIndividualCounts,
                                  _decisionVariablesNum, _rank, _parallelSize);
         // 受信した解を2次元に変換
         std::vector<Eigen::ArrayX<DecisionVariableType>> receivedSolutions =
