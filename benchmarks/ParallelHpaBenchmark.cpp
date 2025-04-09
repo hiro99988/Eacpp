@@ -66,6 +66,9 @@ class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
         "data/inputs/benchmarks/hpaParameter.json";
+    constexpr static const char* UtopiaNadirFilePath =
+        "extern/hpa/utopia_and_nadir_points/n=4/"
+        "utopia_nadir.json";
     constexpr static std::array<const char*, 3> MoeadNames = {"MP-MOEAD",
                                                               "MP-MOEAD-NO"};
     constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
@@ -155,6 +158,8 @@ class ParallelMoeadBenchmark {
                                   objectives.end());
             }
 
+            // TODO: MPI_Allgatherv
+            // を使ってこの段階で全てのランクに全ての目的関数値を分散させる
             std::vector<double> receiveBuffer;
             std::vector<int> sizes;
             Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
@@ -267,9 +272,9 @@ class ParallelMoeadBenchmark {
 
         // 各プロセスに部分範囲を割り当て
         // rankごとに [start, end) のインデックスを担当
-        int chunkSize = (mergedSize + parallelSize - 1) / parallelSize;
-        int start = rank * chunkSize;
-        int end = std::min(start + chunkSize, mergedSize);
+        int workload = CalculateNodeWorkload(mergedSize, rank, parallelSize);
+        int start = CalculateNodeStartIndex(mergedSize, rank, parallelSize);
+        int end = start + workload;
 
         // 割り当てられた範囲において自分が支配されている（=1）か判定
         std::vector<int> isDominatedLocal(mergedSize, 0);
@@ -560,6 +565,13 @@ class ParallelMoeadBenchmark {
             RANK0(std::cout << "generationsNum: " << generationsNum
                             << std::endl;)
 
+            // 正規化のための utopia, nadir 点を取得
+            auto utopiaNadirJson = OpenInputFile(UtopiaNadirFilePath);
+            nlohmann::json utopiaNadir = nlohmann::json::parse(utopiaNadirJson);
+            std::vector<double> utopia = utopiaNadir[hpaProblem.name]["utopia"];
+            std::vector<double> nadir = utopiaNadir[hpaProblem.name]["nadir"];
+            utopiaNadirJson.close();
+
             for (auto&& algorithm : algorithms) {
                 // MP-MOEA/D-NOのobjとhpaの目的数が一致するか確認
                 if (algorithm.name.compare(0, std::string(MoeadNames[1]).size(),
@@ -633,7 +645,7 @@ class ParallelMoeadBenchmark {
                                       hpaProblem.name + ".csv");
                     paretoFront = ReadCsv<double>(paretoFrontFile, true, true);
                 }
-                IGD indicator(paretoFront);
+                IGDPlus indicator(paretoFront);
 
                 RANK0(std::cout << "Algorithm: " << algorithm.name << std::endl)
 
@@ -741,10 +753,24 @@ class ParallelMoeadBenchmark {
                     // IGDの出力
                     auto globalExecutionTimes = GatherExecutionTimes();
                     if (rank == 0) {
+                        // IGD出力ファイルの作成
                         std::filesystem::path igdFilePath =
                             igdDirectoryPath / fileName;
                         std::ofstream igdFile = OpenOutputFile(igdFilePath);
                         SetSignificantDigits(igdFile);
+
+                        // 目的関数値を正規化
+                        for (auto& objectivesList : objectivesListHistory) {
+                            for (auto& objectives : objectivesList) {
+                                for (std::size_t i = 0; i < objectives.size();
+                                     ++i) {
+                                    objectives[i] =
+                                        (objectives[i] - utopia[i]) /
+                                        (nadir[i] - utopia[i]);
+                                }
+                            }
+                        }
+
                         std::vector<std::tuple<int, double, double>> igd;
                         for (int j = 0; j < objectivesListHistory.size(); j++) {
                             igd.push_back(std::make_tuple(
