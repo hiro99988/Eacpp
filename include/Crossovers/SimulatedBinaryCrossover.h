@@ -19,6 +19,7 @@ class SimulatedBinaryCrossover : public CrossoverBase<double> {
    private:
     static constexpr double DefaultCrossoverRateVariable = 0.5;
 
+   public:
     SimulatedBinaryCrossover(
         double crossoverRate,
         const std::vector<std::pair<double, double>>& variableBounds)
