@@ -19,10 +19,16 @@ Individuald SimulatedBinaryCrossover::performCrossover(
     const Eigen::ArrayXd& parent2 = parents[1].solution;
     Eigen::ArrayXd child(parent1.size());
 
+    // 交叉しない場合は親のいずれかを返す
+    if (_rng->Random() > crossoverRate) {
+        return _rng->Random() < 0.5 ? Individuald(parent1)
+                                    : Individuald(parent2);
+    }
+
     for (int i = 0; i < child.size(); i++) {
         double x1 = parent1(i);
         double x2 = parent2(i);
-        if (_rng->Random() > crossoverRate || x1 == x2 ||
+        if (_rng->Random() > DefaultCrossoverRateVariable ||
             std::abs(x1 - x2) <= epsilon) {
             if (_rng->Random() < 0.5) {
                 child(i) = x1;
@@ -56,6 +62,13 @@ Individuald SimulatedBinaryCrossover::performCrossover(
         } else {
             child(i) = 0.5 * ((1.0 - betaq) * x1 + (1.0 + betaq) * x2);
         }
+
+        // 境界チェック
+        if (child(i) < bound.first) {
+            child(i) = bound.first;
+        } else if (child(i) > bound.second) {
+            child(i) = bound.second;
+        }
     }
 
     return Individuald(child);
@@ -64,7 +77,7 @@ Individuald SimulatedBinaryCrossover::performCrossover(
 double SimulatedBinaryCrossover::Betaq(double alpha) const {
     double betaq;
     double random = _rng->Random();
-    if (random <= 1.0 / alpha) {
+    if (random < 1.0 / alpha) {
         betaq = std::pow(random * alpha, 1.0 / (distributionIndex + 1.0));
     } else {
         betaq = std::pow(1.0 / (2.0 - random * alpha),
