@@ -572,6 +572,23 @@ class ParallelMoeadBenchmark {
             std::vector<double> nadir = utopiaNadir[hpaProblem.name]["nadir"];
             utopiaNadirJson.close();
 
+            // インディケータの作成
+            std::vector<std::vector<double>> paretoFront;
+            if (rank == 0) {
+                auto paretoFrontFile =
+                    OpenInputFile("extern/hpa/igd_reference_points/n=4/" +
+                                  hpaProblem.name + ".csv");
+                paretoFront = ReadCsv<double>(paretoFrontFile, true, true);
+            }
+            // パレートフロントも正規化
+            for (auto&& objectives : paretoFront) {
+                for (std::size_t i = 0; i < objectives.size(); i++) {
+                    objectives[i] =
+                        (objectives[i] - utopia[i]) / (nadir[i] - utopia[i]);
+                }
+            }
+            IGDPlus indicator(paretoFront);
+
             for (auto&& algorithm : algorithms) {
                 // MP-MOEA/D-NOのobjとhpaの目的数が一致するか確認
                 if (algorithm.name.compare(0, std::string(MoeadNames[1]).size(),
@@ -636,16 +653,6 @@ class ParallelMoeadBenchmark {
                     idealPointHeader.push_back("objective" +
                                                std::to_string(i + 1));
                 }
-
-                // インディケータの作成
-                std::vector<std::vector<double>> paretoFront;
-                if (rank == 0) {
-                    auto paretoFrontFile =
-                        OpenInputFile("extern/hpa/igd_reference_points/n=4/" +
-                                      hpaProblem.name + ".csv");
-                    paretoFront = ReadCsv<double>(paretoFrontFile, true, true);
-                }
-                IGDPlus indicator(paretoFront);
 
                 RANK0(std::cout << "Algorithm: " << algorithm.name << std::endl)
 
