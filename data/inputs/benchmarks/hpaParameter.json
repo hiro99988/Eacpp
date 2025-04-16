@@ -5,7 +5,6 @@
     "divisionsNumOfWeightVector": 199,
     "migrationInterval": 1,
     "crossoverRate": 0.9,
-    "idealPointMigration": true,
     "algorithms": [
         {
             "name": "MP-MOEAD",

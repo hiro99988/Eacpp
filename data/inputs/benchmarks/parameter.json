@@ -6,7 +6,6 @@
     "migrationInterval": 1,
     "crossoverRate": 0.9,
     "objectivesNum": 3,
-    "idealPointMigration": true,
     "isAsync": true,
     "decisionVariablesNums": [
         7,
