@@ -3,17 +3,14 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <array>
-#include <eigen3/Eigen/Dense>
-#include <filesystem>
-#include <fstream>
 #include <list>
 #include <memory>
 #include <numeric>
 #include <ranges>
 #include <set>
-#include <tuple>
+#include <stdexcept>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "Algorithms/IParallelMoead.hpp"
@@ -34,16 +31,19 @@ namespace Eacpp {
 
 template <typename DecisionVariableType>
 class MpMoead : public IParallelMoead<DecisionVariableType> {
-   public:
-    constexpr static int maxBufferSize = 100;
-    constexpr static int messageTag = 0;
+   protected:
+    // 送信中のデータを管理する構造体
+    struct PendingSend {
+        MPI_Request request;
+        std::vector<double> data;
+    };
 
-   private:
+    constexpr static int MessageTag = 0;
+
     int _generationNum;
     int _neighborhoodSize;
     int _divisionsNumOfWeightVector;
     int _migrationInterval;
-    bool _idealPointMigration;
     bool _isAsync;
     int _decisionVariablesNum;
     int _objectivesNum;
@@ -70,18 +70,12 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     std::vector<int> _externalIndividualRanks;
     std::vector<int> _neighboringRanks;
     std::vector<int> _ranksToSend;
-    MpiStopwatch _stopwatch;
+    // 通信量を記録する
     std::vector<std::vector<int>> _traffics;
-
-   private:
-    // 送信中のデータを管理する構造体
-    struct PendingSend {
-        MPI_Request request;
-        std::vector<double> data;
-    };
-
     // 保留中の送信データを管理するバッファ
-    std::list<PendingSend> pendingSends;
+    std::list<PendingSend> _pendingSends;
+    MpiStopwatch _initializationTime;
+    MpiStopwatch _executionTime;
     MpiStopwatch _communicationTime;
 
    public:
@@ -93,13 +87,11 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             const std::shared_ptr<IProblem<DecisionVariableType>>& problem,
             const std::shared_ptr<IRepair<DecisionVariableType>>& repair,
             const std::shared_ptr<ISampling<DecisionVariableType>>& sampling,
-            const std::shared_ptr<ISelection>& selection,
-            bool idealPointMigration = false, bool isAsync = true)
+            const std::shared_ptr<ISelection>& selection, bool isAsync = true)
         : _generationNum(generationNum),
           _neighborhoodSize(neighborhoodSize),
           _migrationInterval(migrationInterval),
           _divisionsNumOfWeightVector(divisionsNumOfWeightVector),
-          _idealPointMigration(idealPointMigration),
           _isAsync(isAsync) {
         if (!crossover || !decomposition || !mutation || !problem || !repair ||
             !sampling || !selection) {
@@ -120,6 +112,8 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         _isIdealPointUpdated = false;
     }
 
+    virtual ~MpMoead() {}
+
     int CurrentGeneration() const override {
         return _currentGeneration;
     }
@@ -133,19 +127,19 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     }
 
     void Initialize() override {
-        _stopwatch.Restart();
+        _initializationTime.Restart();
         Clear();
         InitializeMpi();
         _totalPopulationSize = _initializer.CalculatePopulationSize(
             _divisionsNumOfWeightVector, _objectivesNum);
         _decomposition->InitializeIdealPoint(_objectivesNum);
         InitializeIsland();
-        _currentGeneration = 0;
-        _stopwatch.Stop();
+        AdditionalInitialization();
+        _initializationTime.Stop();
     }
 
     void Update() override {
-        _stopwatch.Start();
+        _executionTime.Start();
         if (_currentGeneration % _migrationInterval == 0) {
             MakeLocalCopyOfExternalIndividuals();
         }
@@ -174,7 +168,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             _communicationTime.Stop();
 
             // 受信データ量を記録する
-            _stopwatch.Stop();
+            _executionTime.Stop();
             int receiveTimes = messages.size();
             int totalReceiveDataTraffic = 0;
             for (const auto& message : messages) {
@@ -182,7 +176,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             }
             _traffics.back().push_back(receiveTimes);
             _traffics.back().push_back(totalReceiveDataTraffic);
-            _stopwatch.Start();
+            _executionTime.Start();
 
             _updatedSolutionIndexes.clear();
             _isIdealPointUpdated = false;
@@ -200,19 +194,10 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             }
         }
 
-        _stopwatch.Stop();
+        _executionTime.Stop();
 
         if (IsEnd()) {
-            CompletePendingSends();
-
-            double elapsed = _communicationTime.Elapsed();
-            double maxExecutionTime;
-            MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE, MPI_MAX, 0,
-                       MPI_COMM_WORLD);
-            if (_rank == 0) {
-                std::cout << "Max communication time: " << maxExecutionTime
-                          << std::endl;
-            }
+            Complete_pendingSends();
         }
     }
 
@@ -239,16 +224,46 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         return solutions;
     }
 
-    double GetElapsedTime() const override {
-        return _stopwatch.Elapsed();
+    double GetInitializationTime() const override {
+        return _initializationTime.Elapsed();
+    }
+
+    double GetExecutionTime() const override {
+        return _executionTime.Elapsed();
+    }
+
+    double GetCommunicationTime() const override {
+        return _communicationTime.Elapsed();
     }
 
     std::vector<std::vector<int>> GetDataTraffics() const override {
         return _traffics;
     }
 
+   protected:
+    /// @brief 追加の初期化を行う
+    virtual void AdditionalInitialization() {}
+
+    /// @brief 追加の変数の初期化を行う
+    virtual void AdditionalClear() {}
+
+    /// @brief dataToSendに送信する理想点を追加する
+    /// @param dataToSend
+    virtual void PushIdealPointToSend(
+        std::unordered_map<int, std::vector<double>>& dataToSend) {
+        if (_isIdealPointUpdated) {
+            for (auto&& rank : _ranksToSend) {
+                dataToSend[rank].insert(dataToSend[rank].end(),
+                                        _decomposition->IdealPoint().begin(),
+                                        _decomposition->IdealPoint().end());
+            }
+        }
+    }
+
    private:
     void Clear() {
+        _currentGeneration = 0;
+        _isIdealPointUpdated = false;
         _internalIndexes.clear();
         _externalIndexes.clear();
         _updatedSolutionIndexes.clear();
@@ -257,6 +272,11 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         _externalIndividualRanks.clear();
         _neighboringRanks.clear();
         _ranksToSend.clear();
+        _traffics.clear();
+        _pendingSends.clear();
+        _executionTime.Reset();
+        _communicationTime.Reset();
+        AdditionalClear();
     }
 
     void InitializeMpi() {
@@ -367,10 +387,8 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     std::vector<std::vector<double>> ScatterPopulation(
         const std::vector<int>& ranksToSend) {
         std::vector<double> individualsToSend;
-        individualsToSend.reserve(
-            _idealPointMigration
-                ? _internalIndexes.size() * _singleMessageSize + _objectivesNum
-                : _internalIndexes.size() * _singleMessageSize);
+        individualsToSend.reserve(_internalIndexes.size() * _singleMessageSize +
+                                  _objectivesNum);
         for (auto&& i : _internalIndexes) {
             individualsToSend.push_back(i);
             individualsToSend.insert(individualsToSend.end(),
@@ -381,18 +399,16 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
                                      _individuals[i].objectives.end());
         }
 
-        if (_idealPointMigration) {
-            individualsToSend.insert(individualsToSend.end(),
-                                     _decomposition->IdealPoint().begin(),
-                                     _decomposition->IdealPoint().end());
-        }
+        individualsToSend.insert(individualsToSend.end(),
+                                 _decomposition->IdealPoint().begin(),
+                                 _decomposition->IdealPoint().end());
 
         std::vector<MPI_Request> requests;
         requests.reserve(ranksToSend.size());
         for (auto&& i : ranksToSend) {
             requests.emplace_back();
             MPI_Isend(individualsToSend.data(), individualsToSend.size(),
-                      MPI_DOUBLE, i, messageTag, MPI_COMM_WORLD,
+                      MPI_DOUBLE, i, MessageTag, MPI_COMM_WORLD,
                       &requests.back());
         }
 
@@ -404,12 +420,12 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         receivedIndividuals.reserve(ranksToReceive.size());
         for (auto&& rank : ranksToReceive) {
             MPI_Status status;
-            MPI_Probe(rank, messageTag, MPI_COMM_WORLD, &status);
+            MPI_Probe(rank, MessageTag, MPI_COMM_WORLD, &status);
             int receivedDataSize;
             MPI_Get_count(&status, MPI_DOUBLE, &receivedDataSize);
             receivedIndividuals.emplace_back(receivedDataSize);
             MPI_Recv(receivedIndividuals.back().data(), receivedDataSize,
-                     MPI_DOUBLE, rank, messageTag, MPI_COMM_WORLD,
+                     MPI_DOUBLE, rank, MessageTag, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
         }
 
@@ -470,8 +486,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     void InitializeExternalPopulation(
         std::vector<std::vector<double>>& receivedIndividuals) {
         for (auto&& receive : receivedIndividuals) {
-            int limit = _idealPointMigration ? receive.size() - _objectivesNum
-                                             : receive.size();
+            int limit = receive.size() - _objectivesNum;
             for (int i = 0; i < limit; i += _singleMessageSize) {
                 int index = receive[i];
                 if (!IsExternal(index)) {
@@ -488,9 +503,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
                 UpdateIdealPoint(_clonedExternalIndividuals[index].objectives);
             }
 
-            if (_idealPointMigration) {
-                UpdateIdealPointWithMessage(receive);
-            }
+            UpdateIdealPointWithMessage(receive);
         }
     }
 
@@ -617,13 +630,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             }
         }
 
-        if (_idealPointMigration && _isIdealPointUpdated) {
-            for (auto&& rank : _ranksToSend) {
-                dataToSend[rank].insert(dataToSend[rank].end(),
-                                        _decomposition->IdealPoint().begin(),
-                                        _decomposition->IdealPoint().end());
-            }
-        }
+        PushIdealPointToSend(dataToSend);
 
         return dataToSend;
     }
@@ -632,7 +639,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         auto sendMessages = CreateMessages();
 
         // 送信データ量を記録する
-        _stopwatch.Stop();
+        _executionTime.Stop();
         int sendTimes = sendMessages.size();
         int totalSendDataTraffic = 0;
         for (const auto& [dest, message] : sendMessages) {
@@ -640,20 +647,20 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         }
         _traffics.push_back(
             {_currentGeneration, sendTimes, totalSendDataTraffic});
-        _stopwatch.Start();
+        _executionTime.Start();
 
         _communicationTime.Start();
         // メッセージを送信する
         for (auto&& [dest, message] : sendMessages) {
-            pendingSends.emplace_back();
-            auto& ps = pendingSends.back();
+            _pendingSends.emplace_back();
+            auto& ps = _pendingSends.back();
             ps.data = std::move(message);
             MPI_Isend(ps.data.data(), ps.data.size(), MPI_DOUBLE, dest,
-                      messageTag, MPI_COMM_WORLD, &ps.request);
+                      MessageTag, MPI_COMM_WORLD, &ps.request);
         }
 
         // 送信が完了したリクエストを削除する
-        pendingSends.remove_if([](PendingSend& ps) {
+        _pendingSends.remove_if([](PendingSend& ps) {
             int flag = 0;
             MPI_Test(&ps.request, &flag, MPI_STATUS_IGNORE);
             return flag;
@@ -667,12 +674,12 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
 
         for (const auto& source : _neighboringRanks) {
             MPI_Status status;
-            MPI_Probe(source, messageTag, MPI_COMM_WORLD, &status);
+            MPI_Probe(source, MessageTag, MPI_COMM_WORLD, &status);
             int count;
             MPI_Get_count(&status, MPI_DOUBLE, &count);
 
             std::vector<double> message(count);
-            MPI_Recv(message.data(), count, MPI_DOUBLE, source, messageTag,
+            MPI_Recv(message.data(), count, MPI_DOUBLE, source, MessageTag,
                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             receiveMessages.push_back(std::move(message));
         }
@@ -686,7 +693,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
             while (true) {
                 MPI_Status status;
                 int canReceive;
-                MPI_Iprobe(source, messageTag, MPI_COMM_WORLD, &canReceive,
+                MPI_Iprobe(source, MessageTag, MPI_COMM_WORLD, &canReceive,
                            &status);
                 if (!canReceive) {
                     break;
@@ -696,7 +703,7 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
                 MPI_Get_count(&status, MPI_DOUBLE, &receiveDataSize);
                 std::vector<double> receive(receiveDataSize);
                 MPI_Recv(receive.data(), receiveDataSize, MPI_DOUBLE, source,
-                         messageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                         MessageTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 receiveMessages.push_back(std::move(receive));
             }
         }
@@ -707,7 +714,6 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
     void UpdateWithMessage(std::vector<double>& message) {
         int limit = message.size();
         bool containsIdealPoint =
-            _idealPointMigration &&
             message.size() % _singleMessageSize == _objectivesNum;
         if (containsIdealPoint) {
             limit -= _objectivesNum;
@@ -747,33 +753,17 @@ class MpMoead : public IParallelMoead<DecisionVariableType> {
         }
     }
 
-    void CompletePendingSends() {
+    void Complete_pendingSends() {
         MPI_Barrier(MPI_COMM_WORLD);
         ReleaseIsend(_parallelSize, MPI_DOUBLE);
 
         std::vector<MPI_Request> requests;
-        for (auto&& ps : pendingSends) {
+        for (auto&& ps : _pendingSends) {
             requests.push_back(ps.request);
         }
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
-
-#ifdef _TEST_
-   public:
-    MpMoead(int totalPopulationSize, int generationNum, int decisionVariableNum,
-            int objectiveNum, int neighborNum, int migrationInterval, int H)
-        : _totalPopulationSize(totalPopulationSize),
-          generationNum(generationNum),
-          decisionVariablesNum(decisionVariableNum),
-          _objectivesNum(objectiveNum),
-          neighborhoodSize(neighborNum),
-          migrationInterval(migrationInterval),
-          divisionsNumOfWeightVector(H) {}
-
-    friend class MpMoeadTest;
-    friend class MpMoeadTestM;
-#endif
 };
 
 }  // namespace Eacpp
