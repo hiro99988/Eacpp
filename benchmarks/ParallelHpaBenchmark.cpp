@@ -71,14 +71,15 @@ class ParallelMoeadBenchmark {
         "utopia_nadir.json";
     constexpr static std::array<const char*, 3> MoeadNames = {"MP-MOEAD",
                                                               "MP-MOEAD-NO"};
-    constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
-        "trial", "time(s)"};
+    constexpr static std::array<const char*, 4> ElapsedTimeHeaders = {
+        "trial", "initialization_time_s", "execution_time_s",
+        "communication_time_s"};
     constexpr static std::array<const char*, 3> IgdHeader = {
-        "generation", "executionTime(s)", "igd"};
+        "generation", "execution_time_s", "igd"};
     constexpr static std::array<const char*, 6> DataTrafficsHeader = {
-        "rank",         "generation",
-        "sendTimes",    "totalSendDataTraffic",
-        "receiveTimes", "totalReceiveDataTraffic"};
+        "rank",          "generation",
+        "send_times",    "total_send_sata_traffic",
+        "receive_times", "total_receive_data_traffic"};
 
     // key: 目的数, H
     const std::unordered_map<int, int> divisionsNumOfWeightVectors = {
@@ -89,7 +90,7 @@ class ParallelMoeadBenchmark {
 
     int rank;
     int parallelSize;
-    std::vector<std::pair<int, Eigen::ArrayXd>> transitionOfIdealPoint;
+    std::vector<Eigen::ArrayXd> transitionOfIdealPoint;
     std::vector<std::vector<Eigen::ArrayXd>> localObjectivesListHistory;
     std::vector<double> executionTimes;
 
@@ -103,17 +104,6 @@ class ParallelMoeadBenchmark {
         }
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &parallelSize);
-    }
-
-    void AddIdealPoint(int gen, const Eigen::ArrayXd& add) {
-        if (transitionOfIdealPoint.size() == 0) {
-            transitionOfIdealPoint.push_back(std::make_pair(gen, add));
-            return;
-        }
-
-        if ((add != transitionOfIdealPoint.back().second).any()) {
-            transitionOfIdealPoint.push_back(std::make_pair(gen, add));
-        }
     }
 
     void Warmup() {
@@ -391,13 +381,12 @@ class ParallelMoeadBenchmark {
     //     return nonDominated;
     // }
 
-    std::vector<std::pair<std::array<int, 2>, std::vector<double>>>
+    std::vector<std::tuple<int, int, std::vector<double>>>
     GatherTransitionOfIdealPoint() {
         std::vector<double> sendBuffer;
-        int dataSize = transitionOfIdealPoint[0].second.size() + 1;
+        int dataSize = transitionOfIdealPoint[0].size();
         sendBuffer.reserve(dataSize * transitionOfIdealPoint.size());
-        for (const auto& [gen, idealPoint] : transitionOfIdealPoint) {
-            sendBuffer.push_back(gen);
+        for (const auto& idealPoint : transitionOfIdealPoint) {
             sendBuffer.insert(sendBuffer.end(), idealPoint.begin(),
                               idealPoint.end());
         }
@@ -406,19 +395,21 @@ class ParallelMoeadBenchmark {
         std::vector<int> sizes;
         Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
 
-        std::vector<std::pair<std::array<int, 2>, std::vector<double>>>
+        // [[rank, gen, idealPoint], ...]
+        std::vector<std::tuple<int, int, std::vector<double>>>
             transitionOfIdealPointList;
         if (rank == 0) {
-            for (int i = 0, count = 0; i < parallelSize;
-                 count += sizes[i], i++) {
-                for (int j = 0; j < sizes[i]; j += dataSize) {
-                    std::array<int, 2> keys = {
-                        i, static_cast<int>(receiveBuffer[count + j])};
-                    std::vector<double> objectives(
-                        receiveBuffer.begin() + count + j + 1,
-                        receiveBuffer.begin() + count + j + dataSize);
-                    transitionOfIdealPointList.push_back(
-                        std::make_pair(std::move(keys), std::move(objectives)));
+            transitionOfIdealPointList.reserve(receiveBuffer.size() / dataSize);
+            for (int rank = 0, count = 0; rank < parallelSize;
+                 count += sizes[rank], rank++) {
+                int gen = 0;
+                for (int j = count; j < count + sizes[rank]; j += dataSize) {
+                    std::vector<double> idealPoint(
+                        receiveBuffer.begin() + j,
+                        receiveBuffer.begin() + j + dataSize);
+                    transitionOfIdealPointList.emplace_back(
+                        rank, gen, std::move(idealPoint));
+                    gen++;
                 }
             }
         }
@@ -457,14 +448,14 @@ class ParallelMoeadBenchmark {
         return allDataTraffics;
     }
 
-    std::vector<double> GatherExecutionTimes() {
-        std::vector<double> globalExecutionTimes(executionTimes.size());
-        for (std::size_t i = 0; i < executionTimes.size(); ++i) {
-            MPI_Reduce(&executionTimes[i], &globalExecutionTimes[i], 1,
-                       MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    std::vector<double> GatherMaxTimes(const std::vector<double>& times) {
+        std::vector<double> globalTimes(times.size());
+        for (std::size_t i = 0; i < times.size(); ++i) {
+            MPI_Reduce(&times[i], &globalTimes[i], 1, MPI_DOUBLE, MPI_MAX, 0,
+                       MPI_COMM_WORLD);
         }
 
-        return globalExecutionTimes;
+        return globalTimes;
     }
 
     int CalculatePopulationSize(int divisionsNumOfWeightVector,
@@ -485,7 +476,6 @@ class ParallelMoeadBenchmark {
         int neighborhoodSize = parameter["neighborhoodSize"];
         int migrationInterval = parameter["migrationInterval"];
         double crossoverRate = parameter["crossoverRate"];
-        bool idealPointMigration = parameter["idealPointMigration"];
         std::vector<Algorithm> algorithms =
             parameter.at("algorithms").get<std::vector<Algorithm>>();
         std::vector<Problem> problems =
@@ -622,13 +612,13 @@ class ParallelMoeadBenchmark {
                         dataTrafficsDirectoryPath);)
 
                 // 実行時間ファイルの作成
-                const std::filesystem::path executionTimesFilePath =
-                    outputAlgorithmDirectoryPath / "executionTimes.csv";
-                std::ofstream executionTimesFile;
+                const std::filesystem::path elapsedTimesFilePath =
+                    outputAlgorithmDirectoryPath / "elapsedTimes.csv";
+                std::ofstream elapsedTimesFile;
                 if (rank == 0) {
-                    executionTimesFile = OpenOutputFile(executionTimesFilePath);
-                    SetSignificantDigits(executionTimesFile, 9);
-                    WriteCsvLine(executionTimesFile, ExecutionTimesHeader);
+                    elapsedTimesFile = OpenOutputFile(elapsedTimesFilePath);
+                    SetSignificantDigits(elapsedTimesFile, 9);
+                    WriteCsvLine(elapsedTimesFile, ElapsedTimeHeaders);
                 }
 
                 // moeadの構成クラスの作成
@@ -641,12 +631,13 @@ class ParallelMoeadBenchmark {
                 auto repair = std::make_shared<RealRandomRepair>(problem);
                 auto selection = std::make_shared<RandomSelection>();
 
-                // ヘッダの作成
+                // 目的関数ファイルのヘッダの作成
                 std::vector<std::string> objectiveHeader = {"rank"};
                 for (int i = 0; i < problem->ObjectivesNum(); i++) {
                     objectiveHeader.push_back("objective" +
                                               std::to_string(i + 1));
                 }
+                // 理想点ファイルのヘッダの作成
                 std::vector<std::string> idealPointHeader = {"rank",
                                                              "generation"};
                 for (int i = 0; i < problem->ObjectivesNum(); i++) {
@@ -674,8 +665,7 @@ class ParallelMoeadBenchmark {
                             generationsNum, neighborhoodSize,
                             divisionsNumOfWeightVector, migrationInterval,
                             crossover, decomposition, mutation, problem, repair,
-                            sampling, selection, idealPointMigration,
-                            algorithm.isAsync);
+                            sampling, selection, algorithm.isAsync);
                     } else if (algorithm.name.compare(
                                    0, std::string(MoeadNames[1]).size(),
                                    MoeadNames[1]) == 0) {
@@ -693,36 +683,49 @@ class ParallelMoeadBenchmark {
 
                     moead->Initialize();
 
-                    AddIdealPoint(moead->CurrentGeneration(),
-                                  decomposition->IdealPoint());
+                    transitionOfIdealPoint.push_back(
+                        decomposition->IdealPoint());
                     localObjectivesListHistory.push_back(
                         moead->GetObjectivesList());
-                    executionTimes.push_back(moead->GetElapsedTime());
+                    executionTimes.push_back(0.);
 
                     MPI_Barrier(MPI_COMM_WORLD);
 
                     while (!moead->IsEnd()) {
                         moead->Update();
 
-                        AddIdealPoint(moead->CurrentGeneration(),
-                                      decomposition->IdealPoint());
+                        transitionOfIdealPoint.push_back(
+                            decomposition->IdealPoint());
                         localObjectivesListHistory.push_back(
                             moead->GetObjectivesList());
-                        executionTimes.push_back(moead->GetElapsedTime());
+                        executionTimes.push_back(moead->GetExecutionTime());
                     }
 
-                    double elapsed = moead->GetElapsedTime();
+                    double initializationTime = moead->GetInitializationTime();
+                    double executionTime = moead->GetExecutionTime();
+                    double communicationTime = moead->GetCommunicationTime();
                     MPI_Barrier(MPI_COMM_WORLD);
 
                     // 実行時間の出力
+                    double maxInitializationTime;
                     double maxExecutionTime;
-                    MPI_Reduce(&elapsed, &maxExecutionTime, 1, MPI_DOUBLE,
+                    double maxCommunicationTime;
+                    MPI_Reduce(&initializationTime, &maxInitializationTime, 1,
+                               MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+                    MPI_Reduce(&executionTime, &maxExecutionTime, 1, MPI_DOUBLE,
                                MPI_MAX, 0, MPI_COMM_WORLD);
+                    MPI_Reduce(&communicationTime, &maxCommunicationTime, 1,
+                               MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
                     RANK0(std::cout
-                              << "Trial " << t + 1 << " Total execution time: "
-                              << maxExecutionTime << " seconds" << std::endl;)
-                    RANK0(executionTimesFile << t + 1 << "," << maxExecutionTime
-                                             << std::endl;)
+                              << "Trial " << t + 1 << " Initialization time: "
+                              << maxInitializationTime
+                              << " Total execution time: " << maxExecutionTime
+                              << " Communication time: " << maxCommunicationTime
+                              << std::endl;)
+                    RANK0(elapsedTimesFile
+                              << t + 1 << "," << maxInitializationTime << ","
+                              << maxExecutionTime << "," << maxCommunicationTime
+                              << std::endl;)
 
                     std::string fileName =
                         "trial_" + std::to_string(t + 1) + ".csv";
@@ -730,14 +733,31 @@ class ParallelMoeadBenchmark {
                     // 理想点の出力
                     auto transitionOfIdealPointList =
                         GatherTransitionOfIdealPoint();
+
                     if (rank == 0) {
                         std::filesystem::path idealPointFilePath =
                             idealPointDirectoryPath / fileName;
                         std::ofstream idealPointFile =
                             OpenOutputFile(idealPointFilePath);
                         SetSignificantDigits(idealPointFile);
-                        WriteCsv(idealPointFile, transitionOfIdealPointList,
-                                 idealPointHeader);
+                        // ヘッダーの書き込み
+                        WriteCsvLine(idealPointFile, idealPointHeader);
+                        // データの書き込み
+                        for (const auto& [rank, gen, idealPoint] :
+                             transitionOfIdealPointList) {
+                            idealPointFile << rank << "," << gen << ",";
+                            for (std::size_t i = 0; i < idealPoint.size();
+                                 ++i) {
+                                // 正規化
+                                auto value = (idealPoint[i] - utopia[i]) /
+                                             (nadir[i] - utopia[i]);
+                                idealPointFile << value;
+                                if (i != idealPoint.size() - 1) {
+                                    idealPointFile << ",";
+                                }
+                            }
+                            idealPointFile << std::endl;
+                        }
                     }
 
                     // 目的関数値の出力
@@ -748,6 +768,15 @@ class ParallelMoeadBenchmark {
                     GatherObjectivesListHistory(objectivesListHistory,
                                                 finalObjectivesList);
                     if (rank == 0) {
+                        // 目的関数値を正規化
+                        for (auto& [rank, objectives] : finalObjectivesList) {
+                            for (std::size_t i = 0; i < objectives.size();
+                                 ++i) {
+                                objectives[i] = (objectives[i] - utopia[i]) /
+                                                (nadir[i] - utopia[i]);
+                            }
+                        }
+
                         std::filesystem::path objectiveFilePath =
                             objectiveDirectoryPath / fileName;
                         std::ofstream objectiveFile =
@@ -758,7 +787,7 @@ class ParallelMoeadBenchmark {
                     }
 
                     // IGDの出力
-                    auto globalExecutionTimes = GatherExecutionTimes();
+                    auto globalExecutionTimes = GatherMaxTimes(executionTimes);
                     if (rank == 0) {
                         // IGD出力ファイルの作成
                         std::filesystem::path igdFilePath =
@@ -778,6 +807,7 @@ class ParallelMoeadBenchmark {
                             }
                         }
 
+                        // IGDの計算
                         std::vector<std::tuple<int, double, double>> igd;
                         for (int j = 0; j < objectivesListHistory.size(); j++) {
                             igd.push_back(std::make_tuple(
