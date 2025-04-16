@@ -760,6 +760,17 @@ class ParallelMoeadBenchmark {
                         }
                     }
 
+                    // 目的関数値の正規化
+                    for (auto& objectivesList : localObjectivesListHistory) {
+                        for (auto& objectives : objectivesList) {
+                            for (std::size_t i = 0; i < objectives.size();
+                                 i++) {
+                                objectives[i] = (objectives[i] - utopia[i]) /
+                                                (nadir[i] - utopia[i]);
+                            }
+                        }
+                    }
+
                     // 目的関数値の出力
                     std::vector<std::vector<std::vector<double>>>
                         objectivesListHistory;
@@ -768,15 +779,6 @@ class ParallelMoeadBenchmark {
                     GatherObjectivesListHistory(objectivesListHistory,
                                                 finalObjectivesList);
                     if (rank == 0) {
-                        // 目的関数値を正規化
-                        for (auto& [rank, objectives] : finalObjectivesList) {
-                            for (std::size_t i = 0; i < objectives.size();
-                                 ++i) {
-                                objectives[i] = (objectives[i] - utopia[i]) /
-                                                (nadir[i] - utopia[i]);
-                            }
-                        }
-
                         std::filesystem::path objectiveFilePath =
                             objectiveDirectoryPath / fileName;
                         std::ofstream objectiveFile =
@@ -794,18 +796,6 @@ class ParallelMoeadBenchmark {
                             igdDirectoryPath / fileName;
                         std::ofstream igdFile = OpenOutputFile(igdFilePath);
                         SetSignificantDigits(igdFile);
-
-                        // 目的関数値を正規化
-                        for (auto& objectivesList : objectivesListHistory) {
-                            for (auto& objectives : objectivesList) {
-                                for (std::size_t i = 0; i < objectives.size();
-                                     ++i) {
-                                    objectives[i] =
-                                        (objectives[i] - utopia[i]) /
-                                        (nadir[i] - utopia[i]);
-                                }
-                            }
-                        }
 
                         // IGDの計算
                         std::vector<std::tuple<int, double, double>> igd;
