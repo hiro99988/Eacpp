@@ -252,12 +252,21 @@ class HalfMpMoead : public IParallelMoead<DecisionVariableType> {
         return solutions;
     }
 
-    double GetElapsedTime() const override {
+    double GetExecutionTime() const override {
         return _stopwatch.Elapsed();
     }
 
     std::vector<std::vector<int>> GetDataTraffics() const override {
         return _traffics;
+    }
+
+    // FIXME: 修正
+    double GetInitializationTime() const override {
+        return _stopwatch.Elapsed();
+    }
+
+    double GetCommunicationTime() const override {
+        return _communicationTime.Elapsed();
     }
 
    private:
