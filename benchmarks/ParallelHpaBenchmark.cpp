@@ -210,14 +210,20 @@ class ParallelMoeadBenchmark {
         auto dominates = [](const std::vector<double>& a,
                             const std::vector<double>& b) -> bool {
             bool strictlyBetter = false;
+            bool allEqual = true;
             for (std::size_t i = 0; i < a.size(); ++i) {
                 if (a[i] > b[i]) {
                     return false;
                 } else if (a[i] < b[i]) {
                     strictlyBetter = true;
                 }
+                // 一つでも要素が違えばallEqualはfalse
+                if (a[i] != b[i]) {
+                    allEqual = false;
+                }
             }
-            return strictlyBetter;
+            // 完全に同じ解もまとめて排除したい場合は allEqual || strictlyBetter
+            return (strictlyBetter || allEqual);
         };
 
         // 全ての解を結合
