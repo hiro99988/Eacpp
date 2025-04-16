@@ -185,6 +185,8 @@ class MoeadInitializer {
                                                      objectivesNum);
         auto partitions = NearestNeighborPartitioning(
             parallelSize, divisionsNumOfWeightVector, vectors);
+        // auto partitions = LinearPartitioning(
+        //     parallelSize, divisionsNumOfWeightVector, vectors);
 
         std::vector<std::vector<int>> internalIndividualIndexes;
         internalIndividualIndexes.reserve(parallelSize);
@@ -429,7 +431,11 @@ class MoeadInitializer {
             }
         }
 
-        return *min;
+        if (min == nullptr) {
+            return {};
+        } else {
+            return *min;
+        }
     }
 
     std::vector<std::vector<int>> nearest(const std::vector<int>& vector,
@@ -447,6 +453,8 @@ class MoeadInitializer {
             }
         }
 
+        std::sort(neighbors.begin(), neighbors.end());
+
         return neighbors;
     }
 
@@ -457,58 +465,78 @@ class MoeadInitializer {
         std::vector<std::vector<std::vector<int>>> partitions;
         partitions.reserve(partitionsNum);
         std::deque<std::vector<int>> queue;
-        int controlVar = 0;
-        std::size_t WeightVectorSize = vectors.size();
+        std::size_t vectorsSize = vectors.size();
+        int l = 0;
 
         for (int i = 0; i < partitionsNum; ++i) {
-            std::vector<int> root;
-            if (controlVar == 0) {
-                root = LexicographicalMin(vectors, visitedVectors);
-                controlVar = root.back();
-            } else {
-                root = *std::min_element(queue.begin(), queue.end());
-                controlVar = 0;
-            }
-
-            queue = {root};
+            int partitionSize =
+                CalculateNodeWorkload(vectorsSize, i, partitionsNum);
             std::vector<std::vector<int>> currentPartition;
-            int currentCount = 0;
-
-            int partitionSize;
-            if (i < WeightVectorSize % partitionsNum) {
-                partitionSize = WeightVectorSize / partitionsNum + 1;
-            } else {
-                partitionSize = WeightVectorSize / partitionsNum;
-            }
-
-            while (currentCount < partitionSize) {
-                if (queue.empty()) {
-                    break;
+            currentPartition.reserve(partitionSize);
+            while (currentPartition.size() != partitionSize) {
+                std::vector<int> root;
+                if (l == 0 || queue.empty()) {
+                    root = LexicographicalMin(vectors, visitedVectors);
+                    if (root.empty()) {
+                        break;
+                    }
+                    l = root.back();
+                } else {
+                    root = *std::min_element(queue.begin(), queue.end());
                 }
 
-                auto current = queue.front();
-                queue.pop_front();
+                queue = {root};
+                while (currentPartition.size() < partitionSize) {
+                    if (queue.empty()) {
+                        break;
+                    }
 
-                if (visitedVectors.find(current) != visitedVectors.end()) {
-                    continue;
-                }
+                    auto current = queue.front();
+                    queue.pop_front();
 
-                currentPartition.push_back(current);
-                visitedVectors.insert(current);
-                controlVar = std::min(controlVar, current.back());
-                ++currentCount;
+                    if (visitedVectors.find(current) != visitedVectors.end()) {
+                        continue;
+                    }
 
-                auto neighbors = nearest(current, divisionsNumOfWeightVector);
-                for (const auto& neighbor : neighbors) {
-                    if (visitedVectors.find(neighbor) == visitedVectors.end() &&
-                        std::find(queue.begin(), queue.end(), neighbor) ==
-                            queue.end()) {
-                        queue.push_back(neighbor);
+                    currentPartition.push_back(current);
+                    visitedVectors.insert(current);
+                    l = std::min(l, current.back());
+
+                    for (const auto& neighbor :
+                         nearest(current, divisionsNumOfWeightVector)) {
+                        if (visitedVectors.find(neighbor) ==
+                                visitedVectors.end() &&
+                            std::find(queue.begin(), queue.end(), neighbor) ==
+                                queue.end()) {
+                            queue.push_back(neighbor);
+                        }
                     }
                 }
             }
 
             partitions.push_back(std::move(currentPartition));
+        }
+
+        return partitions;
+    }
+
+    std::vector<std::vector<std::vector<int>>> LinearPartitioning(
+        int partitionsNum, int divisionsNumOfWeightVector,
+        const std::vector<std::vector<int>>& vectors) {
+        auto sortedVectors = vectors;
+        std::sort(sortedVectors.begin(), sortedVectors.end());
+        std::vector<std::vector<std::vector<int>>> partitions;
+        partitions.reserve(partitionsNum);
+        auto partitionSizes =
+            CalculateNodeWorkloads(sortedVectors.size(), partitionsNum);
+        for (int i = 0, count = 0; i < partitionsNum;
+             count += partitionSizes[i], ++i) {
+            std::vector<std::vector<int>> partition;
+            partition.reserve(partitionSizes[i]);
+            for (int j = count; j < count + partitionSizes[i]; ++j) {
+                partition.push_back(sortedVectors[j]);
+            }
+            partitions.push_back(std::move(partition));
         }
 
         return partitions;
