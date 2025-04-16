@@ -39,7 +39,7 @@ class ParallelMoeadBenchmark {
         "data/inputs/benchmarks/parameter.json";
     constexpr static std::array<const char*, 3> MoeadNames = {
         "MpMoead", "MpMoeadIt", "HalfMpMoead"};
-    constexpr static std::array<const char*, 2> ExecutionTimesHeader = {
+    constexpr static std::array<const char*, 2> ElapsedTimeHeaders = {
         "trial", "time(s)"};
     constexpr static std::array<const char*, 3> IgdHeader = {
         "generation", "executionTime(s)", "igd"};
@@ -90,7 +90,7 @@ class ParallelMoeadBenchmark {
         std::ifstream& file, int& outTrial, int& outGenerationNum,
         int& outNeighborhoodSize, int& outDivisionsNumOfWeightVector,
         int& outMigrationInterval, double& outCrossoverRate,
-        int& outObjectivesNum, bool& outIdealPointMigration, bool& outIsAsync,
+        int& outObjectivesNum, bool& outIsAsync,
         std::vector<int>& outDecisionVariablesNums,
         std::vector<std::string>& outProblemNames,
         std::string& outAdjacencyListFileName) {
@@ -103,7 +103,6 @@ class ParallelMoeadBenchmark {
         outMigrationInterval = parameter["migrationInterval"];
         outCrossoverRate = parameter["crossoverRate"];
         outObjectivesNum = parameter["objectivesNum"];
-        outIdealPointMigration = parameter["idealPointMigration"];
         outIsAsync = parameter["isAsync"];
         outDecisionVariablesNums =
             parameter["decisionVariablesNums"].get<std::vector<int>>();
@@ -279,7 +278,6 @@ class ParallelMoeadBenchmark {
         int migrationInterval;
         double crossoverRate;
         int objectivesNum;
-        bool idealPointMigration;
         bool isAsync;
         std::vector<int> decisionVariablesNums;
         std::vector<std::string> problemNames;
@@ -288,8 +286,8 @@ class ParallelMoeadBenchmark {
         auto parameter = ReadParameters(
             parameterFile, trial, generationNum, neighborhoodSize,
             divisionsNumOfWeightVector, migrationInterval, crossoverRate,
-            objectivesNum, idealPointMigration, isAsync, decisionVariablesNums,
-            problemNames, adjacencyListFileName);
+            objectivesNum, isAsync, decisionVariablesNums, problemNames,
+            adjacencyListFileName);
         parameterFile.close();
 
         if (decisionVariablesNums.size() != problemNames.size()) {
@@ -356,7 +354,7 @@ class ParallelMoeadBenchmark {
             if (rank == 0) {
                 executionTimesFile = OpenOutputFile(executionTimesFilePath);
                 SetSignificantDigits(executionTimesFile, 9);
-                WriteCsvLine(executionTimesFile, ExecutionTimesHeader);
+                WriteCsvLine(executionTimesFile, ElapsedTimeHeaders);
             }
 
             // moeadの構成クラスの作成
@@ -406,7 +404,7 @@ class ParallelMoeadBenchmark {
                         generationNum, neighborhoodSize,
                         divisionsNumOfWeightVector, migrationInterval,
                         crossover, decomposition, mutation, problem, repair,
-                        sampling, selection, idealPointMigration, isAsync);
+                        sampling, selection, isAsync);
                 } else if (moeadName == MoeadNames[1]) {
                     moead = std::make_unique<MpMoeadIdealTopology<double>>(
                         generationNum, neighborhoodSize,
@@ -433,7 +431,7 @@ class ParallelMoeadBenchmark {
                               decomposition->IdealPoint());
                 localObjectivesListHistory.push_back(
                     moead->GetObjectivesList());
-                executionTimes.push_back(moead->GetElapsedTime());
+                executionTimes.push_back(moead->GetExecutionTime());
 
                 MPI_Barrier(MPI_COMM_WORLD);
 
@@ -444,10 +442,10 @@ class ParallelMoeadBenchmark {
                                   decomposition->IdealPoint());
                     localObjectivesListHistory.push_back(
                         moead->GetObjectivesList());
-                    executionTimes.push_back(moead->GetElapsedTime());
+                    executionTimes.push_back(moead->GetExecutionTime());
                 }
 
-                double elapsed = moead->GetElapsedTime();
+                double elapsed = moead->GetExecutionTime();
                 MPI_Barrier(MPI_COMM_WORLD);
 
                 // 実行時間の出力
