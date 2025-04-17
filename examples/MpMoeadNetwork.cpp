@@ -52,6 +52,17 @@ int main(int argc, char* argv[]) {
         std::cout << " == ";
     }
     std::cout << "population size " << populationSize << std::endl;
+    // 生成した内部個体の近傍の合計数と真の近傍の合計数を比較
+    std::cout << "internalIndividualNeighborhoods: size "
+              << outInternalNeighborhoods.size();
+    if (outInternalNeighborhoods.size() !=
+        (populationSize * neighborhoodSize)) {
+        std::cout << " != ";
+    } else {
+        std::cout << " == ";
+    }
+    std::cout << "true size " << (populationSize * neighborhoodSize)
+              << std::endl;
     // 内部個体情報を表示
     for (int i = 0, count = 0; i < outInternalIndividualCounts.size();
          count += outInternalIndividualCounts[i], ++i) {
@@ -79,42 +90,32 @@ int main(int argc, char* argv[]) {
         }
         std::cout << std::endl;
     }
-    // 生成した内部個体の近傍の合計数と真の近傍の合計数を比較
-    std::cout << "internalIndividualNeighborhoods: size "
-              << outInternalNeighborhoods.size();
-    if (outInternalNeighborhoods.size() !=
-        (populationSize * neighborhoodSize)) {
-        std::cout << " != ";
-    } else {
-        std::cout << " == ";
-    }
-    std::cout << "true size " << (populationSize * neighborhoodSize)
-              << std::endl;
-    // 内部個体の近傍情報を表示
+
+    // 外部個体の近傍情報を表示
     for (int i = 0, count = 0; i < outExternalIndividualCounts.size();
          count += outExternalIndividualCounts[i], ++i) {
         // ランクと割り当てられた近傍数を表示
         int size = outExternalIndividualCounts[i];
         std::cout << "rank: " << i << " size: " << size << std::endl;
-        // 内部個体の近傍インデックスを表示
+        // 外部個体の近傍インデックスを表示
         std::cout << "index: ";
         for (int j = 0; j < size; ++j) {
             std::cout << outExternalIndividualIndexes[count + j] << " ";
         }
         std::cout << std::endl;
-        // 内部個体の近傍が所属するランクを表示
+        // 外部個体の近傍が所属するランクを表示
         std::cout << " rank: ";
         for (int j = 0; j < size; ++j) {
             std::cout << outExternalIndividualRanks[count + j] << " ";
         }
         std::cout << std::endl;
-        // 内部個体の近傍の重みベクトルを表示
+        // 外部個体の近傍の重みベクトルを表示
         std::cout << "weight: ";
         for (int j = count * objectivesNum; j < (count + size) * objectivesNum;
              j += objectivesNum) {
             std::cout << "[";
             for (int k = 0; k < objectivesNum; ++k) {
-                std::cout << outInternalWeightVectors[j + k];
+                std::cout << outExternalWeightVectors[j + k];
                 if (k != objectivesNum - 1) {
                     std::cout << ", ";
                 }
