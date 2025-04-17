@@ -42,8 +42,7 @@ void AddIdealPoint(int gen, const Eigen::ArrayXd& add,
 
 int main(int argc, char** argv) {
     // パラメータ読み込み
-    constexpr const char* ParameterFilePath =
-        "data/inputs/benchmarks/parameter.json";
+    constexpr const char* ParameterFilePath = "data/inputs/parameter.json";
     auto parameterFile = OpenInputFile(ParameterFilePath);
     nlohmann::json parameter = nlohmann::json::parse(parameterFile);
     parameterFile.close();

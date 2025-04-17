@@ -89,7 +89,7 @@ void WriteParetoFront(std::ofstream& outfile,
 int main(int argc, char** argv) {
     constexpr const char* outDirPath = "data/ground_truth/pareto_fronts/";
     constexpr const char* targetProblemsFilePath =
-        "data/inputs/benchmarks/TargetProblems.txt";
+        "data/inputs/TargetProblems.txt";
 
     if (argc != 2) {
         PrintUsage(argv[0]);

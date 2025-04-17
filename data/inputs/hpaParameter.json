@@ -1,5 +1,5 @@
 {
-    "trial": 31,
+    "trial": 4,
     "generationNum": 500,
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 199,
@@ -11,27 +11,19 @@
             "isAsync": true
         },
         {
-            "name": "MP-MOEAD-NO-3",
+            "name": "MP-MOEAD-NO-4",
             "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d3/adjacencyList.csv",
+            "adjacencyListFileName": "data/graphs/n50_d4/adjacencyList.csv",
             "obj": [
                 2
             ]
         },
         {
-            "name": "MP-MOEAD-NO-4",
+            "name": "MP-MOEAD-NO-7",
             "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d4/adjacencyList.csv",
+            "adjacencyListFileName": "data/graphs/n50_d7/adjacencyList.csv",
             "obj": [
                 2,
-                3
-            ]
-        },
-        {
-            "name": "MP-MOEAD-NO-5",
-            "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d5/adjacencyList.csv",
-            "obj": [
                 3
             ]
         },
@@ -40,15 +32,71 @@
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d10/adjacencyList.csv",
             "obj": [
+                3
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-11",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d11/adjacencyList.csv",
+            "obj": [
+                4
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-15",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d15/adjacencyList.csv",
+            "obj": [
+                4
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-17",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d17/adjacencyList.csv",
+            "obj": [
                 5
             ]
         },
         {
-            "name": "MP-MOEAD-NO-12",
+            "name": "MP-MOEAD-NO-22",
             "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d12/adjacencyList.csv",
+            "adjacencyListFileName": "data/graphs/n50_d22/adjacencyList.csv",
             "obj": [
                 5
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-19",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d19/adjacencyList.csv",
+            "obj": [
+                6
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-24",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d24/adjacencyList.csv",
+            "obj": [
+                6
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-27",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d27/adjacencyList.csv",
+            "obj": [
+                9
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-31",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d31/adjacencyList.csv",
+            "obj": [
+                9
             ]
         }
     ],
@@ -58,12 +106,20 @@
             "level": 0
         },
         {
-            "name": "HPA201-1",
-            "level": 1
+            "name": "HPA301-0",
+            "level": 0
         },
         {
             "name": "HPA201-2",
             "level": 2
+        },
+        {
+            "name": "HPA301-2",
+            "level": 2
+        },
+        {
+            "name": "HPA201-1",
+            "level": 1
         },
         {
             "name": "HPA202-0",
@@ -114,16 +170,8 @@
             "level": 2
         },
         {
-            "name": "HPA301-0",
-            "level": 0
-        },
-        {
             "name": "HPA301-1",
             "level": 1
-        },
-        {
-            "name": "HPA301-2",
-            "level": 2
         },
         {
             "name": "HPA302-0",
@@ -174,6 +222,42 @@
             "level": 2
         },
         {
+            "name": "HPA401-0",
+            "level": 0
+        },
+        {
+            "name": "HPA401-1",
+            "level": 1
+        },
+        {
+            "name": "HPA401-2",
+            "level": 2
+        },
+        {
+            "name": "HPA402-0",
+            "level": 0
+        },
+        {
+            "name": "HPA402-1",
+            "level": 1
+        },
+        {
+            "name": "HPA402-2",
+            "level": 2
+        },
+        {
+            "name": "HPA403-0",
+            "level": 0
+        },
+        {
+            "name": "HPA403-1",
+            "level": 1
+        },
+        {
+            "name": "HPA403-2",
+            "level": 2
+        },
+        {
             "name": "HPA501-0",
             "level": 0
         },
@@ -195,6 +279,30 @@
         },
         {
             "name": "HPA502-2",
+            "level": 2
+        },
+        {
+            "name": "HPA601-0",
+            "level": 0
+        },
+        {
+            "name": "HPA601-1",
+            "level": 1
+        },
+        {
+            "name": "HPA601-2",
+            "level": 2
+        },
+        {
+            "name": "HPA901-0",
+            "level": 0
+        },
+        {
+            "name": "HPA901-1",
+            "level": 1
+        },
+        {
+            "name": "HPA901-2",
             "level": 2
         }
     ]

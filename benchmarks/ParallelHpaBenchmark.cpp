@@ -65,7 +65,7 @@ void from_json(const nlohmann::json& j, Problem& prob) {
 class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
-        "data/inputs/benchmarks/hpaParameter.json";
+        "data/inputs/hpaParameter.json";
     constexpr static const char* UtopiaNadirFilePath =
         "extern/hpa/utopia_and_nadir_points/n=4/"
         "utopia_nadir.json";

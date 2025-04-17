@@ -36,7 +36,7 @@ namespace Eacpp {
 class ParallelMoeadBenchmark {
    public:
     constexpr static const char* DefaultParameterFilePath =
-        "data/inputs/benchmarks/parameter.json";
+        "data/inputs/parameter.json";
     constexpr static std::array<const char*, 3> MoeadNames = {
         "MpMoead", "MpMoeadIt", "HalfMpMoead"};
     constexpr static std::array<const char*, 2> ElapsedTimeHeaders = {
