@@ -308,6 +308,18 @@ class ParallelMoeadBenchmark {
                 }
             }
             nonDominated.shrink_to_fit();
+
+            std::sort(nonDominated.begin(), nonDominated.end(),
+                      [](const auto& lhs, const auto& rhs) {
+                          return lhs.second < rhs.second;
+                      });
+            nonDominated.erase(
+                std::unique(nonDominated.begin(), nonDominated.end(),
+                            [](const auto& lhs, const auto& rhs) {
+                                return lhs.second == rhs.second;
+                            }),
+                nonDominated.end());
+
             return nonDominated;
         } else {
             return {};
@@ -805,13 +817,7 @@ class ParallelMoeadBenchmark {
                                 indicator.Calculate(objectivesListHistory[j])));
                         }
                         // ヘッダーの書き込み
-                        for (std::size_t j = 0; j < IgdHeader.size(); j++) {
-                            igdFile << IgdHeader[j];
-                            if (j != IgdHeader.size() - 1) {
-                                igdFile << ",";
-                            }
-                        }
-                        igdFile << std::endl;
+                        WriteCsvLine(igdFile, IgdHeader);
                         // データの書き込み
                         for (const auto& [generation, time, igdValue] : igd) {
                             igdFile << generation << "," << time << ","
@@ -819,7 +825,7 @@ class ParallelMoeadBenchmark {
                         }
                     }
 
-                    // データ量の出力
+                    // 通信量の出力
                     auto sendDataTraffics = moead->GetDataTraffics();
                     auto allDataTraffics = GatherDataTraffics(sendDataTraffics);
                     if (rank == 0) {
