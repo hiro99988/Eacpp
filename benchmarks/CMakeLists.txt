@@ -1,5 +1,5 @@
 # ベンチマーク出力ディレクトリパスの設定
-add_definitions(-DBENCHMARK_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/out/data/")
+add_definitions(-DBENCHMARK_OUTPUT_DIR="${CMAKE_SOURCE_DIR}/out/data/")
 
 add_executable(MoeadBenchmark.out MoeadBenchmark.cpp)
 target_link_libraries(MoeadBenchmark.out Eacpp Eigen3::Eigen nlohmann_json::nlohmann_json)
