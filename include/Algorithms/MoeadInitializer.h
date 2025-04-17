@@ -204,17 +204,6 @@ class MoeadInitializer {
         auto neighborhoods =
             CalculateNeighborhoods2d(neighborhoodSize, weightVectors);
 
-        // std::vector<std::vector<double>> weightVectors;
-        // std::vector<std::vector<int>> neighborhoods;
-        // GenerateWeightVectorsAndNeighborhoods(divisionsNumOfWeightVector,
-        //                                       objectivesNum,
-        //                                       neighborhoodSize,
-        //                                       weightVectors, neighborhoods);
-
-        // // 各ランクのインデックスを生成する
-        // auto internalIndividualIndexes =
-        //     GenerateAllNodeIndexes(totalPopulationSize, parallelSize);
-
         // internalIndividualIndexesを1次元に変換，個数をカウント
         outInternalIndividualIndexes.reserve(
             internalIndividualIndexes.size() *
