@@ -20,6 +20,7 @@ add_subdirectory(extern/pybind11)
 add_subdirectory(extern/googletest)
 add_subdirectory(extern/json)
 add_subdirectory(extern/eigen)
+add_subdirectory(extern/toml11)
 
 target_link_libraries(Eacpp Eigen3::Eigen MPI::MPI_CXX gtest_main gmock_main nlohmann_json::nlohmann_json pybind11::embed)
 
