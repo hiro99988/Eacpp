@@ -532,11 +532,11 @@ class MoeadInitializer {
     }
 
     std::vector<std::vector<double>> GenerateWeightVectors(
-        std::vector<std::vector<std::vector<int>>> partitioins,
+        std::vector<std::vector<std::vector<int>>> partitions,
         int divisionsNumOfWeightVector, std::size_t size) {
         std::vector<std::vector<double>> weightVectors;
         weightVectors.reserve(size);
-        for (const auto& partition : partitioins) {
+        for (const auto& partition : partitions) {
             for (const auto& vector : partition) {
                 weightVectors.emplace_back(vector.begin(), vector.end());
             }
