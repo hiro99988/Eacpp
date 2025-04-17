@@ -1,10 +1,5 @@
-# file(GLOB_RECURSE FILES *.cpp)
-
-# foreach(test ${FILES})
-# get_filename_component(target ${test} NAME_WE)
-# add_executable(${target}.out ${test})
-# target_link_libraries(${target}.out Eacpp)
-# endforeach()
+# ベンチマーク出力ディレクトリパスの設定
+add_definitions(-DBENCHMARK_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/out/data/")
 
 add_executable(MoeadBenchmark.out MoeadBenchmark.cpp)
 target_link_libraries(MoeadBenchmark.out Eacpp Eigen3::Eigen nlohmann_json::nlohmann_json)
