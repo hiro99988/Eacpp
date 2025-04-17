@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <cstdint>
-#include <eigen3/Eigen/Core>
 #include <memory>
 #include <vector>
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
 #include <algorithm>
-#include <eigen3/Eigen/Core>
 #include <iostream>
 #include <unordered_set>
 #include <vector>

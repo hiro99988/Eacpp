@@ -1,7 +1,7 @@
 #include "Problems/ZDT2.h"
 
+#include <Eigen/Core>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 
 namespace Eacpp {
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 #include <stdexcept>
 #include <vector>
 

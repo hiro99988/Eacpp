@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
 #include <array>
-#include <eigen3/Eigen/Core>
 #include <iostream>
 #include <tuple>
 #include <vector>

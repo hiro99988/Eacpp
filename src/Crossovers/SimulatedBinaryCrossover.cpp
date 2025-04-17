@@ -1,7 +1,7 @@
 #include "Crossovers/SimulatedBinaryCrossover.h"
 
+#include <Eigen/Core>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 #include <memory>
 #include <tuple>
 #include <vector>

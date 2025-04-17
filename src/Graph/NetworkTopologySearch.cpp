@@ -1,8 +1,8 @@
 #include "Graph/NetworkTopologySearch.hpp"
 
+#include <Eigen/Core>
 #include <algorithm>
 #include <array>
-#include <eigen3/Eigen/Core>
 #include <filesystem>
 #include <iostream>
 #include <map>

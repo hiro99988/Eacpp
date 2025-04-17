@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <algorithm>
-#include <eigen3/Eigen/Core>
 #include <iostream>
 #include <vector>
 

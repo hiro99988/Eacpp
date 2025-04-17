@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <mpi.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "Algorithms/MpMoead.h"
 

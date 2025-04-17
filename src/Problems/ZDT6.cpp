@@ -1,7 +1,7 @@
 #include "Problems/ZDT6.h"
 
+#include <Eigen/Core>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 #include <numbers>
 
 #include "Utils/Utils.h"

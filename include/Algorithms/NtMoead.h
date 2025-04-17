@@ -2,8 +2,8 @@
 
 #include <mpi.h>
 
+#include <Eigen/Core>
 #include <algorithm>
-#include <eigen3/Eigen/Core>
 #include <fstream>
 #include <memory>
 #include <numeric>

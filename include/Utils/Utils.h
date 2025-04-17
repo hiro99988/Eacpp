@@ -1,8 +1,8 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <algorithm>
 #include <chrono>
-#include <eigen3/Eigen/Core>
 #include <iomanip>
 #include <iostream>
 #include <iterator>

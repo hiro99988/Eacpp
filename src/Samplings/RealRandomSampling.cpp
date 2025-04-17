@@ -1,6 +1,6 @@
 #include "Samplings/RealRandomSampling.h"
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <iostream>
 #include <tuple>
 #include <vector>

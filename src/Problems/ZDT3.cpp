@@ -1,8 +1,8 @@
 #include "Problems/ZDT3.h"
 
+#include <Eigen/Core>
 #include <array>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 #include <numbers>
 #include <vector>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <filesystem>
 #include <fstream>
 #include <iostream>

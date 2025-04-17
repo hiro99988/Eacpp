@@ -3,7 +3,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/embed.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "Individual.h"
 

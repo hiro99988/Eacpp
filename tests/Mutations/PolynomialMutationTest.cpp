@@ -3,8 +3,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 #include <memory>
 #include <tuple>
 #include <vector>

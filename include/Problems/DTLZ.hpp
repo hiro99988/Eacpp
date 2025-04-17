@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <array>
-#include <eigen3/Eigen/Core>
 #include <tuple>
 #include <vector>
 

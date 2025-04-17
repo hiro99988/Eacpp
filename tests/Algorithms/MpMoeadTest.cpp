@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <memory>
 #include <tuple>
 #include <unordered_map>

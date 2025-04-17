@@ -2,9 +2,9 @@
 
 #include <mpi.h>
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <array>
-#include <eigen3/Eigen/Dense>
 #include <filesystem>
 #include <fstream>
 #include <list>

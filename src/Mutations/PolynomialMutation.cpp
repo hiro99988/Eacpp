@@ -1,7 +1,7 @@
 #include "Mutations/PolynomialMutation.h"
 
+#include <Eigen/Core>
 #include <cmath>
-#include <eigen3/Eigen/Core>
 
 #include "Individual.h"
 

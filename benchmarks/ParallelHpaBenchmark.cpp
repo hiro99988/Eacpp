@@ -1,8 +1,8 @@
 #include <mpi.h>
 #include <pybind11/embed.h>
 
+#include <Eigen/Core>
 #include <chrono>
-#include <eigen3/Eigen/Core>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -524,9 +524,14 @@ class ParallelMoeadBenchmark {
             }
         }
 
-        // 出力ディレクトリの作成
+// 出力ディレクトリの作成
+#ifdef BENCHMARK_OUTPUT_DIR
+        std::filesystem::path outputDirectoryPath =
+            BENCHMARK_OUTPUT_DIR + GetTimestamp();
+#else
         std::filesystem::path outputDirectoryPath =
             "out/data/" + GetTimestamp();
+#endif
         RANK0(std::filesystem::create_directories(outputDirectoryPath);)
         // パラメータファイルのコピー
         if (rank == 0) {

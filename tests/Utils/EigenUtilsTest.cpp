@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "Utils/EigenUtils.h"
 

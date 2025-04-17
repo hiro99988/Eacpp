@@ -1,6 +1,6 @@
 #pragma once
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "Problems/ZDTBase.h"
 #include "Reflections/Reflection.h"

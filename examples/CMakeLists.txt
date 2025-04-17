@@ -24,4 +24,4 @@ add_executable(GraphGenerator.out GraphGenerator.cpp)
 target_link_libraries(GraphGenerator.out Eacpp nlohmann_json::nlohmann_json)
 
 add_executable(Test.out Test.cpp)
-target_link_libraries(Test.out Eacpp pybind11::embed)
+target_link_libraries(Test.out Eacpp Eigen3::Eigen pybind11::embed)

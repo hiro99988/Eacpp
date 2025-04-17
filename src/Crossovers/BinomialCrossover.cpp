@@ -1,6 +1,6 @@
 #include "Crossovers/BinomialCrossover.h"
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <vector>
 
 #include "Individual.h"

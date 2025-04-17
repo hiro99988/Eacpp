@@ -1,6 +1,6 @@
 #include <mpi.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>

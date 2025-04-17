@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <algorithm>
-#include <eigen3/Eigen/Core>
 #include <memory>
 #include <numeric>
 #include <ranges>

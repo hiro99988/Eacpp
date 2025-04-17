@@ -1,7 +1,7 @@
 #include "Problems/ZDTBase.h"
 
+#include <Eigen/Core>
 #include <algorithm>
-#include <eigen3/Eigen/Core>
 #include <vector>
 
 #include "Individual.h"

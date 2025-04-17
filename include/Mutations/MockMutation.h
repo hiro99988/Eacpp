@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "Individual.h"
 #include "Mutations/IMutation.h"

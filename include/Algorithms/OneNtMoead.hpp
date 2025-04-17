@@ -2,9 +2,9 @@
 
 #include <mpi.h>
 
+#include <Eigen/Core>
 #include <algorithm>
 #include <array>
-#include <eigen3/Eigen/Core>
 #include <filesystem>
 #include <fstream>
 #include <memory>

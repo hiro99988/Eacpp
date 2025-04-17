@@ -1,8 +1,8 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <algorithm>
 #include <deque>
-#include <eigen3/Eigen/Core>
 #include <numeric>
 #include <ranges>
 #include <set>

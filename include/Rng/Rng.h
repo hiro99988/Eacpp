@@ -1,8 +1,8 @@
 #ifndef Rng_h
 #define Rng_h
 
+#include <Eigen/Core>
 #include <cstdint>
-#include <eigen3/Eigen/Core>
 #include <random>
 #include <tuple>
 #include <vector>
