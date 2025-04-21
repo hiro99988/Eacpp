@@ -11,27 +11,19 @@
             "isAsync": true
         },
         {
-            "name": "MP-MOEAD-NO-3",
+            "name": "MP-MOEAD-NO-4",
             "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d3/adjacencyList.csv",
+            "adjacencyListFileName": "data/graphs/n50_d4/adjacencyList.csv",
             "obj": [
                 2
             ]
         },
         {
-            "name": "MP-MOEAD-NO-4",
+            "name": "MP-MOEAD-NO-7",
             "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d4/adjacencyList.csv",
+            "adjacencyListFileName": "data/graphs/n50_d7/adjacencyList.csv",
             "obj": [
                 2,
-                3
-            ]
-        },
-        {
-            "name": "MP-MOEAD-NO-5",
-            "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d5/adjacencyList.csv",
-            "obj": [
                 3
             ]
         },
@@ -40,30 +32,313 @@
             "isAsync": true,
             "adjacencyListFileName": "data/graphs/n50_d10/adjacencyList.csv",
             "obj": [
+                3
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-11",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d11/adjacencyList.csv",
+            "obj": [
+                4
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-15",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d15/adjacencyList.csv",
+            "obj": [
+                4
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-17",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d17/adjacencyList.csv",
+            "obj": [
                 5
             ]
         },
         {
-            "name": "MP-MOEAD-NO-12",
+            "name": "MP-MOEAD-NO-22",
             "isAsync": true,
-            "adjacencyListFileName": "data/graphs/n50_d12/adjacencyList.csv",
+            "adjacencyListFileName": "data/graphs/n50_d22/adjacencyList.csv",
             "obj": [
                 5
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-19",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d19/adjacencyList.csv",
+            "obj": [
+                6
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-24",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d24/adjacencyList.csv",
+            "obj": [
+                6
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-27",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d27/adjacencyList.csv",
+            "obj": [
+                9
+            ]
+        },
+        {
+            "name": "MP-MOEAD-NO-31",
+            "isAsync": true,
+            "adjacencyListFileName": "data/graphs/n50_d31/adjacencyList.csv",
+            "obj": [
+                9
             ]
         }
     ],
     "problems": [
         {
+            "name": "ZDT1-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        },
+        {
+            "name": "ZDT1-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT1-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT2-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        },
+        {
+            "name": "ZDT2-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT2-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT3-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        },
+        {
+            "name": "ZDT3-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT3-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT4-10",
+            "decisionVariablesNum": 10,
+            "level": 0
+        },
+        {
+            "name": "ZDT4-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT4-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT6-10",
+            "decisionVariablesNum": 10,
+            "level": 0
+        },
+        {
+            "name": "ZDT6-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT6-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "DTLZ1-3-7",
+            "decisionVariablesNum": 7,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ1-3-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 3,
+            "level": 1
+        },
+        {
+            "name": "DTLZ1-3-100",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 3,
+            "level": 2
+        },
+        {
+            "name": "DTLZ2-3-12",
+            "decisionVariablesNum": 12,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ2-3-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 3,
+            "level": 1
+        },
+        {
+            "name": "DTLZ2-3-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 3,
+            "level": 2
+        },
+        {
+            "name": "DTLZ3-3-12",
+            "decisionVariablesNum": 12,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ3-3-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 3,
+            "level": 1
+        },
+        {
+            "name": "DTLZ3-3-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 3,
+            "level": 2
+        },
+        {
+            "name": "DTLZ4-3-12",
+            "decisionVariablesNum": 12,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ4-3-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 3,
+            "level": 1
+        },
+        {
+            "name": "DTLZ4-3-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 3,
+            "level": 2
+        },
+        {
+            "name": "DTLZ1-5-9",
+            "decisionVariablesNum": 9,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ1-5-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 5,
+            "level": 1
+        },
+        {
+            "name": "DTLZ1-5-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 5,
+            "level": 2
+        },
+        {
+            "name": "DTLZ2-5-14",
+            "decisionVariablesNum": 14,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ2-5-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 5,
+            "level": 1
+        },
+        {
+            "name": "DTLZ2-5-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 5,
+            "level": 2
+        },
+        {
+            "name": "DTLZ3-5-14",
+            "decisionVariablesNum": 14,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ3-5-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 5,
+            "level": 1
+        },
+        {
+            "name": "DTLZ3-5-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 5,
+            "level": 2
+        },
+        {
+            "name": "DTLZ4-5-14",
+            "decisionVariablesNum": 14,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ4-5-100",
+            "decisionVariablesNum": 100,
+            "objectivesNum": 5,
+            "level": 1
+        },
+        {
+            "name": "DTLZ4-5-200",
+            "decisionVariablesNum": 200,
+            "objectivesNum": 5,
+            "level": 2
+        },
+        {
             "name": "HPA201-0",
             "level": 0
         },
         {
-            "name": "HPA201-1",
-            "level": 1
+            "name": "HPA301-0",
+            "level": 0
         },
         {
             "name": "HPA201-2",
             "level": 2
+        },
+        {
+            "name": "HPA301-2",
+            "level": 2
+        },
+        {
+            "name": "HPA201-1",
+            "level": 1
         },
         {
             "name": "HPA202-0",
@@ -114,16 +389,8 @@
             "level": 2
         },
         {
-            "name": "HPA301-0",
-            "level": 0
-        },
-        {
             "name": "HPA301-1",
             "level": 1
-        },
-        {
-            "name": "HPA301-2",
-            "level": 2
         },
         {
             "name": "HPA302-0",
@@ -174,6 +441,42 @@
             "level": 2
         },
         {
+            "name": "HPA401-0",
+            "level": 0
+        },
+        {
+            "name": "HPA401-1",
+            "level": 1
+        },
+        {
+            "name": "HPA401-2",
+            "level": 2
+        },
+        {
+            "name": "HPA402-0",
+            "level": 0
+        },
+        {
+            "name": "HPA402-1",
+            "level": 1
+        },
+        {
+            "name": "HPA402-2",
+            "level": 2
+        },
+        {
+            "name": "HPA403-0",
+            "level": 0
+        },
+        {
+            "name": "HPA403-1",
+            "level": 1
+        },
+        {
+            "name": "HPA403-2",
+            "level": 2
+        },
+        {
             "name": "HPA501-0",
             "level": 0
         },
@@ -195,6 +498,30 @@
         },
         {
             "name": "HPA502-2",
+            "level": 2
+        },
+        {
+            "name": "HPA601-0",
+            "level": 0
+        },
+        {
+            "name": "HPA601-1",
+            "level": 1
+        },
+        {
+            "name": "HPA601-2",
+            "level": 2
+        },
+        {
+            "name": "HPA901-0",
+            "level": 0
+        },
+        {
+            "name": "HPA901-1",
+            "level": 1
+        },
+        {
+            "name": "HPA901-2",
             "level": 2
         }
     ]
