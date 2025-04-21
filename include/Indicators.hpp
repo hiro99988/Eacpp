@@ -11,10 +11,14 @@ class IGD {
         : _paretoFront(paretoFront) {}
     IGD(const std::vector<std::vector<double>>& paretoFront);
 
+    constexpr const char* Name() const {
+        return _Name;
+    }
     double Calculate(const std::vector<Eigen::ArrayXd>& objectives);
     double Calculate(const std::vector<std::vector<double>>& objectives);
 
    private:
+    constexpr static const char* _Name = "IGD";
     std::vector<Eigen::ArrayXd> _paretoFront;
 };
 
@@ -24,10 +28,14 @@ class IGDPlus {
         : _paretoFront(paretoFront) {}
     IGDPlus(const std::vector<std::vector<double>>& paretoFront);
 
+    constexpr const char* Name() const {
+        return _Name;
+    }
     double Calculate(const std::vector<Eigen::ArrayXd>& objectives);
     double Calculate(const std::vector<std::vector<double>>& objectives);
 
    private:
+    constexpr static const char* _Name = "IGD+";
     std::vector<Eigen::ArrayXd> _paretoFront;
 };
 
