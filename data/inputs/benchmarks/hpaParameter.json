@@ -183,34 +183,10 @@
             "level": 0
         },
         {
-            "name": "DTLZ1-3-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 3,
-            "level": 1
-        },
-        {
-            "name": "DTLZ1-3-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 3,
-            "level": 2
-        },
-        {
             "name": "DTLZ2-3-12",
             "decisionVariablesNum": 12,
             "objectivesNum": 3,
             "level": 0
-        },
-        {
-            "name": "DTLZ2-3-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 3,
-            "level": 1
-        },
-        {
-            "name": "DTLZ2-3-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 3,
-            "level": 2
         },
         {
             "name": "DTLZ3-3-12",
@@ -219,34 +195,10 @@
             "level": 0
         },
         {
-            "name": "DTLZ3-3-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 3,
-            "level": 1
-        },
-        {
-            "name": "DTLZ3-3-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 3,
-            "level": 2
-        },
-        {
             "name": "DTLZ4-3-12",
             "decisionVariablesNum": 12,
             "objectivesNum": 3,
             "level": 0
-        },
-        {
-            "name": "DTLZ4-3-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 3,
-            "level": 1
-        },
-        {
-            "name": "DTLZ4-3-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 3,
-            "level": 2
         },
         {
             "name": "DTLZ1-5-9",
@@ -255,34 +207,10 @@
             "level": 0
         },
         {
-            "name": "DTLZ1-5-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 5,
-            "level": 1
-        },
-        {
-            "name": "DTLZ1-5-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 5,
-            "level": 2
-        },
-        {
             "name": "DTLZ2-5-14",
             "decisionVariablesNum": 14,
             "objectivesNum": 5,
             "level": 0
-        },
-        {
-            "name": "DTLZ2-5-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 5,
-            "level": 1
-        },
-        {
-            "name": "DTLZ2-5-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 5,
-            "level": 2
         },
         {
             "name": "DTLZ3-5-14",
@@ -291,34 +219,10 @@
             "level": 0
         },
         {
-            "name": "DTLZ3-5-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 5,
-            "level": 1
-        },
-        {
-            "name": "DTLZ3-5-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 5,
-            "level": 2
-        },
-        {
             "name": "DTLZ4-5-14",
             "decisionVariablesNum": 14,
             "objectivesNum": 5,
             "level": 0
-        },
-        {
-            "name": "DTLZ4-5-100",
-            "decisionVariablesNum": 100,
-            "objectivesNum": 5,
-            "level": 1
-        },
-        {
-            "name": "DTLZ4-5-200",
-            "decisionVariablesNum": 200,
-            "objectivesNum": 5,
-            "level": 2
         },
         {
             "name": "HPA201-0",
