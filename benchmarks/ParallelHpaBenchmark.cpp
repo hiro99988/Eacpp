@@ -619,12 +619,12 @@ class ParallelMoeadBenchmark {
             std::vector<std::vector<double>> paretoFront;
             if (rank == 0) {
                 std::filesystem::path paretoFrontFilePath =
-                    isHpaProblem
-                        ? std::filesystem::path("extern/hpa/pareto_fronts/n=4/")
-                              .append(paretoFrontFileName + ".csv")
-                        : std::filesystem::path(
-                              "data/ground_truth/pareto_fronts/")
-                              .append(paretoFrontFileName + ".csv");
+                    isHpaProblem ? std::filesystem::path(
+                                       "extern/hpa/igd_reference_points/n=4/")
+                                       .append(paretoFrontFileName + ".csv")
+                                 : std::filesystem::path(
+                                       "data/ground_truth/pareto_fronts/")
+                                       .append(paretoFrontFileName + ".csv");
                 auto paretoFrontFile = OpenInputFile(paretoFrontFilePath);
                 paretoFront = ReadCsv<double>(paretoFrontFile, true, true);
             }
