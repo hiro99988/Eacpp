@@ -135,6 +135,50 @@ class ParallelMoeadBenchmark {
     void GatherObjectivesListHistory(
         std::vector<std::vector<std::vector<double>>>& outObjectivesListHistory,
         std::vector<std::pair<int, std::vector<double>>>& finalObjectivesList) {
+        if (rank == 0) {
+            outObjectivesListHistory.reserve(localObjectivesListHistory.size());
+        }
+
+        for (std::size_t i = 0; i < localObjectivesListHistory.size(); i++) {
+            const auto& localObjectivesList = localObjectivesListHistory[i];
+
+            std::vector<double> sendBuffer;
+            int dataSize = localObjectivesList[0].size();
+            sendBuffer.reserve(dataSize * localObjectivesList.size());
+            for (const auto& objectives : localObjectivesList) {
+                sendBuffer.insert(sendBuffer.end(), objectives.begin(),
+                                  objectives.end());
+            }
+
+            std::vector<double> receiveBuffer;
+            std::vector<int> sizes;
+            Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
+
+            if (rank == 0) {
+                std::vector<std::vector<double>> objectivesList;
+                for (int j = 0, count = 0; j < parallelSize;
+                     count += sizes[j], j++) {
+                    for (int k = 0; k < sizes[j]; k += dataSize) {
+                        std::vector<double> objectives(
+                            receiveBuffer.begin() + count + k,
+                            receiveBuffer.begin() + count + k + dataSize);
+                        if (i == localObjectivesListHistory.size() - 1) {
+                            objectivesList.push_back(objectives);
+                            finalObjectivesList.push_back(
+                                std::make_pair(j, std::move(objectives)));
+                        } else {
+                            objectivesList.push_back(std::move(objectives));
+                        }
+                    }
+                }
+                outObjectivesListHistory.push_back(std::move(objectivesList));
+            }
+        }
+    }
+
+    void GatherNonDominatedSolutionsList(
+        std::vector<std::vector<std::vector<double>>>& outObjectivesListHistory,
+        std::vector<std::pair<int, std::vector<double>>>& finalObjectivesList) {
         std::vector<std::vector<std::pair<int, std::vector<double>>>>
             objectivesListHistory;
         if (rank == 0) {
@@ -488,6 +532,8 @@ class ParallelMoeadBenchmark {
         auto parameterFile = OpenInputFile(DefaultParameterFilePath);
         nlohmann::json parameter = nlohmann::json::parse(parameterFile);
 
+        bool isIndicatorCalculatedUsingNds =
+            parameter["isIndicatorCalculatedUsingNds"];
         int trial = parameter["trial"];
         int neighborhoodSize = parameter["neighborhoodSize"];
         int migrationInterval = parameter["migrationInterval"];
@@ -851,8 +897,13 @@ class ParallelMoeadBenchmark {
                         objectivesListHistory;
                     std::vector<std::pair<int, std::vector<double>>>
                         finalObjectivesList;
-                    GatherObjectivesListHistory(objectivesListHistory,
-                                                finalObjectivesList);
+                    if (isIndicatorCalculatedUsingNds) {
+                        GatherNonDominatedSolutionsList(objectivesListHistory,
+                                                        finalObjectivesList);
+                    } else {
+                        GatherObjectivesListHistory(objectivesListHistory,
+                                                    finalObjectivesList);
+                    }
                     if (rank == 0) {
                         std::filesystem::path objectiveFilePath =
                             objectiveDirectoryPath / fileName;
@@ -872,12 +923,25 @@ class ParallelMoeadBenchmark {
                         std::ofstream igdFile = OpenOutputFile(igdFilePath);
                         SetSignificantDigits(igdFile);
 
+                        // isIndicatorCalculatedUsingNds == false
+                        // の時IGDが最小の世代の目的関数値を記録する
+                        double minIgd = std::numeric_limits<double>::max();
+                        std::size_t minIgdIndex = 0;
+
                         // IGDの計算
                         std::vector<std::tuple<int, double, double>> igd;
                         for (int j = 0; j < objectivesListHistory.size(); j++) {
+                            double igdValue =
+                                indicator.Calculate(objectivesListHistory[j]);
                             igd.push_back(std::make_tuple(
-                                j, globalExecutionTimes[j],
-                                indicator.Calculate(objectivesListHistory[j])));
+                                j, globalExecutionTimes[j], igdValue));
+
+                            if (!isIndicatorCalculatedUsingNds) {
+                                if (minIgd > igdValue) {
+                                    minIgd = igdValue;
+                                    minIgdIndex = j;
+                                }
+                            }
                         }
                         // ヘッダーの書き込み
                         WriteCsvLine(igdFile, igdHeader);
@@ -885,6 +949,27 @@ class ParallelMoeadBenchmark {
                         for (const auto& [generation, time, igdValue] : igd) {
                             igdFile << generation << "," << time << ","
                                     << igdValue << std::endl;
+                        }
+
+                        if (!isIndicatorCalculatedUsingNds) {
+                            // 最小IGDの世代の目的関数値を記録する
+                            const std::filesystem::path
+                                minObjectiveDirectoryPath =
+                                    outputAlgorithmDirectoryPath /
+                                    "minObjective";
+                            std::filesystem::create_directories(
+                                minObjectiveDirectoryPath);
+                            std::filesystem::path minObjectiveFilePath =
+                                minObjectiveDirectoryPath / fileName;
+                            std::ofstream minObjectiveFile =
+                                OpenOutputFile(minObjectiveFilePath);
+                            SetSignificantDigits(minObjectiveFile);
+                            std::vector<std::string> minObjectiveHeader(
+                                objectiveHeader.begin() + 1,
+                                objectiveHeader.end());
+                            WriteCsv(minObjectiveFile,
+                                     objectivesListHistory[minIgdIndex],
+                                     minObjectiveHeader);
                         }
                     }
 

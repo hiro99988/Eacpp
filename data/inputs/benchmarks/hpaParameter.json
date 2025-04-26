@@ -1,4 +1,5 @@
 {
+    "isIndicatorCalculatedUsingNds": false,
     "trial": 31,
     "generationNum": 500,
     "neighborhoodSize": 21,
