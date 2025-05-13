@@ -55,11 +55,17 @@ void from_json(const nlohmann::json& j, Algorithm& alg) {
 struct Problem {
     std::string name;
     int level;
+    int decisionVariablesNum;
+    int objectivesNum;
 };
 
 void from_json(const nlohmann::json& j, Problem& prob) {
     j.at("name").get_to(prob.name);
-    j.at("level").get_to(prob.level);
+    if (j.contains("level")) j.at("level").get_to(prob.level);
+    if (j.contains("decisionVariablesNum"))
+        j.at("decisionVariablesNum").get_to(prob.decisionVariablesNum);
+    if (j.contains("objectivesNum"))
+        j.at("objectivesNum").get_to(prob.objectivesNum);
 }
 
 class ParallelMoeadBenchmark {
@@ -74,8 +80,6 @@ class ParallelMoeadBenchmark {
     constexpr static std::array<const char*, 4> ElapsedTimeHeaders = {
         "trial", "initialization_time_s", "execution_time_s",
         "communication_time_s"};
-    constexpr static std::array<const char*, 3> IgdHeader = {
-        "generation", "execution_time_s", "igd"};
     constexpr static std::array<const char*, 6> DataTrafficsHeader = {
         "rank",          "generation",
         "send_times",    "total_send_sata_traffic",
@@ -129,6 +133,50 @@ class ParallelMoeadBenchmark {
     }
 
     void GatherObjectivesListHistory(
+        std::vector<std::vector<std::vector<double>>>& outObjectivesListHistory,
+        std::vector<std::pair<int, std::vector<double>>>& finalObjectivesList) {
+        if (rank == 0) {
+            outObjectivesListHistory.reserve(localObjectivesListHistory.size());
+        }
+
+        for (std::size_t i = 0; i < localObjectivesListHistory.size(); i++) {
+            const auto& localObjectivesList = localObjectivesListHistory[i];
+
+            std::vector<double> sendBuffer;
+            int dataSize = localObjectivesList[0].size();
+            sendBuffer.reserve(dataSize * localObjectivesList.size());
+            for (const auto& objectives : localObjectivesList) {
+                sendBuffer.insert(sendBuffer.end(), objectives.begin(),
+                                  objectives.end());
+            }
+
+            std::vector<double> receiveBuffer;
+            std::vector<int> sizes;
+            Gatherv(sendBuffer, rank, parallelSize, receiveBuffer, sizes);
+
+            if (rank == 0) {
+                std::vector<std::vector<double>> objectivesList;
+                for (int j = 0, count = 0; j < parallelSize;
+                     count += sizes[j], j++) {
+                    for (int k = 0; k < sizes[j]; k += dataSize) {
+                        std::vector<double> objectives(
+                            receiveBuffer.begin() + count + k,
+                            receiveBuffer.begin() + count + k + dataSize);
+                        if (i == localObjectivesListHistory.size() - 1) {
+                            objectivesList.push_back(objectives);
+                            finalObjectivesList.push_back(
+                                std::make_pair(j, std::move(objectives)));
+                        } else {
+                            objectivesList.push_back(std::move(objectives));
+                        }
+                    }
+                }
+                outObjectivesListHistory.push_back(std::move(objectivesList));
+            }
+        }
+    }
+
+    void GatherNonDominatedSolutionsList(
         std::vector<std::vector<std::vector<double>>>& outObjectivesListHistory,
         std::vector<std::pair<int, std::vector<double>>>& finalObjectivesList) {
         std::vector<std::vector<std::pair<int, std::vector<double>>>>
@@ -484,6 +532,8 @@ class ParallelMoeadBenchmark {
         auto parameterFile = OpenInputFile(DefaultParameterFilePath);
         nlohmann::json parameter = nlohmann::json::parse(parameterFile);
 
+        bool isIndicatorCalculatedUsingNds =
+            parameter["isIndicatorCalculatedUsingNds"];
         int trial = parameter["trial"];
         int neighborhoodSize = parameter["neighborhoodSize"];
         int migrationInterval = parameter["migrationInterval"];
@@ -543,65 +593,118 @@ class ParallelMoeadBenchmark {
             parameterOutputFile.close();
         }
 
-        for (auto&& hpaProblem : problems) {
-            RANK0(std::cout << "Problem: " << hpaProblem.name << std::endl)
+        for (auto&& problem : problems) {
+            RANK0(std::cout << "Problem: " << problem.name << std::endl)
 
             // 問題ディレクトリの作成
             std::filesystem::path problemDirectoryPath =
-                outputDirectoryPath / hpaProblem.name;
+                outputDirectoryPath / problem.name;
             RANK0(std::filesystem::create_directories(problemDirectoryPath);)
 
-            // 問題名の修正．"-"以降を削除
+            // 問題名の修正．"-"以降を削除．問題作成時の名前用
             // 例: "HPA201-0" -> "HPA201"
-            std::string hpaName = hpaProblem.name;
-            std::size_t pos = hpaName.find('-');
+            std::string officialName = problem.name;
+            std::size_t pos = officialName.find('-');
             if (pos != std::string::npos) {
-                hpaName = hpaName.substr(0, pos);
+                officialName = officialName.substr(0, pos);
+            }
+            // 問題名の二つ目の"-"以降を削除．パレートフロントファイル名用
+            // 例: "DTLZ1-3-10" -> "DTLZ1-3"
+            std::string paretoFrontFileName = problem.name;
+            if (paretoFrontFileName.compare(0, 3, "ZDT") == 0) {
+                paretoFrontFileName = officialName;
+            } else {
+                std::size_t firstDashPos = paretoFrontFileName.find('-');
+                if (firstDashPos != std::string::npos) {
+                    std::size_t secondDashPos =
+                        paretoFrontFileName.find('-', firstDashPos + 1);
+                    if (secondDashPos != std::string::npos) {
+                        paretoFrontFileName =
+                            paretoFrontFileName.substr(0, secondDashPos);
+                    }
+                }
             }
 
-            // HPA問題の作成
-            std::shared_ptr<IProblem<double>> problem = std::make_unique<Hpa>(
-                hpaModule, hpaName.c_str(), 4, hpaProblem.level);
+            // HPA問題かどうか確認
+            bool isHpaProblem = false;
+            if (officialName.compare(0, 3, "HPA") == 0) {
+                isHpaProblem = true;
+            }
+
+            // 問題クラスの作成
+            std::shared_ptr<IProblem<double>> problem_ptr;
+            if (isHpaProblem) {
+                problem_ptr = std::make_unique<Hpa>(
+                    hpaModule, officialName.c_str(), 4, problem.level);
+            } else {
+                problem_ptr =
+                    CreateProblem(officialName, problem.decisionVariablesNum,
+                                  problem.objectivesNum);
+            }
+
             int divisionsNumOfWeightVector =
-                divisionsNumOfWeightVectors.at(problem->ObjectivesNum());
-            int evaluationsNum = evaluationsNums.at(hpaProblem.level);
+                divisionsNumOfWeightVectors.at(problem_ptr->ObjectivesNum());
+            int evaluationsNum = evaluationsNums.at(problem.level);
             int generationsNum =
                 evaluationsNum /
                 CalculatePopulationSize(divisionsNumOfWeightVector,
-                                        problem->ObjectivesNum());
+                                        problem_ptr->ObjectivesNum());
             RANK0(std::cout << "generationsNum: " << generationsNum
                             << std::endl;)
 
-            // 正規化のための utopia, nadir 点を取得
-            auto utopiaNadirJson = OpenInputFile(UtopiaNadirFilePath);
-            nlohmann::json utopiaNadir = nlohmann::json::parse(utopiaNadirJson);
-            std::vector<double> utopia = utopiaNadir[hpaProblem.name]["utopia"];
-            std::vector<double> nadir = utopiaNadir[hpaProblem.name]["nadir"];
-            utopiaNadirJson.close();
+            // HPA問題の場合，正規化のための utopia, nadir 点を取得
+            std::vector<double> utopia;
+            std::vector<double> nadir;
+            if (isHpaProblem) {
+                auto utopiaNadirJson = OpenInputFile(UtopiaNadirFilePath);
+                nlohmann::json utopiaNadir =
+                    nlohmann::json::parse(utopiaNadirJson);
+                utopia = utopiaNadir[problem.name]["utopia"]
+                             .get<std::vector<double>>();
+                nadir = utopiaNadir[problem.name]["nadir"]
+                            .get<std::vector<double>>();
+                utopiaNadirJson.close();
+            }
 
             // インディケータの作成
             std::vector<std::vector<double>> paretoFront;
             if (rank == 0) {
-                auto paretoFrontFile =
-                    OpenInputFile("extern/hpa/igd_reference_points/n=4/" +
-                                  hpaProblem.name + ".csv");
+                std::filesystem::path paretoFrontFilePath =
+                    isHpaProblem ? std::filesystem::path(
+                                       "extern/hpa/igd_reference_points/n=4/")
+                                       .append(paretoFrontFileName + ".csv")
+                                 : std::filesystem::path(
+                                       "data/ground_truth/pareto_fronts/")
+                                       .append(paretoFrontFileName + ".csv");
+                auto paretoFrontFile = OpenInputFile(paretoFrontFilePath);
                 paretoFront = ReadCsv<double>(paretoFrontFile, true, true);
             }
             // パレートフロントも正規化
-            for (auto&& objectives : paretoFront) {
-                for (std::size_t i = 0; i < objectives.size(); i++) {
-                    objectives[i] =
-                        (objectives[i] - utopia[i]) / (nadir[i] - utopia[i]);
+            if (isHpaProblem) {
+                for (auto&& objectives : paretoFront) {
+                    for (std::size_t i = 0; i < objectives.size(); i++) {
+                        objectives[i] = (objectives[i] - utopia[i]) /
+                                        (nadir[i] - utopia[i]);
+                    }
                 }
             }
             IGDPlus indicator(paretoFront);
+            std::vector<std::string> igdHeader = {"generation",
+                                                  "execution_time_s"};
+            {
+                // 指標の名前を小文字に変換して追加
+                std::string indicatorName = indicator.Name();
+                std::transform(indicatorName.begin(), indicatorName.end(),
+                               indicatorName.begin(), ::tolower);
+                igdHeader.push_back(indicatorName);
+            }
 
             for (auto&& algorithm : algorithms) {
-                // MP-MOEA/D-NOのobjとhpaの目的数が一致するか確認
+                // MP-MOEA/D-NOのobjと問題の目的数が一致するか確認
                 if (algorithm.name.compare(0, std::string(MoeadNames[1]).size(),
                                            MoeadNames[1]) == 0) {
                     if (std::find(algorithm.obj.begin(), algorithm.obj.end(),
-                                  problem->ObjectivesNum()) ==
+                                  problem_ptr->ObjectivesNum()) ==
                         algorithm.obj.end()) {
                         continue;
                     }
@@ -640,24 +743,24 @@ class ParallelMoeadBenchmark {
 
                 // moeadの構成クラスの作成
                 auto crossover = std::make_shared<SimulatedBinaryCrossover>(
-                    crossoverRate, problem->VariableBounds());
+                    crossoverRate, problem_ptr->VariableBounds());
                 auto decomposition = std::make_shared<Tchebycheff>();
                 auto mutation = std::make_shared<PolynomialMutation>(
-                    1.0 / problem->DecisionVariablesNum(),
-                    problem->VariableBounds());
-                auto repair = std::make_shared<RealRandomRepair>(problem);
+                    1.0 / problem_ptr->DecisionVariablesNum(),
+                    problem_ptr->VariableBounds());
+                auto repair = std::make_shared<RealRandomRepair>(problem_ptr);
                 auto selection = std::make_shared<RandomSelection>();
 
                 // 目的関数ファイルのヘッダの作成
                 std::vector<std::string> objectiveHeader = {"rank"};
-                for (int i = 0; i < problem->ObjectivesNum(); i++) {
+                for (int i = 0; i < problem_ptr->ObjectivesNum(); i++) {
                     objectiveHeader.push_back("objective" +
                                               std::to_string(i + 1));
                 }
                 // 理想点ファイルのヘッダの作成
                 std::vector<std::string> idealPointHeader = {"rank",
                                                              "generation"};
-                for (int i = 0; i < problem->ObjectivesNum(); i++) {
+                for (int i = 0; i < problem_ptr->ObjectivesNum(); i++) {
                     idealPointHeader.push_back("objective" +
                                                std::to_string(i + 1));
                 }
@@ -671,18 +774,18 @@ class ParallelMoeadBenchmark {
 
                     auto sampling = rank == 0
                                         ? std::make_shared<RealRandomSampling>(
-                                              problem->VariableBounds(),
+                                              problem_ptr->VariableBounds(),
                                               std::make_shared<Rng>(t))
                                         : std::make_shared<RealRandomSampling>(
-                                              problem->VariableBounds());
+                                              problem_ptr->VariableBounds());
 
                     std::unique_ptr<IParallelMoead<double>> moead;
                     if (algorithm.name == MoeadNames[0]) {
                         moead = std::make_unique<MpMoead<double>>(
                             generationsNum, neighborhoodSize,
                             divisionsNumOfWeightVector, migrationInterval,
-                            crossover, decomposition, mutation, problem, repair,
-                            sampling, selection, algorithm.isAsync);
+                            crossover, decomposition, mutation, problem_ptr,
+                            repair, sampling, selection, algorithm.isAsync);
                     } else if (algorithm.name.compare(
                                    0, std::string(MoeadNames[1]).size(),
                                    MoeadNames[1]) == 0) {
@@ -690,8 +793,8 @@ class ParallelMoeadBenchmark {
                             generationsNum, neighborhoodSize,
                             divisionsNumOfWeightVector, migrationInterval,
                             algorithm.adjacencyListFileName, crossover,
-                            decomposition, mutation, problem, repair, sampling,
-                            selection, algorithm.isAsync);
+                            decomposition, mutation, problem_ptr, repair,
+                            sampling, selection, algorithm.isAsync);
                     } else {
                         throw std::invalid_argument("Invalid moead name");
                     }
@@ -766,8 +869,10 @@ class ParallelMoeadBenchmark {
                             for (std::size_t i = 0; i < idealPoint.size();
                                  ++i) {
                                 // 正規化
-                                auto value = (idealPoint[i] - utopia[i]) /
-                                             (nadir[i] - utopia[i]);
+                                auto value = isHpaProblem
+                                                 ? (idealPoint[i] - utopia[i]) /
+                                                       (nadir[i] - utopia[i])
+                                                 : idealPoint[i];
                                 idealPointFile << value;
                                 if (i != idealPoint.size() - 1) {
                                     idealPointFile << ",";
@@ -778,12 +883,16 @@ class ParallelMoeadBenchmark {
                     }
 
                     // 目的関数値の正規化
-                    for (auto& objectivesList : localObjectivesListHistory) {
-                        for (auto& objectives : objectivesList) {
-                            for (std::size_t i = 0; i < objectives.size();
-                                 i++) {
-                                objectives[i] = (objectives[i] - utopia[i]) /
-                                                (nadir[i] - utopia[i]);
+                    if (isHpaProblem) {
+                        for (auto& objectivesList :
+                             localObjectivesListHistory) {
+                            for (auto& objectives : objectivesList) {
+                                for (std::size_t i = 0; i < objectives.size();
+                                     i++) {
+                                    objectives[i] =
+                                        (objectives[i] - utopia[i]) /
+                                        (nadir[i] - utopia[i]);
+                                }
                             }
                         }
                     }
@@ -793,8 +902,13 @@ class ParallelMoeadBenchmark {
                         objectivesListHistory;
                     std::vector<std::pair<int, std::vector<double>>>
                         finalObjectivesList;
-                    GatherObjectivesListHistory(objectivesListHistory,
-                                                finalObjectivesList);
+                    if (isIndicatorCalculatedUsingNds) {
+                        GatherNonDominatedSolutionsList(objectivesListHistory,
+                                                        finalObjectivesList);
+                    } else {
+                        GatherObjectivesListHistory(objectivesListHistory,
+                                                    finalObjectivesList);
+                    }
                     if (rank == 0) {
                         std::filesystem::path objectiveFilePath =
                             objectiveDirectoryPath / fileName;
@@ -814,19 +928,53 @@ class ParallelMoeadBenchmark {
                         std::ofstream igdFile = OpenOutputFile(igdFilePath);
                         SetSignificantDigits(igdFile);
 
+                        // isIndicatorCalculatedUsingNds == false
+                        // の時IGDが最小の世代の目的関数値を記録する
+                        double minIgd = std::numeric_limits<double>::max();
+                        std::size_t minIgdIndex = 0;
+
                         // IGDの計算
                         std::vector<std::tuple<int, double, double>> igd;
                         for (int j = 0; j < objectivesListHistory.size(); j++) {
+                            double igdValue =
+                                indicator.Calculate(objectivesListHistory[j]);
                             igd.push_back(std::make_tuple(
-                                j, globalExecutionTimes[j],
-                                indicator.Calculate(objectivesListHistory[j])));
+                                j, globalExecutionTimes[j], igdValue));
+
+                            if (!isIndicatorCalculatedUsingNds) {
+                                if (minIgd > igdValue) {
+                                    minIgd = igdValue;
+                                    minIgdIndex = j;
+                                }
+                            }
                         }
                         // ヘッダーの書き込み
-                        WriteCsvLine(igdFile, IgdHeader);
+                        WriteCsvLine(igdFile, igdHeader);
                         // データの書き込み
                         for (const auto& [generation, time, igdValue] : igd) {
                             igdFile << generation << "," << time << ","
                                     << igdValue << std::endl;
+                        }
+
+                        if (!isIndicatorCalculatedUsingNds) {
+                            // 最小IGDの世代の目的関数値を記録する
+                            const std::filesystem::path
+                                minObjectiveDirectoryPath =
+                                    outputAlgorithmDirectoryPath /
+                                    "minObjective";
+                            std::filesystem::create_directories(
+                                minObjectiveDirectoryPath);
+                            std::filesystem::path minObjectiveFilePath =
+                                minObjectiveDirectoryPath / fileName;
+                            std::ofstream minObjectiveFile =
+                                OpenOutputFile(minObjectiveFilePath);
+                            SetSignificantDigits(minObjectiveFile);
+                            std::vector<std::string> minObjectiveHeader(
+                                objectiveHeader.begin() + 1,
+                                objectiveHeader.end());
+                            WriteCsv(minObjectiveFile,
+                                     objectivesListHistory[minIgdIndex],
+                                     minObjectiveHeader);
                         }
                     }
 

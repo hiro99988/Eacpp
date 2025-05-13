@@ -8,7 +8,8 @@
 #include <tuple>
 #include <vector>
 
-#include "Algorithms/NtMoead.h"
+#include "Algorithms/IParallelMoead.hpp"
+#include "Algorithms/MpMoeadIdealTopology.h"
 #include "Crossovers/SimulatedBinaryCrossover.h"
 #include "Decompositions/Tchebycheff.h"
 #include "Mutations/PolynomialMutation.h"
@@ -32,9 +33,9 @@ int main(int argc, char** argv) {
     int neighborhoodSize = parameter["neighborhoodSize"];
     int divisionsNumOfWeightVector = parameter["divisionsNumOfWeightVector"];
     int migrationInterval = parameter["migrationInterval"];
-    bool idealPointMigration = parameter["idealPointMigration"];
     std::string problemName = parameter["problem"];
     std::string adjacencyListFileName = parameter["adjacencyListFileName"];
+    bool isAsync = parameter["isAsync"];
 
     std::shared_ptr<IProblem<double>> problem =
         Reflection<IProblem<double>>::Create(problemName);
@@ -49,15 +50,13 @@ int main(int argc, char** argv) {
     auto repair = std::make_shared<RealRandomRepair>(problem);
     auto selection = std::make_shared<RandomSelection>();
 
-    auto moead = NtMoead<double>(
+    auto moead = MpMoeadIdealTopology<double>(
         generationNum, neighborhoodSize, divisionsNumOfWeightVector,
         migrationInterval, adjacencyListFileName, crossover, decomposition,
-        mutation, problem, repair, sampling, selection);
+        mutation, problem, repair, sampling, selection, isAsync);
 
     double start = MPI_Wtime();
-    ;
     moead.Run();
-
     double end = MPI_Wtime();
     double executionTime = end - start;
     double maxTime;
@@ -68,18 +67,18 @@ int main(int argc, char** argv) {
                   << " seconds" << std::endl;
     }
 
-    std::filesystem::path objectiveFilePath =
-        "out/data/tmp/objective/" + std::to_string(rank) + ".csv";
-    std::ofstream objectiveFile(objectiveFilePath);
-    for (const auto& objectives : moead.GetObjectivesList()) {
-        for (int i = 0; i < objectives.size(); i++) {
-            objectiveFile << objectives[i];
-            if (i != objectives.size() - 1) {
-                objectiveFile << ",";
-            }
-        }
-        objectiveFile << std::endl;
-    }
+    // std::filesystem::path objectiveFilePath =
+    //     "out/data/tmp/objective/" + std::to_string(rank) + ".csv";
+    // std::ofstream objectiveFile(objectiveFilePath);
+    // for (const auto& objectives : moead.GetObjectivesList()) {
+    //     for (int i = 0; i < objectives.size(); i++) {
+    //         objectiveFile << objectives[i];
+    //         if (i != objectives.size() - 1) {
+    //             objectiveFile << ",";
+    //         }
+    //     }
+    //     objectiveFile << std::endl;
+    // }
 
     MPI_Finalize();
 

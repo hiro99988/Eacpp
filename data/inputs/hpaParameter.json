@@ -1,5 +1,6 @@
 {
-    "trial": 4,
+    "isIndicatorCalculatedUsingNds": false,
+    "trial": 31,
     "generationNum": 500,
     "neighborhoodSize": 21,
     "divisionsNumOfWeightVector": 199,
@@ -101,6 +102,129 @@
         }
     ],
     "problems": [
+        {
+            "name": "ZDT1-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        },
+        {
+            "name": "ZDT1-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT1-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT2-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        },
+        {
+            "name": "ZDT2-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT2-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT3-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        },
+        {
+            "name": "ZDT3-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT3-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT4-10",
+            "decisionVariablesNum": 10,
+            "level": 0
+        },
+        {
+            "name": "ZDT4-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT4-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "ZDT6-10",
+            "decisionVariablesNum": 10,
+            "level": 0
+        },
+        {
+            "name": "ZDT6-100",
+            "decisionVariablesNum": 100,
+            "level": 1
+        },
+        {
+            "name": "ZDT6-200",
+            "decisionVariablesNum": 200,
+            "level": 2
+        },
+        {
+            "name": "DTLZ1-3-7",
+            "decisionVariablesNum": 7,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ2-3-12",
+            "decisionVariablesNum": 12,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ3-3-12",
+            "decisionVariablesNum": 12,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ4-3-12",
+            "decisionVariablesNum": 12,
+            "objectivesNum": 3,
+            "level": 0
+        },
+        {
+            "name": "DTLZ1-5-9",
+            "decisionVariablesNum": 9,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ2-5-14",
+            "decisionVariablesNum": 14,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ3-5-14",
+            "decisionVariablesNum": 14,
+            "objectivesNum": 5,
+            "level": 0
+        },
+        {
+            "name": "DTLZ4-5-14",
+            "decisionVariablesNum": 14,
+            "objectivesNum": 5,
+            "level": 0
+        },
         {
             "name": "HPA201-0",
             "level": 0
