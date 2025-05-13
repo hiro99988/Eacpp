@@ -1,0 +1,281 @@
+# -----------------------------------------
+# デフォルトパラメータ設定
+# -----------------------------------------
+# - preferDefaultParameters: bool
+# DefaultParameters と parameterPresets 適用時の優先順を設定
+# true  → DefaultParameters を優先
+# false → parameterPresets を優先
+# - generations: int
+# generations が設定されている場合は，evaluations は無視される
+# - evaluations: int
+# evaluations は generations が設定されていない場合に使用される
+# - neighborhoodSize: int
+# - partitions: int
+# - communicationModes: array[string]
+# "async" or "sync"，どれも設定されていない場合は "async" が選択される
+# - decomposition: string
+# - crossover: string
+# - mutation: string
+# -----------------------------------------
+# parameterPresets はデフォルトパラメータで上書きされる
+# 設定しない場合は -1 を設定 or コメントアウト
+[DefaultParameters]
+preferDefaultParameters = true
+generations = -1
+evaluations = -1
+neighborhoodSize = 21
+partitions = -1
+communicationModes = ["async", "sync"]
+decomposition = "Tchebycheff"
+crossover = "SBX"
+mutation = "PM"
+
+# -----------------------------------------
+# ベンチマーク設定
+# -----------------------------------------
+# - trials: int
+# - indicators: array[string]
+# "IGD", "IGD+" or "all"
+# - problemClassifications: array[string]
+# "HPA" or "other"，実行する問題の分類を指定
+# - useAlgorithmSuffix: bool
+# true のときに非同期アルゴリズム名に asyncSuffix, 同期アルゴリズム名に syncSuffix を付与する．
+# communicationModes に "async"，"sync" の両方が設定されていて，かつ false の場合は，デフォルトで asyncSuffix = "-Async"，syncSuffix = "-Sync" が設定される
+# - asyncSuffix: string
+# - syncSuffix: string
+# -----------------------------------------
+[BenchmarkSettings]
+trials = 31
+indicators = ["IGD+"]
+problemClassifications = ["HPA", "other"]
+useAlgorithmSuffix = false
+asyncSuffix = "-Async"
+syncSuffix = "-Sync"
+
+# -----------------------------------------
+# 実行制御
+# -----------------------------------------
+# run* に "all" を設定し skip* に一つ以上の要素を設定した場合，skip* の要素は除外される
+# -----------------------------------------
+# - runAlgorithms: array[string]
+# "all" を設定した場合は全てのアルゴリズムを含める
+# - skipAlgorithms: array[string]
+# "all" は設定できない
+# - runProblems: array[string]
+# "all" を設定した場合は全ての問題を含める
+# - skipProblems: array[string]
+# "all" は設定できない
+# - defaultParameterPresets: array[string]
+# 複数指定でき，後に設定したものが優先される
+# -----------------------------------------
+# HPA 問題の設定
+# -----------------------------------------
+# - isObjectiveNormalized: bool
+# 結果出力のときに目的関数を正規化するか
+# -----------------------------------------
+# --- HPA 問題以外("other")の設定 ---
+[RunConfiguration]
+runAlgorithms = ["MP-MOEAD", "MP-MOEAD-NO"]
+skipAlgorithms = []
+runProblems = ["all"]
+skipProblems = ["custom"]
+defaultParameterPresets = ["default"]
+
+# --- HPA 問題の設定 ---
+[HPA.RunConfiguration]
+isObjectiveNormalized = true
+runAlgorithms = ["MP-MOEAD", "MP-MOEAD-NO-HPA"]
+skipAlgorithms = []
+runProblems = ["all"]
+skipProblems = ["HPACustom"]
+defaultParameterPresets = ["HPADefault"]
+
+# -----------------------------------------
+# 集約関数設定
+# -----------------------------------------
+[Decomposition.Tchebycheff]
+
+# ----------------------------------------
+# 交叉設定
+# -----------------------------------------
+# - crossoverRate: double
+# -----------------------------------------
+[Crossover.SBX]
+crossoverRate = 0.9
+distributionIndex = 20.0
+
+# -----------------------------------------
+# 突然変異設定
+# -------------------------------------------
+# - mutationRate: double
+# -10 のとき，1/{決定変数の次元数} の確率に設定される
+# -----------------------------------------
+[Mutation.PM]
+mutationRate = -10
+distributionIndex = 20.0
+
+# -----------------------------------------
+# 問題パラメータプリセット
+# -----------------------------------------
+# DefaultParameters と同様の変数を設定可能．
+# -----------------------------------------
+# - generations: int or table[int, int]
+# {level = generations, ...}
+# - evaluations: int or table[int, int]
+# {level = evaluations, ...}
+# - partitions: int or table[int, int]
+# {objectives = partitions, ...}
+# -----------------------------------------
+[ParameterPresets.default]
+generations = { 0 = 500, 1 = 1000, 2 = 1500 }
+partitions = { 2 = 199, 3 = 23, 5 = 8 }
+
+[ParameterPresets.HPADefault]
+evaluations = { 0 = 72000, 1 = 72000, 2 = 216000 }
+partitions = { 2 = 79, 3 = 14, 4 = 8, 5 = 6, 6 = 5, 9 = 4 }
+
+
+# -----------------------------------------
+# アルゴリズム設定
+# -----------------------------------------
+# - isAsync: bool
+# - migrationInterval: int
+# -----------------------------------------
+[Algorithms.MP-MOEAD]
+isAsync = true
+migrationInterval = 1
+
+[Algorithms.MP-MOEAD-NO]
+isAsync = true
+migrationInterval = 1
+objDegree = { 2 = [3, 5], 3 = [4, 6], 5 = [11, 17] }
+
+[Algorithms.MP-MOEAD-NO-HPA]
+isAsync = true
+migrationInterval = 1
+objDegree = { 2 = [
+    4,
+    7,
+], 3 = [
+    7,
+    10,
+], 4 = [
+    11,
+    15,
+], 5 = [
+    17,
+    22,
+], 6 = [
+    19,
+    24,
+], 9 = [
+    27,
+    31,
+] }
+
+# -----------------------------------------
+# 問題設定
+# -----------------------------------------
+# - problems: array[string]
+# 問題名を設定する
+# - presets: array[string]
+# パラメータプリセットを設定する．後に設定したものが優先される．
+# 最初に RunConfiguration.defaultParameterPresets で設定したものが適用され，その後にここで設定したものが適用される．
+# ---------------------------
+[ProblemSets.custom]
+problems = [
+    "ZDT1-30-0",
+    "ZDT1-200-2",
+    "DTLZ1-3-7-0",
+    "DTLZ1-3-70-2",
+    "DTLZ1-5-9-0",
+    "DTLZ1-5-50-2",
+]
+
+[ProblemSets.HPACustom]
+problems = [
+    "HPA201-0",
+    "HPA201-2",
+    "HPA301-0",
+    "HPA301-2",
+    "HPA501-0",
+    "HPA501-2",
+]
+
+# --- ZDT ---
+[ProblemSets.ZDT-0]
+problems = ["ZDT1-30-0", "ZDT2-30-0", "ZDT3-30-0", "ZDT4-10-0", "ZDT6-10-0"]
+[ProblemSets.ZDT-1]
+problems = [
+    "ZDT1-100-1",
+    "ZDT2-100-1",
+    "ZDT3-100-1",
+    "ZDT4-100-1",
+    "ZDT6-100-1",
+]
+[ProblemSets.ZDT-2]
+problems = [
+    "ZDT1-200-2",
+    "ZDT2-200-2",
+    "ZDT3-200-2",
+    "ZDT4-200-2",
+    "ZDT6-200-2",
+]
+
+# --- DTLZ ---
+[ProblemSets.DTLZ3-0]
+problems = ["DTLZ1-3-7-0", "DTLZ2-3-12-0", "DTLZ3-3-12-0", "DTLZ4-3-12-0"]
+[ProblemSets.DTLZ3-1]
+problems = ["DTLZ1-3-35-1", "DTLZ2-3-35-1", "DTLZ3-3-35-1", "DTLZ4-3-35-1"]
+[ProblemSets.DTLZ3-2]
+problems = ["DTLZ1-3-70-2", "DTLZ2-3-70-2", "DTLZ3-3-70-2", "DTLZ4-3-70-2"]
+
+[ProblemSets.DTLZ5-0]
+problems = ["DTLZ1-5-9-0", "DTLZ2-5-14-0", "DTLZ3-5-14-0", "DTLZ4-5-14-0"]
+[ProblemSets.DTLZ5-1]
+problems = ["DTLZ1-5-25-1", "DTLZ2-5-25-1", "DTLZ3-5-25-1", "DTLZ4-5-25-1"]
+[ProblemSets.DTLZ5-2]
+problems = ["DTLZ1-5-50-2", "DTLZ2-5-50-2", "DTLZ3-5-50-2", "DTLZ4-5-50-2"]
+
+# --- HPA ---
+[ProblemSets.HPA2-0]
+problems = ["HPA201-0", "HPA202-0", "HPA203-0", "HPA204-0", "HPA205-0"]
+[ProblemSets.HPA2-1]
+problems = ["HPA201-1", "HPA202-1", "HPA203-1", "HPA204-1", "HPA205-1"]
+[ProblemSets.HPA2-2]
+problems = ["HPA201-2", "HPA202-2", "HPA203-2", "HPA204-2", "HPA205-2"]
+
+[ProblemSets.HPA3-0]
+problems = ["HPA301-0", "HPA302-0", "HPA303-0", "HPA304-0", "HPA305-0"]
+[ProblemSets.HPA3-1]
+problems = ["HPA301-1", "HPA302-1", "HPA303-1", "HPA304-1", "HPA305-1"]
+[ProblemSets.HPA3-2]
+problems = ["HPA301-2", "HPA302-2", "HPA303-2", "HPA304-2", "HPA305-2"]
+
+[ProblemSets.HPA4-0]
+problems = ["HPA401-0", "HPA402-0", "HPA403-0"]
+[ProblemSets.HPA4-1]
+problems = ["HPA401-1", "HPA402-1", "HPA403-1"]
+[ProblemSets.HPA4-2]
+problems = ["HPA401-2", "HPA402-2", "HPA403-2"]
+
+[ProblemSets.HPA5-0]
+problems = ["HPA501-0", "HPA502-0"]
+[ProblemSets.HPA5-1]
+problems = ["HPA501-1", "HPA502-1"]
+[ProblemSets.HPA5-2]
+problems = ["HPA501-2", "HPA502-2"]
+
+[ProblemSets.HPA6-0]
+problems = ["HPA601-0"]
+[ProblemSets.HPA6-1]
+problems = ["HPA601-1"]
+[ProblemSets.HPA6-2]
+problems = ["HPA601-2"]
+
+[ProblemSets.HPA9-0]
+problems = ["HPA901-0"]
+[ProblemSets.HPA9-1]
+problems = ["HPA901-1"]
+[ProblemSets.HPA9-2]
+problems = ["HPA901-2"]
