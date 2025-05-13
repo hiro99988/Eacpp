@@ -32,6 +32,8 @@ mutation = "PM"
 # DefaultParameters と parameterPresets 適用時の優先順を設定
 # true  → DefaultParameters を優先
 # false → parameterPresets を優先
+# - isIndicatorCalculatedUsingNds: bool
+# indicator の計算時に 非支配解(NDS) を使用するか
 # - trials: int
 # - indicators: array[string]
 # "IGD", "IGD+" or "all"
@@ -45,6 +47,7 @@ mutation = "PM"
 # -----------------------------------------
 [BenchmarkSettings]
 preferDefaultParameters = true
+isIndicatorCalculatedUsingNds = true
 trials = 31
 indicators = ["IGD+"]
 problemClassifications = ["HPA", "other"]
