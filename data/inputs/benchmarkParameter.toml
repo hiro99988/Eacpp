@@ -1,10 +1,6 @@
 # -----------------------------------------
 # デフォルトパラメータ設定
 # -----------------------------------------
-# - preferDefaultParameters: bool
-# DefaultParameters と parameterPresets 適用時の優先順を設定
-# true  → DefaultParameters を優先
-# false → parameterPresets を優先
 # - generations: int
 # generations が設定されている場合は，evaluations は無視される
 # - evaluations: int
@@ -20,7 +16,6 @@
 # parameterPresets はデフォルトパラメータで上書きされる
 # 設定しない場合は -1 を設定 or コメントアウト
 [DefaultParameters]
-preferDefaultParameters = true
 generations = -1
 evaluations = -1
 neighborhoodSize = 21
@@ -33,6 +28,10 @@ mutation = "PM"
 # -----------------------------------------
 # ベンチマーク設定
 # -----------------------------------------
+# - preferDefaultParameters: bool
+# DefaultParameters と parameterPresets 適用時の優先順を設定
+# true  → DefaultParameters を優先
+# false → parameterPresets を優先
 # - trials: int
 # - indicators: array[string]
 # "IGD", "IGD+" or "all"
@@ -45,6 +44,7 @@ mutation = "PM"
 # - syncSuffix: string
 # -----------------------------------------
 [BenchmarkSettings]
+preferDefaultParameters = true
 trials = 31
 indicators = ["IGD+"]
 problemClassifications = ["HPA", "other"]
