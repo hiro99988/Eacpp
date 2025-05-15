@@ -11,13 +11,16 @@ int main(int argc, char* argv[]) {
     int objectivesNum = 2;
     int neighborhoodSize = 21;
     int parallelSize = 50;
+    int methodIndex = 0;
 
-    if (argc == 5) {
+    if (argc == 6) {
         divisionsNumOfWeightVector = std::stoi(argv[1]);
         objectivesNum = std::stoi(argv[2]);
         neighborhoodSize = std::stoi(argv[3]);
         parallelSize = std::stoi(argv[4]);
+        methodIndex = std::stoi(argv[5]);
     }
+    PartitioningMethod method = static_cast<PartitioningMethod>(methodIndex);
 
     MoeadInitializer moeadInitializer;
     std::vector<int> outInternalIndividualIndexes;
@@ -39,7 +42,7 @@ int main(int argc, char* argv[]) {
         outExternalIndividualIndexes, outExternalIndividualRanks,
         outExternalWeightVectors, outExternalIndividualCounts,
         outRanksToSendAtInitialization, outRanksToSendCounts,
-        outNeighboringRanks, outNeighboringRankCounts);
+        outNeighboringRanks, outNeighboringRankCounts, {}, method);
 
     // 生成した内部個体数と母集団サイズを比較
     auto populationSize = moeadInitializer.CalculatePopulationSize(
