@@ -47,19 +47,36 @@ class NeighborGenerator {
 template <typename SolutionType>
 class SimulatedAnnealing {
    public:
-    // ///@brief
-    // SAの現在の状態を保持する構造体。進捗コールバック関数に渡されます。 struct
-    // SAState {
-    //     double temperature;           ///< 現在の温度
-    //     int iterationsAtCurrentTemp;  ///< 現在の温度でのイテレーション回数
-    //     long long totalIterations;    ///< 総イテレーション回数
-    //     const SolutionType& currentSolution;  ///< 現在の解への参照
-    //     double currentEnergy;                 ///< 現在の解のエネルギー
-    //     const SolutionType&
-    //         bestSolutionSoFar;   ///< これまでに見つかった最良解への参照
-    //     double bestEnergySoFar;  ///< これまでに見つかった最良解のエネルギー
-    //     int iterationsSinceLastImprovement;  ///<
-    //     最良解が最後に改善されてからのイテレーション回数
+    /// @brief SAの結果を保持する構造体
+    struct Result {
+        SolutionType best;          /// 最良解
+        double objective;           /// 最良解の目的値
+        long long iterationAtBest;  /// 最良解を見つけたイテレーション数
+        long long totalIterations;  /// 総イテレーション数
+        double temperatureAtBest;   /// 最良解を見つけたときの温度
+        double finalTemperature;    /// 最終温度
+
+        /// @brief コンストラクタ
+        Result(SolutionType best, double objective, long long iterationAtBest,
+               long long totalIterations, double temperatureAtBest,
+               double finalTemperature)
+            : best(std::move(best)),
+              objective(objective),
+              iterationAtBest(iterationAtBest),
+              totalIterations(totalIterations),
+              temperatureAtBest(temperatureAtBest),
+              finalTemperature(finalTemperature) {}
+
+        void UpdateBest(SolutionType newBest, double newObjective,
+                        long long newIterationAtBest,
+                        double newTemperatureAtBest) {
+            best = std::move(newBest);
+            objective = newObjective;
+            iterationAtBest = newIterationAtBest;
+            temperatureAtBest = newTemperatureAtBest;
+        }
+    };
+
     ///@brief SAの現在の状態を保持する構造体。進捗コールバック関数に渡される
     struct SAState {
         double temperature;           /// 現在の温度
@@ -126,13 +143,18 @@ class SimulatedAnnealing {
           _maxStagnantIterations(maxStagnantIterations),
           _verbose(verbose),
           _rng(seed),
-          _progressCallback(callback) {
+          _progressCallback(callback),
+          _result(
+              _originalInitialSolution,
+              (_problem ? _problem->ComputeObjective(_originalInitialSolution)
+                        : 0.0),  // Compute objective if problem is valid
+              0, 0, initialTemperature, initialTemperature) {
         // パラメータの検証
-        if (_problem == nullptr) {
+        if (!_problem) {
             throw std::invalid_argument(
                 "目的関数はnullptrであってはなりません。");
         }
-        if (_neighborGenerator == nullptr) {
+        if (!_neighborGenerator) {
             throw std::invalid_argument(
                 "近傍解生成関数はnullptrであってはなりません。");
         }
@@ -152,7 +174,7 @@ class SimulatedAnnealing {
                 "各温度での最大イテレーション回数は正である必要があります"
                 "。");
         }
-        Reset();  // 状態を初期化
+        Reset();
         SetDefaultProgressCallback();
     }
 
@@ -160,12 +182,12 @@ class SimulatedAnnealing {
     /// SAアルゴリズムの内部状態を初期状態（コンストラクタで指定された初期解と温度）にリセットします。
     void Reset() {
         _currentSolution = _originalInitialSolution;
-        _bestSoFar = _originalInitialSolution;
         _currentObjective = _problem->ComputeObjective(_currentSolution);
-        _bestSoFarObjective = _currentObjective;
         _temperature = _initialTemperature;
         _totalIterations = 0;
         _iterationsSinceLastImprovement = 0;
+        _result = Result(_originalInitialSolution, _currentObjective, 0, 0,
+                         _initialTemperature, _initialTemperature);
     }
 
     /// @brief SAアルゴリズムの内部状態を新しい初期解でリセットします。
@@ -176,16 +198,16 @@ class SimulatedAnnealing {
         Reset();
     }
 
-    /// @brief Simulated Annealing アルゴリズムを実行します
-    /// @return 見つかった最良解。SolutionTypeのコピーが返されます
-    SolutionType Run() {
+    /// @brief Simulated Annealing アルゴリズムを実行する
+    /// @return SAの結果を保持するResultオブジェクト
+    Result Run() {
         bool stop = false;
         _iterationsSinceLastImprovement = 0;
 
         if (_verbose) {
             _progressCallback(SAState(_temperature, 0, _totalIterations,
                                       _currentSolution, _currentObjective,
-                                      _bestSoFar, _bestSoFarObjective,
+                                      _result.best, _result.objective,
                                       _iterationsSinceLastImprovement));
         }
 
@@ -219,9 +241,9 @@ class SimulatedAnnealing {
                         neighborSolution);  // 近傍解をムーブ(またはコピー)で現在の解に
                     _currentObjective = neighborObjective;
 
-                    if (_currentObjective < _bestSoFarObjective) {
-                        _bestSoFar = _currentSolution;  // 最良解を更新 (コピー)
-                        _bestSoFarObjective = _currentObjective;
+                    if (_currentObjective < _result.objective) {
+                        _result.UpdateBest(_currentSolution, _currentObjective,
+                                           _totalIterations, _temperature);
                         _iterationsSinceLastImprovement = 0;
                     }
                 }
@@ -251,7 +273,7 @@ class SimulatedAnnealing {
                 if (_progressCallback) {
                     _progressCallback(SAState(
                         _temperature, i + 1, _totalIterations, _currentSolution,
-                        _currentObjective, _bestSoFar, _bestSoFarObjective,
+                        _currentObjective, _result.best, _result.objective,
                         _iterationsSinceLastImprovement));
                 }
             }
@@ -259,39 +281,23 @@ class SimulatedAnnealing {
             _temperature *= _coolingRate;
             _temperature = std::max(_temperature, _minTemperature);
         }
-        return _bestSoFar;
+        // 戻り値ResultのtotalIterationsとfinalTemperatureを確定する
+        _result.totalIterations = _totalIterations;
+        _result.finalTemperature = _temperature;
+        return _result;
     }
 
-    /// @brief 見つかった最良解のエネルギーを取得する
-    /// @return 最良解のエネルギー。
-    double GetBestSoFarObjective() const {
-        return _bestSoFarObjective;
-    }
-
-    /// @brief 見つかった最良解を取得する
-    /// @return 最良解への定数参照。
-    const SolutionType& GetBestSoFar() const {
-        return _bestSoFar;
-    }
-
-    /// @brief 現在の総イテレーション回数を取得する
-    /// @return 総イテレーション回数。
-    long long GetTotalIterations() const {
-        return _totalIterations;
-    }
-
-    /// @brief 現在の温度を取得する
-    /// @return 現在の温度。
-    double GetCurrentTemperature() const {
-        return _temperature;
+    /// @brief SAの結果を取得する
+    /// @return SAの結果を保持するResultオブジェクト
+    Result GetResult() const {
+        return _result;
     }
 
    private:
     SolutionType _originalInitialSolution;  // リセット用に保持する初期解
     SolutionType _currentSolution;          // 現在の解
-    SolutionType _bestSoFar;                // これまでに見つかった最良解
-    double _currentObjective;               // 現在の解のエネルギー
-    double _bestSoFarObjective;             // 最良解のエネルギー
+    double _currentObjective;               // 現在の解の目的値
+    Result _result;                         // これまでに見つかった最良解の情報
 
     std::unique_ptr<SingleObjectiveProblem<SolutionType>> _problem;  // 目的関数
     std::unique_ptr<NeighborGenerator<SolutionType>>
