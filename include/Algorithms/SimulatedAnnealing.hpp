@@ -60,24 +60,33 @@ class SimulatedAnnealing {
     //     double bestEnergySoFar;  ///< これまでに見つかった最良解のエネルギー
     //     int iterationsSinceLastImprovement;  ///<
     //     最良解が最後に改善されてからのイテレーション回数
+    ///@brief SAの現在の状態を保持する構造体。進捗コールバック関数に渡される
+    struct SAState {
+        double temperature;           /// 現在の温度
+        int iterationsAtCurrentTemp;  /// 現在の温度でのイテレーション回数
+        long long totalIterations;    /// 総イテレーション回数
+        const SolutionType& currentSolution;  /// 現在の解への参照
+        double currentObjective;              /// 現在の解の目的値
+        const SolutionType& bestSoFar;  /// これまでに見つかった最解への参照
+        double bestSoFarObjective;      /// これまでに見つかった最良解の目的値
+        int iterationsSinceLastImprovement;  /// 最良解が最後に改善されてからのイテレーション回数
 
-    //     SAState(double temp, int iterAtTemp, long long totalIter,
-    //             const SolutionType& currentSol, double currentEng,
-    //             const SolutionType& bestSol, double bestEng, int
-    //             stagnantIter)
-    //         : temperature(temp),
-    //           iterationsAtCurrentTemp(iterAtTemp),
-    //           totalIterations(totalIter),
-    //           currentSolution(currentSol),
-    //           currentEnergy(currentEng),
-    //           bestSolutionSoFar(bestSol),
-    //           bestEnergySoFar(bestEng),
-    //           iterationsSinceLastImprovement(stagnantIter) {}
-    // };
+        SAState(double temp, int iterAtTemp, long long totalIter,
+                const SolutionType& currentSol, double currentObj,
+                const SolutionType& bestSol, double bestObj, int stagnantIter)
+            : temperature(temp),
+              iterationsAtCurrentTemp(iterAtTemp),
+              totalIterations(totalIter),
+              currentSolution(currentSol),
+              currentObjective(currentObj),
+              bestSoFar(bestSol),
+              bestSoFarObjective(bestObj),
+              iterationsSinceLastImprovement(stagnantIter) {}
+    };
 
-    // /// @brief 進捗通知コールバック関数の型エイリアス。
-    // /// SAStateオブジェクトを定数参照で受け取ります。
-    // using ProgressCallback = std::function<void(const SAState&)>;
+    /// @brief 進捗通知コールバック関数の型エイリアス。
+    /// SAStateオブジェクトを定数参照で受け取ります。
+    using ProgressCallback = std::function<void(const SAState&)>;
 
     /// @brief SimulatedAnnealing クラスのコンストラクタ。
     /// @param initialSolution 初期解
@@ -103,7 +112,8 @@ class SimulatedAnnealing {
         double initialTemperature, double coolingRate, double minTemperature,
         int maxIterationsPerTemperature, long long maxTotalIterations = 0,
         int maxStagnantIterations = 0, bool verbose = false,
-        std::uint_fast32_t seed = std::random_device()())
+        std::uint_fast32_t seed = std::random_device()(),
+        ProgressCallback callback = nullptr)
         : _originalInitialSolution(std::move(initialSolution)),
           _problem(std::move(singleObjectiveProblem)),
           _neighborGenerator(std::move(neighborGen)),
@@ -115,7 +125,8 @@ class SimulatedAnnealing {
           _maxTotalIterations(maxTotalIterations),
           _maxStagnantIterations(maxStagnantIterations),
           _verbose(verbose),
-          _rng(seed) {
+          _rng(seed),
+          _progressCallback(callback) {
         // パラメータの検証
         if (_problem == nullptr) {
             throw std::invalid_argument(
@@ -132,10 +143,7 @@ class SimulatedAnnealing {
             throw std::invalid_argument(
                 "冷却率は0より大きく1未満である必要があります。");
         }
-        if (_minTemperature < 0 ||
-            _minTemperature >= _initialTemperature) {  // minTemperature_ ==
-                                                       // initialTemperature_
-                                                       // も実質的に意味がない
+        if (_minTemperature < 0 || _minTemperature >= _initialTemperature) {
             throw std::invalid_argument(
                 "最低温度は0以上かつ初期温度未満である必要があります。");
         }
@@ -145,13 +153,14 @@ class SimulatedAnnealing {
                 "。");
         }
         Reset();  // 状態を初期化
+        SetDefaultProgressCallback();
     }
 
     /// @brief
     /// SAアルゴリズムの内部状態を初期状態（コンストラクタで指定された初期解と温度）にリセットします。
     void Reset() {
-        _currentSolution = _originalInitialSolution;  // コピーで初期化
-        _bestSoFar = _originalInitialSolution;        // コピーで初期化
+        _currentSolution = _originalInitialSolution;
+        _bestSoFar = _originalInitialSolution;
         _currentObjective = _problem->ComputeObjective(_currentSolution);
         _bestSoFarObjective = _currentObjective;
         _temperature = _initialTemperature;
@@ -174,10 +183,10 @@ class SimulatedAnnealing {
         _iterationsSinceLastImprovement = 0;
 
         if (_verbose) {
-            std::cout << "イテレーション: " << _totalIterations
-                      << ", 現在のエネルギー: " << _currentObjective
-                      << ", 最良エネルギー: " << _bestSoFarObjective
-                      << ", 温度: " << _temperature << std::endl;
+            _progressCallback(SAState(_temperature, 0, _totalIterations,
+                                      _currentSolution, _currentObjective,
+                                      _bestSoFar, _bestSoFarObjective,
+                                      _iterationsSinceLastImprovement));
         }
 
         while (!stop) {
@@ -238,19 +247,12 @@ class SimulatedAnnealing {
                     }
                 }
 
-                // // 進捗コールバックの呼び出し
-                // if (progressCallback_) {
-                //     progressCallback_(
-                //         SAState(temperature_, i + 1, totalIterations_,
-                //                 currentSolution_, currentEnergy_,
-                //                 bestSolution_, bestEnergy_,
-                //                 iterationsSinceLastImprovement_));
-                // }
-                if (_verbose) {
-                    std::cout << "イテレーション: " << _totalIterations
-                              << ", 現在のエネルギー: " << _currentObjective
-                              << ", 最良エネルギー: " << _bestSoFarObjective
-                              << ", 温度: " << _temperature << std::endl;
+                // 進捗コールバックの呼び出し
+                if (_progressCallback) {
+                    _progressCallback(SAState(
+                        _temperature, i + 1, _totalIterations, _currentSolution,
+                        _currentObjective, _bestSoFar, _bestSoFarObjective,
+                        _iterationsSinceLastImprovement));
                 }
             }
             // 4. 温度を更新 (冷却)
@@ -260,25 +262,25 @@ class SimulatedAnnealing {
         return _bestSoFar;
     }
 
-    /// @brief 見つかった最良解のエネルギーを取得します。
+    /// @brief 見つかった最良解のエネルギーを取得する
     /// @return 最良解のエネルギー。
     double GetBestSoFarObjective() const {
         return _bestSoFarObjective;
     }
 
-    /// @brief 見つかった最良解を取得します。
+    /// @brief 見つかった最良解を取得する
     /// @return 最良解への定数参照。
     const SolutionType& GetBestSoFar() const {
         return _bestSoFar;
     }
 
-    /// @brief 現在の総イテレーション回数を取得します。
+    /// @brief 現在の総イテレーション回数を取得する
     /// @return 総イテレーション回数。
     long long GetTotalIterations() const {
         return _totalIterations;
     }
 
-    /// @brief 現在の温度を取得します。
+    /// @brief 現在の温度を取得する
     /// @return 現在の温度。
     double GetCurrentTemperature() const {
         return _temperature;
@@ -293,8 +295,8 @@ class SimulatedAnnealing {
 
     std::unique_ptr<SingleObjectiveProblem<SolutionType>> _problem;  // 目的関数
     std::unique_ptr<NeighborGenerator<SolutionType>>
-        _neighborGenerator;  // 近傍解生成関数
-    // ProgressCallback progressCallback_;  // 進捗通知コールバック
+        _neighborGenerator;              // 近傍解生成関数
+    ProgressCallback _progressCallback;  // 進捗通知コールバック
 
     double _initialTemperature;  // 初期温度
     double _temperature;         // 現在の温度
@@ -311,6 +313,28 @@ class SimulatedAnnealing {
     bool _verbose;  // 進捗通知を表示するかどうか
 
     Rng _rng;  // 乱数生成器
+
+   private:
+    /// @brief デフォルトの進捗通知コールバック関数
+    /// @param state SAの状態
+    void DefaultProgressCallback(const SAState& state) {
+        std::cout << "iters: " << state.totalIterations << ", stagnant iters: "
+                  << state.iterationsSinceLastImprovement
+                  << ", temp: " << state.temperature
+                  << ", iters at temp: " << state.iterationsAtCurrentTemp
+                  << ", current obj: " << state.currentObjective
+                  << ", best obj: " << state.bestSoFarObjective << std::endl;
+    }
+
+    /// @brief デフォルトの進捗通知コールバック関数を設定する
+    /// @param callback コールバック関数
+    void SetDefaultProgressCallback() {
+        if (!_progressCallback) {
+            _progressCallback = [this](const SAState& state) {
+                DefaultProgressCallback(state);
+            };
+        }
+    }
 };
 
 template <typename T>
