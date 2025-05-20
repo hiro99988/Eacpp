@@ -185,12 +185,13 @@ class NeighborGen : public NeighborGenerator<SolutionType> {
         : avgDists(avgDists), _rng() {}
 
     SolutionType Generate(const SolutionType& currentSolution) override {
-        constexpr int maxExchangeNodeTimes = 1;
+        constexpr int maxExchangeNodeTimes = 10;
         // constexpr int maxExchangeVectorTimes = 10;
 
         auto neighbor = currentSolution;
         // 重みベクトルを交換するノード数を決定
-        int times = _rng.Integer(1, maxExchangeNodeTimes);
+        // int times = _rng.Integer(1, maxExchangeNodeTimes);
+        int times = 1;
         // 交換する片方のノードを選択
         auto firsts =
             _rng.Integers(0, currentSolution.size() - 1, times, false);
@@ -198,9 +199,12 @@ class NeighborGen : public NeighborGenerator<SolutionType> {
             // 交換するもう片方のノードを選択
             auto second = SelectIndexByWeightedRandom(avgDists[first]);
             // 重みベクトルの交換回数の上限を決定
-            auto max = 2;
+            auto max =
+                std::min(static_cast<int>(currentSolution[first].size()),
+                         static_cast<int>(currentSolution[second].size()));
             // 重みベクトルの交換回数を決定
-            times = _rng.Integer(1, max - 1);
+            // times = _rng.Integer(1, max - 1);
+            times = 1;
             // 交換する重みベクトルのインデックスを選択
             auto firstIndexes = _rng.Integers(
                 0, currentSolution[first].size() - 1, times, false);
@@ -253,8 +257,8 @@ void PrintSolution(const SolutionType& solution) {
 }
 
 int main() {
-    int divisionsNumOfWeightVector = 23;
-    int objectivesNum = 3;
+    int divisionsNumOfWeightVector = 8;
+    int objectivesNum = 5;
     int neighborhoodSize = 21;
     int parallelSize = 50;
     MoeadInitializer moeadInitializer;
@@ -279,27 +283,27 @@ int main() {
     auto initialObjective = problem->ComputeObjective(initialSolution);
 
     // Simulated Annealingの設定
-    double initialTemperature = 10.0;
-    double coolingRate = 0.95;
-    double minTemperature = 0.0001;
-    int maxIterationsPerTemp = 300;
-    long long maxTotalIterations = 1000000;
-    int maxStagnantIterations = -1;
+    double initialTemperature = 0.1;
+    double coolingRate = 0.99;
+    double minTemperature = 1.e-6;
+    int maxIterationsPerTemp = 10;
+    long long maxTotalIterations = -1;
+    int maxStagnantIterations = 5000000;
     bool verbose = true;
     SA<SolutionType> sa(initialSolution, std::move(problem),
                         std::move(neighborGen), initialTemperature, coolingRate,
                         minTemperature, maxIterationsPerTemp,
                         maxTotalIterations, maxStagnantIterations, verbose);
     // Simulated Annealingの実行
-    auto bestSolution = sa.Run();
+    auto result = sa.Run();
 
     // 最良解のグラフを生成
     auto graph = GenerateGraph(divisionsNumOfWeightVector, objectivesNum,
                                neighborhoodSize, parallelSize, moeadInitializer,
-                               bestSolution);
+                               result.best);
 
     // 初期解と最良解の表示
-    auto bestObjective = sa.GetBestSoFarObjective();
+    auto bestObjective = result.objective;
     std::cout << "Initial Objective: " << initialObjective
               << " max degree: " << initialGraph.MaxDegree() << std::endl;
     std::cout << "Best Objective: " << bestObjective
@@ -307,7 +311,7 @@ int main() {
 
     // 最良解とそのグラフの隣接リストを表示
     std::cout << "Best Solution:" << std::endl;
-    PrintSolution(bestSolution);
+    PrintSolution(result.best);
     std::cout << "Adjacency List:" << std::endl;
     PrintAdjacencyList(graph);
 }
