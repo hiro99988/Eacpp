@@ -212,23 +212,27 @@ inline std::string ConvertDoubleToStringByDividingIntoIntegersAndDecimals(
     return str;
 }
 
-inline double CalculateSquaredEuclideanDistance(const std::vector<double> &v1,
-                                                const std::vector<double> &v2) {
-    if (v1.size() != v2.size()) {
+template <typename T>
+inline T CalculateSquaredEuclideanDistance(const std::vector<T> &lhs,
+                                           const std::vector<T> &rhs) {
+    if (lhs.size() != rhs.size()) {
         throw std::invalid_argument("Vector sizes are different");
     }
 
-    double sum = 0.0;
-    for (int i = 0; i < v1.size(); i++) {
-        sum += std::pow(v1[i] - v2[i], 2);
+    T sum = T{};
+    for (std::size_t i = 0; i < lhs.size(); ++i) {
+        T diff = lhs[i] - rhs[i];
+        sum += diff * diff;
     }
 
     return sum;
 }
 
-inline double CalculateEuclideanDistance(const std::vector<double> &v1,
-                                         const std::vector<double> &v2) {
-    return std::sqrt(CalculateSquaredEuclideanDistance(v1, v2));
+template <typename T>
+inline double CalculateEuclideanDistance(const std::vector<T> &lhs,
+                                         const std::vector<T> &rhs) {
+    return std::sqrt(
+        static_cast<double>(CalculateSquaredEuclideanDistance(lhs, rhs)));
 }
 
 template <typename T>
