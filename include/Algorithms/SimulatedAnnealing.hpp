@@ -19,6 +19,7 @@
 
 #include "Rng/IRng.h"
 #include "Rng/Rng.h"
+#include "Stopwatches/Stopwatch.hpp"
 
 namespace Eacpp {
 
@@ -49,36 +50,46 @@ class SimulatedAnnealing {
    public:
     /// @brief SAの結果を保持する構造体
     struct Result {
-        SolutionType best;          ///< 最良解
-        double objective;           ///< 最良解の目的値
-        long long iterationAtBest;  ///< 最良解を見つけたイテレーション数
-        long long totalIterations;  ///< 総イテレーション数
-        double temperatureAtBest;   ///< 最良解を見つけたときの温度
-        double finalTemperature;    ///< 最終温度
+        SolutionType best;                 ///< 最良解
+        double objective;                  ///< 最良解の目的値
+        long long iterationAtBest;         ///< 最良解を見つけたイテレーション数
+        long long totalIterations;         ///< 総イテレーション数
+        double temperatureAtBest;          ///< 最良解を見つけたときの温度
+        double finalTemperature;           ///< 最終温度
+        double totalExecutionTimeSeconds;  ///< 総実行時間(秒)
+        double
+            executionTimeAtBestSeconds;  ///< 最良解を見つけた時点の実行時間(秒)
 
         /// @brief コンストラクタ
         Result(SolutionType best, double objective, long long iterationAtBest,
                long long totalIterations, double temperatureAtBest,
-               double finalTemperature)
+               double finalTemperature, double totalExecutionTimeSeconds,
+               double executionTimeAtBestSeconds)
             : best(std::move(best)),
               objective(objective),
               iterationAtBest(iterationAtBest),
               totalIterations(totalIterations),
               temperatureAtBest(temperatureAtBest),
-              finalTemperature(finalTemperature) {}
+              finalTemperature(finalTemperature),
+              totalExecutionTimeSeconds(totalExecutionTimeSeconds),
+              executionTimeAtBestSeconds(executionTimeAtBestSeconds) {}
 
         /// @brief 最良解の情報を更新する
         /// @param newBest 新しい最良解
         /// @param newObjective 新しい最良解の目的値
         /// @param newIterationAtBest 新しい最良解を見つけたイテレーション数
         /// @param newTemperatureAtBest 新しい最良解を見つけたときの温度
+        /// @param newExecutionTimeAtBestSeconds
+        /// 新しい最良解を見つけた時点の実行時間(秒)
         void UpdateBest(SolutionType newBest, double newObjective,
                         long long newIterationAtBest,
-                        double newTemperatureAtBest) {
+                        double newTemperatureAtBest,
+                        double newExecutionTimeAtBestSeconds) {
             best = std::move(newBest);
             objective = newObjective;
             iterationAtBest = newIterationAtBest;
             temperatureAtBest = newTemperatureAtBest;
+            executionTimeAtBestSeconds = newExecutionTimeAtBestSeconds;
         }
     };
 
@@ -162,7 +173,9 @@ class SimulatedAnnealing {
               _originalInitialSolution,
               (_problem ? _problem->ComputeObjective(_originalInitialSolution)
                         : 0.0),  // Compute objective if problem is valid
-              0, 0, initialTemperature, initialTemperature) {
+              0, 0, initialTemperature, initialTemperature, 0.0,
+              0.0),  // Initialize time fields to 0.0
+          _stopwatch() {
         // パラメータの検証
         if (!_problem) {
             throw std::invalid_argument(
@@ -201,7 +214,8 @@ class SimulatedAnnealing {
         _totalIterations = 0;
         _iterationsSinceLastImprovement = 0;
         _result = Result(_originalInitialSolution, _currentObjective, 0, 0,
-                         _initialTemperature, _initialTemperature);
+                         _initialTemperature, _initialTemperature, 0.0, 0.0);
+        _stopwatch.Reset();
     }
 
     /// @brief SAアルゴリズムの内部状態を新しい初期解でリセットします。
@@ -215,6 +229,8 @@ class SimulatedAnnealing {
     /// @brief Simulated Annealing アルゴリズムを実行する
     /// @return SAの結果を保持するResultオブジェクト
     Result Run() {
+        _stopwatch.Start();
+
         bool stop = false;
         _iterationsSinceLastImprovement = 0;
 
@@ -257,7 +273,8 @@ class SimulatedAnnealing {
 
                     if (_currentObjective < _result.objective) {
                         _result.UpdateBest(_currentSolution, _currentObjective,
-                                           _totalIterations, _temperature);
+                                           _totalIterations, _temperature,
+                                           _stopwatch.GetElapsedTimeSeconds());
                         _iterationsSinceLastImprovement = 0;
                     }
                 }
@@ -298,6 +315,8 @@ class SimulatedAnnealing {
         // 戻り値ResultのtotalIterationsとfinalTemperatureを確定する
         _result.totalIterations = _totalIterations;
         _result.finalTemperature = _temperature;
+        _result.totalExecutionTimeSeconds = _stopwatch.GetElapsedTimeSeconds();
+        _stopwatch.Stop();  // Stop the stopwatch as the run is complete
         return _result;
     }
 
@@ -331,8 +350,9 @@ class SimulatedAnnealing {
     long long _totalIterations;  ///< 実行された総イテレーション回数
     int _iterationsSinceLastImprovement;  ///< 最良解が更新されずに経過したイテレーション回数
 
-    bool _verbose;  ///< 進捗通知を標準出力に表示するかどうか
-    Rng _rng;       ///< 乱数生成器
+    bool _verbose;         ///< 進捗通知を標準出力に表示するかどうか
+    Rng _rng;              ///< 乱数生成器
+    Stopwatch _stopwatch;  ///< 実行時間計測用ストップウォッチ
 
    private:
     /// @brief デフォルトの進捗通知コールバック関数
