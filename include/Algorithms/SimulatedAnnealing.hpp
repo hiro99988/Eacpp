@@ -274,7 +274,7 @@ class SimulatedAnnealing {
                     if (_currentObjective < _result.objective) {
                         _result.UpdateBest(_currentSolution, _currentObjective,
                                            _totalIterations, _temperature,
-                                           _stopwatch.GetElapsedTimeSeconds());
+                                           _stopwatch.Elapsed());
                         _iterationsSinceLastImprovement = 0;
                     }
                 }
@@ -315,7 +315,7 @@ class SimulatedAnnealing {
         // 戻り値ResultのtotalIterationsとfinalTemperatureを確定する
         _result.totalIterations = _totalIterations;
         _result.finalTemperature = _temperature;
-        _result.totalExecutionTimeSeconds = _stopwatch.GetElapsedTimeSeconds();
+        _result.totalExecutionTimeSeconds = _stopwatch.Elapsed();
         _stopwatch.Stop();  // Stop the stopwatch as the run is complete
         return _result;
     }
