@@ -230,6 +230,16 @@ std::set<SimpleGraph::Node> SimpleGraph::Neighbors(Node n) const {
     return _adjacencyList[n];
 }
 
+std::vector<SimpleGraph::Node> SimpleGraph::Degrees() const {
+    std::vector<Node> degrees(_nodesNum);
+
+    for (Node i = 0; i < _nodesNum; ++i) {
+        degrees[i] = _adjacencyList[i].size();
+    }
+
+    return degrees;
+}
+
 SimpleGraph::Node SimpleGraph::Degree(Node n) const {
     ValidateIndexes(n);
 
@@ -237,15 +247,19 @@ SimpleGraph::Node SimpleGraph::Degree(Node n) const {
 }
 
 SimpleGraph::Node SimpleGraph::MaxDegree() const {
-    Node maxDegree = 0;
+    auto degrees = Degrees();
+    return *std::max_element(degrees.begin(), degrees.end());
+}
 
-    for (const auto& neighbors : _adjacencyList) {
-        if (neighbors.size() > maxDegree) {
-            maxDegree = neighbors.size();
-        }
-    }
+SimpleGraph::Node SimpleGraph::MinDegree() const {
+    auto degrees = Degrees();
+    return *std::min_element(degrees.begin(), degrees.end());
+}
 
-    return maxDegree;
+double SimpleGraph::AverageDegree() const {
+    auto degrees = Degrees();
+    double sum = std::reduce(degrees.begin(), degrees.end(), 0.0);
+    return sum / _nodesNum;
 }
 
 void SimpleGraph::Resize(Node nodesNum) {

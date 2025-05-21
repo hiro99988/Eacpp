@@ -44,8 +44,11 @@ class SimpleGraph {
     bool HasEdge(Edge edge) const;
     bool HasEdge(Node u, Node v) const;
     std::set<Node> Neighbors(Node n) const;
+    std::vector<Node> Degrees() const;
     Node Degree(Node n) const;
     Node MaxDegree() const;
+    Node MinDegree() const;
+    double AverageDegree() const;
     void Resize(Node nodesNum);
 
     /// @brief Calculate the length of the shortest path from the specified
