@@ -49,12 +49,12 @@ class SimulatedAnnealing {
    public:
     /// @brief SAの結果を保持する構造体
     struct Result {
-        SolutionType best;          /// 最良解
-        double objective;           /// 最良解の目的値
-        long long iterationAtBest;  /// 最良解を見つけたイテレーション数
-        long long totalIterations;  /// 総イテレーション数
-        double temperatureAtBest;   /// 最良解を見つけたときの温度
-        double finalTemperature;    /// 最終温度
+        SolutionType best;          ///< 最良解
+        double objective;           ///< 最良解の目的値
+        long long iterationAtBest;  ///< 最良解を見つけたイテレーション数
+        long long totalIterations;  ///< 総イテレーション数
+        double temperatureAtBest;   ///< 最良解を見つけたときの温度
+        double finalTemperature;    ///< 最終温度
 
         /// @brief コンストラクタ
         Result(SolutionType best, double objective, long long iterationAtBest,
@@ -67,6 +67,11 @@ class SimulatedAnnealing {
               temperatureAtBest(temperatureAtBest),
               finalTemperature(finalTemperature) {}
 
+        /// @brief 最良解の情報を更新する
+        /// @param newBest 新しい最良解
+        /// @param newObjective 新しい最良解の目的値
+        /// @param newIterationAtBest 新しい最良解を見つけたイテレーション数
+        /// @param newTemperatureAtBest 新しい最良解を見つけたときの温度
         void UpdateBest(SolutionType newBest, double newObjective,
                         long long newIterationAtBest,
                         double newTemperatureAtBest) {
@@ -79,15 +84,24 @@ class SimulatedAnnealing {
 
     ///@brief SAの現在の状態を保持する構造体。進捗コールバック関数に渡される
     struct SAState {
-        double temperature;           /// 現在の温度
-        int iterationsAtCurrentTemp;  /// 現在の温度でのイテレーション回数
-        long long totalIterations;    /// 総イテレーション回数
-        const SolutionType& currentSolution;  /// 現在の解への参照
-        double currentObjective;              /// 現在の解の目的値
-        const SolutionType& bestSoFar;  /// これまでに見つかった最解への参照
-        double bestSoFarObjective;      /// これまでに見つかった最良解の目的値
-        int iterationsSinceLastImprovement;  /// 最良解が最後に改善されてからのイテレーション回数
+        double temperature;           ///< 現在の温度
+        int iterationsAtCurrentTemp;  ///< 現在の温度でのイテレーション回数
+        long long totalIterations;    ///< 総イテレーション回数
+        const SolutionType& currentSolution;  ///< 現在の解への参照
+        double currentObjective;              ///< 現在の解の目的値
+        const SolutionType& bestSoFar;  ///< これまでに見つかった最良解への参照
+        double bestSoFarObjective;      ///< これまでに見つかった最良解の目的値
+        int iterationsSinceLastImprovement;  ///< 最良解が最後に改善されてからのイテレーション回数
 
+        /// @brief SAStateのコンストラクタ
+        /// @param temp 現在の温度
+        /// @param iterAtTemp 現在の温度でのイテレーション回数
+        /// @param totalIter 総イテレーション回数
+        /// @param currentSol 現在の解
+        /// @param currentObj 現在の解の目的値
+        /// @param bestSol これまでに見つかった最良解
+        /// @param bestObj これまでに見つかった最良解の目的値
+        /// @param stagnantIter 最良解が最後に改善されてからのイテレーション回数
         SAState(double temp, int iterAtTemp, long long totalIter,
                 const SolutionType& currentSol, double currentObj,
                 const SolutionType& bestSol, double bestObj, int stagnantIter)
@@ -236,9 +250,9 @@ class SimulatedAnnealing {
                     }
                 }
 
+                // 近傍解を受理する場合、現在の解を更新
                 if (accepted) {
-                    _currentSolution = std::move(
-                        neighborSolution);  // 近傍解をムーブ(またはコピー)で現在の解に
+                    _currentSolution = std::move(neighborSolution);
                     _currentObjective = neighborObjective;
 
                     if (_currentObjective < _result.objective) {
@@ -294,35 +308,35 @@ class SimulatedAnnealing {
     }
 
    private:
-    SolutionType _originalInitialSolution;  // リセット用に保持する初期解
-    SolutionType _currentSolution;          // 現在の解
-    double _currentObjective;               // 現在の解の目的値
-    Result _result;                         // これまでに見つかった最良解の情報
+    SolutionType _originalInitialSolution;  ///< リセット用に保持する初期解
+    SolutionType _currentSolution;          ///< 現在の解
+    double _currentObjective;               ///< 現在の解の目的値
+    Result _result;  ///< SAの結果を保持するResultオブジェクト
 
-    std::unique_ptr<SingleObjectiveProblem<SolutionType>> _problem;  // 目的関数
+    std::unique_ptr<SingleObjectiveProblem<SolutionType>>
+        _problem;  ///< 目的関数オブジェクト
     std::unique_ptr<NeighborGenerator<SolutionType>>
-        _neighborGenerator;              // 近傍解生成関数
-    ProgressCallback _progressCallback;  // 進捗通知コールバック
+        _neighborGenerator;              ///< 近傍解生成関数オブジェクト
+    ProgressCallback _progressCallback;  ///< 進捗通知コールバック関数
 
-    double _initialTemperature;  // 初期温度
-    double _temperature;         // 現在の温度
-    double _coolingRate;         // 冷却率
-    double _minTemperature;      // 最低温度
-    int _maxIterationsPerTemp;   // 各温度での最大イテレーション回数
+    double _initialTemperature;  ///< 初期温度
+    double _temperature;         ///< 現在の温度
+    double _coolingRate;         ///< 冷却率
+    double _minTemperature;      ///< 最低温度
+    int _maxIterationsPerTemp;   ///< 各温度での最大イテレーション回数
 
-    long long _maxTotalIterations;  // 総イテレーション回数の上限
-    int _maxStagnantIterations;     // 停滞許容イテレーション回数
+    long long _maxTotalIterations;  ///< 総イテレーション回数の上限
+    int _maxStagnantIterations;  ///< 最良解が更新されない場合の許容最大イテレーション回数
 
-    long long _totalIterations;  // 実行された総イテレーション回数
-    int _iterationsSinceLastImprovement;  // 最良解が更新されずに経過したイテレーション回数
+    long long _totalIterations;  ///< 実行された総イテレーション回数
+    int _iterationsSinceLastImprovement;  ///< 最良解が更新されずに経過したイテレーション回数
 
-    bool _verbose;  // 進捗通知を表示するかどうか
-
-    Rng _rng;  // 乱数生成器
+    bool _verbose;  ///< 進捗通知を標準出力に表示するかどうか
+    Rng _rng;       ///< 乱数生成器
 
    private:
     /// @brief デフォルトの進捗通知コールバック関数
-    /// @param state SAの状態
+    /// @param state SAの現在の状態
     void DefaultProgressCallback(const SAState& state) {
         std::cout << "iters: " << state.totalIterations << ", stagnant iters: "
                   << state.iterationsSinceLastImprovement
