@@ -156,10 +156,12 @@ class SimulatedAnnealing {
         int maxStagnantIterations = 0, bool verbose = false,
         std::uint_fast32_t seed = std::random_device()(),
         ProgressCallback callback = nullptr)
-        : _originalInitialSolution(std::move(initialSolution)),
-          _problem(std::move(singleObjectiveProblem)),
+        : _problem(std::move(singleObjectiveProblem)),
           _neighborGenerator(std::move(neighborGen)),
+          _originalInitialSolution(std::move(initialSolution)),
           _initialTemperature(initialTemperature),
+          _result(_originalInitialSolution, std::numeric_limits<double>::max(),
+                  0, 0, initialTemperature, initialTemperature, 0.0, 0.0),
           _temperature(initialTemperature),
           _coolingRate(coolingRate),
           _minTemperature(minTemperature),
@@ -169,12 +171,6 @@ class SimulatedAnnealing {
           _verbose(verbose),
           _rng(seed),
           _progressCallback(callback),
-          _result(
-              _originalInitialSolution,
-              (_problem ? _problem->ComputeObjective(_originalInitialSolution)
-                        : 0.0),  // Compute objective if problem is valid
-              0, 0, initialTemperature, initialTemperature, 0.0,
-              0.0),  // Initialize time fields to 0.0
           _stopwatch() {
         // パラメータの検証
         if (!_problem) {
@@ -301,7 +297,7 @@ class SimulatedAnnealing {
                 }
 
                 // 進捗コールバックの呼び出し
-                if (_progressCallback) {
+                if (_verbose) {
                     _progressCallback(SAState(
                         _temperature, i + 1, _totalIterations, _currentSolution,
                         _currentObjective, _result.best, _result.objective,
@@ -327,16 +323,16 @@ class SimulatedAnnealing {
     }
 
    private:
-    SolutionType _originalInitialSolution;  ///< リセット用に保持する初期解
-    SolutionType _currentSolution;          ///< 現在の解
-    double _currentObjective;               ///< 現在の解の目的値
-    Result _result;  ///< SAの結果を保持するResultオブジェクト
-
     std::unique_ptr<SingleObjectiveProblem<SolutionType>>
         _problem;  ///< 目的関数オブジェクト
     std::unique_ptr<NeighborGenerator<SolutionType>>
-        _neighborGenerator;              ///< 近傍解生成関数オブジェクト
-    ProgressCallback _progressCallback;  ///< 進捗通知コールバック関数
+        _neighborGenerator;                 ///< 近傍解生成関数オブジェクト
+    SolutionType _originalInitialSolution;  ///< リセット用に保持する初期解
+
+    Result _result;  ///< SAの結果を保持するResultオブジェクト
+
+    SolutionType _currentSolution;  ///< 現在の解
+    double _currentObjective;       ///< 現在の解の目的値
 
     double _initialTemperature;  ///< 初期温度
     double _temperature;         ///< 現在の温度
@@ -350,9 +346,10 @@ class SimulatedAnnealing {
     long long _totalIterations;  ///< 実行された総イテレーション回数
     int _iterationsSinceLastImprovement;  ///< 最良解が更新されずに経過したイテレーション回数
 
-    bool _verbose;         ///< 進捗通知を標準出力に表示するかどうか
-    Rng _rng;              ///< 乱数生成器
-    Stopwatch _stopwatch;  ///< 実行時間計測用ストップウォッチ
+    bool _verbose;  ///< 進捗通知を標準出力に表示するかどうか
+    Rng _rng;       ///< 乱数生成器
+    ProgressCallback _progressCallback;  ///< 進捗通知コールバック関数
+    Stopwatch _stopwatch;                ///< 実行時間計測用ストップウォッチ
 
    private:
     /// @brief デフォルトの進捗通知コールバック関数
