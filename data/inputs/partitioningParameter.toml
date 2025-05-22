@@ -1,0 +1,83 @@
+[[parameters]]
+divisionsNumOfWeightVector = 13
+objectivesNum = 3
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 1000000
+
+[[parameters]]
+divisionsNumOfWeightVector = 23
+objectivesNum = 3
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 2000000
+
+[[parameters]]
+divisionsNumOfWeightVector = 30
+objectivesNum = 3
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 2000000
+
+[[parameters]]
+divisionsNumOfWeightVector = 43
+objectivesNum = 3
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 2000000
+
+[[parameters]]
+divisionsNumOfWeightVector = 5
+objectivesNum = 5
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 2000000
+
+[[parameters]]
+divisionsNumOfWeightVector = 8
+objectivesNum = 5
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 3000000
+
+[[parameters]]
+divisionsNumOfWeightVector = 10
+objectivesNum = 5
+neighborhoodSize = 21
+parallelSize = 50
+minTemperature = 1.0e-8
+initialTemperature = 0.1
+coolingRate = 0.99
+maxIterationsPerTemp = 10
+maxTotalIterations = -1
+maxStagnantIterations = 3000000

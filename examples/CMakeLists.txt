@@ -26,5 +26,8 @@ target_link_libraries(GraphGenerator.out Eacpp nlohmann_json::nlohmann_json)
 add_executable(Test.out Test.cpp)
 target_link_libraries(Test.out Eacpp Eigen3::Eigen toml11::toml11)
 
-add_executable(WeightVectorPartitioning.out WeightVectorPartitioning.cpp)
-target_link_libraries(WeightVectorPartitioning.out Eacpp Eigen3::Eigen)
+add_executable(Partitioning.out Partitioning.cpp)
+target_link_libraries(Partitioning.out Eacpp)
+
+add_executable(ParallelPartitioning.out ParallelPartitioning.cpp)
+target_link_libraries(ParallelPartitioning.out Eacpp MPI::MPI_CXX toml11::toml11)
