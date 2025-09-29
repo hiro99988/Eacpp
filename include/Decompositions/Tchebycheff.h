@@ -1,0 +1,17 @@
+#pragma once
+
+#include <Eigen/Core>
+
+#include "Decompositions/DecompositionBase.h"
+
+namespace eacpp {
+
+class Tchebycheff : public DecompositionBase {
+   public:
+    Tchebycheff() {}
+
+    double ComputeObjective(const Eigen::ArrayXd& weight,
+                            const Eigen::ArrayXd& objectiveSet) const override;
+};
+
+}  // namespace eacpp

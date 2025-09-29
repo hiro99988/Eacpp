@@ -1,0 +1,18 @@
+#pragma once
+
+#include <Eigen/Core>
+#include <vector>
+
+#include "Individual.h"
+
+namespace eacpp {
+
+template <typename T>
+struct ISampling {
+    virtual ~ISampling() {}
+
+    virtual std::vector<Individual<T>> Sample(const int sampleNum,
+                                              const int variableNum) const = 0;
+};
+
+}  // namespace eacpp

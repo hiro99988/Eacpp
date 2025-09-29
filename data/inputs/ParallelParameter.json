@@ -1,0 +1,53 @@
+{
+    "isIndicatorCalculatedUsingNds": true,
+    "trial": 10,
+    "neighborhoodSize": 21,
+    "crossoverRate": 0.9,
+    "divisionsNumOfWeightVectors": [
+        {
+            "obj": 2,
+            "value": 199
+        },
+        {
+            "obj": 3,
+            "value": 23
+        },
+        {
+            "obj": 5,
+            "value": 8
+        }
+    ],
+    "generationsNums": [
+        {
+            "level": 0,
+            "value": 500
+        },
+        {
+            "level": 1,
+            "value": 1000
+        },
+        {
+            "level": 2,
+            "value": 1500
+        }
+    ],
+    "algorithms": [
+        {
+            "name": "MP-MOEAD-Async",
+            "isAsync": true,
+            "migrationInterval": 300
+        },
+        {
+            "name": "MP-MOEAD-Sync",
+            "isAsync": false,
+            "migrationInterval": 1
+        }
+    ],
+    "problems": [
+        {
+            "name": "ZDT1-30",
+            "decisionVariablesNum": 30,
+            "level": 0
+        }
+    ]
+}
